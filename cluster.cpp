@@ -98,6 +98,15 @@ string Cluster::get_type() const{
 bool Cluster::get_is_X() const{
 	return is_X;
 }
+double Cluster::get_ampl() const{
+	return ampl;
+}
+double Cluster::get_size() const{
+	return size;
+}
+double Cluster::get_pos() const{
+	return pos;
+}
 Cluster::~Cluster(){
 
 }

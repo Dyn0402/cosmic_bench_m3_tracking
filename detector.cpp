@@ -169,6 +169,38 @@ MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_r
 MG_Detector::~MG_Detector(){
 
 }
+unsigned int MG_Detector::StripToChannel(unsigned int strip_nb){
+	if(strip_nb>=61) return -1;
+	int p=61; int n=1024;
+	int MultiplexSeries[]={30,10,15,19,5,20,27,22,11,24,18,12,9,6,3,4,1,16,8,2,23,21,7,25,14,28,17,26,13,29};
+	int Detector[n]; // strip to channel correspondance
+	for(int i=0;i<(p-1)/2;i++){
+		for(int j=0;j<p;j++){
+			if(i*p+j<n){
+				Detector[i*p+j]=(0+MultiplexSeries[i]*j)%p;
+			}
+		}
+	}
+	return Detector[strip_nb];
+}
+vector<unsigned int> MG_Detector::ChannelToStrip(unsigned int channel_nb){
+	vector<unsigned int> channel_list;
+	if(channel_nb>=1024) return channel_list;
+	int p=61; int n=1024;
+	int MultiplexSeries[]={30,10,15,19,5,20,27,22,11,24,18,12,9,6,3,4,1,16,8,2,23,21,7,25,14,28,17,26,13,29};
+	unsigned int Detector[n]; // strip to channel correspondance
+	for(int i=0;i<(p-1)/2;i++){
+		for(int j=0;j<p;j++){
+			if(i*p+j<n){
+				Detector[i*p+j]=(0+MultiplexSeries[i]*j)%p;
+			}
+		}
+	}
+	for(unsigned int i=0;i<61;i++){
+		if(Detector[i] == channel_nb) channel_list.push_back(i);
+	}
+	return channel_list;
+}
 const double MG_Detector::StripPitch = 500./1024.; // distance between the middle of 2 adjacent strips
 void MG_Detector::set_ClusSizeCut_Min(double cut){
 	ClusSizeCut_Min = cut;

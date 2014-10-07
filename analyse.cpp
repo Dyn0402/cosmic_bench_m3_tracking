@@ -23,6 +23,7 @@
 #include <limits>
 #include <TMath.h>
 #include <TGraph.h>
+#include <TF1.h>
 
 using std::string;
 using std::cout;
@@ -35,6 +36,7 @@ using std::numeric_limits;
 using boost::property_tree::ptree;
 using TMath::Sqrt;
 using TMath::ATan;
+using TMath::MaxElement;
 
 Analyse::Analyse(string configFilePath){
 	ptree config_tree;
@@ -68,6 +70,7 @@ Analyse::Analyse(string configFilePath){
 		return;
 	}
 	Init(tree,total_CM_N,total_MG_N);
+	signal_file_name = config_tree.get<string>("signal_file");
 }
 Analyse::~Analyse(){
 
@@ -939,4 +942,124 @@ void Analyse::bugtest(){
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << before << "|" << setw(20) << afterAbsorption << "|" << setw(20) << afterDeviation << flush;
 	}
 	cout << "\r"<< setw(20) << before << "|" << setw(20) << afterAbsorption << "|" << setw(20) << afterDeviation << endl;
+}
+
+void Analyse::CalcStripResponseFunction(){
+
+	gStyle->SetPalette(55,0);
+
+	int det_N = CM_N + MG_N;
+	cout << setw(20) << "detector proccessed" << "|" << setw(20) << "event processed" << endl;
+	TProfile * SRH[det_N];
+	TCanvas * c[det_N];
+	TF1 * SRF[det_N];
+	double chisquare_threshold = 500;
+	Long64_t nentries = fChain->GetEntriesFast();
+
+	TFile * signal_file = new TFile(signal_file_name.c_str(),"READ");
+	TTree * signal_tree = (TTree*)(signal_file->Get("T"));
+	double StripAmpl_MG_corr[MG_N][61][32];
+	double StripAmpl_CM_corr[CM_N][64][32];
+	int signal_evn;
+	signal_tree->SetBranchAddress("Nevent",&signal_evn);
+	signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
+	signal_tree->SetBranchAddress("StripAmpl_MG_corr",StripAmpl_MG_corr);
+
+	for(int i=0;i<det_N;i++){
+		for(int j=0;j<det_N;j++){
+			detectors[j]->is_ref = (i!=j);
+		}
+
+		ostringstream c_name;
+		c_name << "c_" << i;
+		ostringstream SRH_name;
+		c_name << "SRH_" << i;
+		ostringstream SRF_name;
+		c_name << "SRF_" << i;
+		c[i] = new TCanvas(c_name.str().c_str(),c_name.str().c_str());
+		SRH[i] = new TProfile(c_name.str().c_str(),c_name.str().c_str(),200,-500,500,0,1000);
+		SRF[i] = new TF1(SRF_name.str().c_str(),"(1+[0]*x*x+[1]*x*x*x*x)/(1+[2]*x*x+[3]*x*x*x*x)",-50,50);
+		SRF[i]->SetParameters(1.12/100000.,-7.68/100000000000.,3.2/100000.,0.);
+
+		if (fChain == 0) return;
+		for (Long64_t jentry=0; jentry<nentries;jentry++){
+			Long64_t ientry = LoadTree(jentry);
+			if (ientry < 0) break;
+			fChain->GetEntry(jentry);
+			signal_tree->GetEntry(jentry);
+			if(signal_evn!=evn){
+				cout << "event numbers are different in analyse and signal trees" << endl;
+				return;
+			}
+			CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
+			vector<Ray> currentRays = currentCBEvent->get_absorption_rays();
+
+			for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
+				if(!((*it)->get_is_ref())){
+					if((*it)->get_type() == "CM_Demux"){
+						continue;
+						/*
+						vector<CM_Demux_Cluster> current_clusters = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
+						for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
+							if((jt->get_chiSquare_X()+jt->get_chiSquare_Y()) > chisquare_threshold) continue;
+							double residu = numeric_limits<double>::max();
+							vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
+							for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+								double current_residu = jt->get_residu_ref(&(*kt));
+								if(current_residu<residu){
+									residu = current_residu;
+									matching_cluster = kt;
+								}
+							}
+							if(matching_cluster == current_clusters.end()) continue;
+							for(int strip_nb=0;strip_nb<matching_cluster->get_size();strip_nb++){
+								int strip = matching_cluster->get_pos() - matching_cluster->get_size() + strip_nb;
+								SRH[i]->Fill(matching_cluster->get_pos_mm() - strip*CM_Detector::ThinStripPitch, MaxElement(32,StripAmpl_CM_corr[(*it)->get_n_in_tree()][strip]));
+							}
+							current_clusters.erase(matching_cluster);
+						}
+						*/
+					}
+					else if((*it)->get_type() == "MG"){
+						vector<MG_Cluster> current_clusters = (dynamic_cast<MG_Event*>(*it))->get_clusters();
+						for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
+							if((jt->get_chiSquare_X()+jt->get_chiSquare_Y()) > chisquare_threshold) continue;
+							double residu = numeric_limits<double>::max();
+							vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
+							for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+								double current_residu = jt->get_residu_ref(&(*kt));
+								if(current_residu<residu){
+									residu = current_residu;
+									matching_cluster = kt;
+								}
+							}
+							if(matching_cluster == current_clusters.end()) continue;
+							for(int strip_nb=0;strip_nb<matching_cluster->get_size();strip_nb++){
+								int strip = matching_cluster->get_pos() - matching_cluster->get_size() + strip_nb;
+								SRH[i]->Fill(matching_cluster->get_pos_mm() - strip*MG_Detector::StripPitch, MaxElement(32,StripAmpl_MG_corr[(*it)->get_n_in_tree()][strip]));
+							}
+							current_clusters.erase(matching_cluster);
+						}
+					}
+				}
+			}
+
+			delete currentCBEvent;
+
+			if(jentry%500 == 0) cout << "\r" << setw(20) << i << "|" << setw(20) << jentry << flush;
+			if(jentry%10000 == 0){
+				c[i]->cd();
+				SRH[i]->Draw();
+				c[i]->Modified();
+				c[i]->Update();
+			}
+		}
+		cout << "\r" << setw(20) << i << "|" << setw(20) << nentries << flush;
+		SRH[i]->Fit(SRF[i],"QN");
+		c[i]->cd();
+		SRH[i]->Draw();
+		c[i]->Modified();
+		c[i]->Update();
+	}
+	cout << "\r" << setw(20) << det_N << "|" << setw(20) << nentries << flush;
 }

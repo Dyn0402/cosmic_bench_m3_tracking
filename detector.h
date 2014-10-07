@@ -24,8 +24,10 @@ class CM_Detector;
 class MG_Detector;
 class CosmicBench;
 class T;
+class Analyse;
 
 class Detector{
+	friend class Analyse;
 	public:
 		//getters
 		double get_z() const;
@@ -92,6 +94,8 @@ class MG_Detector: public Detector{
 		MG_Detector& operator=(const MG_Detector& other);
 		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_);
 		~MG_Detector();
+		static unsigned int StripToChannel(unsigned int strip_nb);
+		static vector<unsigned int> ChannelToStrip(unsigned int channel_nb);
 		//MultiGen general charac
 		static const double StripPitch; // distance between the middle of 2 adjacent strips
 		//Cut setters
