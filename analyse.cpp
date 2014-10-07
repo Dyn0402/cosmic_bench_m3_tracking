@@ -188,6 +188,7 @@ void Analyse::Residus_ref(){
 	map<string,TH2D*> muon_total;
 	map<string,TH2D*> efficacity_2D;
 	map<string,TGraph*> correlation;
+	map<string,TProfile*> angle_alignment;
 	map<string,int> point_nb;
 	map<string,double> efficacity;
 	map<string,bool> is_seen;
@@ -210,6 +211,7 @@ void Analyse::Residus_ref(){
 				efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
 				efficacity_2D[name.str()]->SetStats(false);
 				correlation[name.str()] = new TGraph();
+				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,0,500,-20,20);
 				point_nb[name.str()] = 0;
 				efficacity[name.str()] = 0;
 				is_seen [name.str()] = false;
@@ -224,6 +226,7 @@ void Analyse::Residus_ref(){
 				efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
 				efficacity_2D[name.str()]->SetStats(false);
 				correlation[name.str()] = new TGraph();
+				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,0,500,-20,20);
 				point_nb[name.str()] = 0;
 				efficacity[name.str()] = 0;
 				is_seen [name.str()] = false;
@@ -295,9 +298,11 @@ void Analyse::Residus_ref(){
 						if(matching_cluster == current_clusters.end()) continue;
 						if((*matching_cluster).get_is_X()){
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster).get_pos_mm());
+							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
 						}
 						else{
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster).get_pos_mm());
+							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
 						}
 						point_nb[name.str()]++;
 						current_clusters.erase(matching_cluster);
@@ -340,9 +345,11 @@ void Analyse::Residus_ref(){
 						if(matching_cluster == current_clusters.end()) continue;
 						if((*matching_cluster).get_is_X()){
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster).get_pos_mm());
+							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
 						}
 						else{
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster).get_pos_mm());
+							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
 						}
 						point_nb[name.str()]++;
 						current_clusters.erase(matching_cluster);
@@ -383,6 +390,8 @@ void Analyse::Residus_ref(){
 				efficacity_2D[it->first]->Draw("COLZ");
 				it->second->cd(3);
 				if(point_nb[it->first]>0) correlation[it->first]->Draw("AP");
+				it->second->cd(4);
+				angle_alignment[it->first]->Draw();
 				it->second->Modified();
 				it->second->Update();
 			}
@@ -417,6 +426,8 @@ void Analyse::Residus_ref(){
 		efficacity_2D[it->first]->Draw("COLZ");
 		it->second->cd(3);
 		if(point_nb[it->first]>0) correlation[it->first]->Draw("AP");
+		it->second->cd(4);
+		angle_alignment[it->first]->Draw();
 		it->second->Modified();
 		it->second->Update();
 		cout << it->first << " efficacity : " << 100.*efficacity[it->first] << "%" << endl;
