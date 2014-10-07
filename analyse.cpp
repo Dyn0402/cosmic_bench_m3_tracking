@@ -987,7 +987,7 @@ void Analyse::CalcStripResponseFunction(){
 			if (ientry < 0) break;
 			fChain->GetEntry(jentry);
 			signal_tree->GetEntry(jentry);
-			if(signal_evn!=evn){
+			if(signal_evn!=(evn+1)){
 				cout << "event numbers are different in analyse and signal trees" << endl;
 				return;
 			}
