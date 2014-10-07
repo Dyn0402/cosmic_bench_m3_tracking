@@ -981,12 +981,13 @@ void Analyse::CalcStripResponseFunction(){
 		ostringstream c_name;
 		c_name << "c_" << i;
 		ostringstream SRH_name;
-		c_name << "SRH_" << i;
+		SRH_name << "SRH_" << i;
 		ostringstream SRF_name;
-		c_name << "SRF_" << i;
+		SRF_name << "SRF_" << i;
+		double limit = 20;
 		c[i] = new TCanvas(c_name.str().c_str(),c_name.str().c_str());
-		SRH[i] = new TProfile(c_name.str().c_str(),c_name.str().c_str(),200,-500,500,0,1000);
-		SRF[i] = new TF1(SRF_name.str().c_str(),"(1+[0]*x*x+[1]*x*x*x*x)/(1+[2]*x*x+[3]*x*x*x*x)",-50,50);
+		SRH[i] = new TProfile(SRH_name.str().c_str(),SRH_name.str().c_str(),200,-limit,limit,0,1000);
+		SRF[i] = new TF1(SRF_name.str().c_str(),"(1+[0]*x*x+[1]*x*x*x*x)/(1+[2]*x*x+[3]*x*x*x*x)",-limit,limit);
 		SRF[i]->SetParameters(1.12/100000.,-7.68/100000000000.,3.2/100000.,0.);
 
 		if (fChain == 0) return;
@@ -1044,7 +1045,7 @@ void Analyse::CalcStripResponseFunction(){
 							}
 							if(matching_cluster == current_clusters.end()) continue;
 							for(int strip_nb=0;strip_nb<matching_cluster->get_size();strip_nb++){
-								int strip = matching_cluster->get_pos() - matching_cluster->get_size() + strip_nb;
+								int strip = matching_cluster->get_pos() - 0.5*matching_cluster->get_size() + strip_nb;
 								if(strip<0) continue;
 								int channel = MG_Detector::StripToChannel(strip);
 								SRH[i]->Fill(matching_cluster->get_pos_mm() - strip*MG_Detector::StripPitch, *max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32));
