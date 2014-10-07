@@ -28,7 +28,7 @@ int main(int argc, char ** argv){
 	string residus = "residus";
 	string fluxMap = "fluxmap";
 	string raypairs = "raypairs";
-	string bugtest = "bugtest"
+	string bugtest = "bugtest";
 	string srf = "srf";
 	if(argv[2] == efficacity){
 		blah->Efficacity();
