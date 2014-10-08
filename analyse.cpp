@@ -197,7 +197,7 @@ void Analyse::Residus_ref(){
 	double marge = 2./5.;
 	int nbins_2D = 50*(1+2*marge);
 	int eventReconstructed = 0;
-	int eventSuitable = 0;
+	double eventSuitable = 0;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())){
 			ostringstream name;
@@ -256,8 +256,10 @@ void Analyse::Residus_ref(){
 	correlation["Multigen_2D_1"] = new TGraph();
 	double z_MG2D_1 = 705;
 	*/
-	TCanvas * c0 = new TCanvas("chiSquares","chiSquares");
+	TCanvas * c0 = new TCanvas("stats","stats");
+	c0->Divide(2);
 	TH1D * chisquares = new TH1D("chiSquares","chiSquares",nbins,0,chisquare_threshold);
+	TH1D * ray_clus_n = new TH1D("clus_n","clus_n",10,0,10);
 
 	if (fChain == 0) return;
 	Long64_t nentries = fChain->GetEntriesFast();
@@ -269,10 +271,13 @@ void Analyse::Residus_ref(){
 		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays();
 		for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-			if((jt->get_chiSquare_X()+jt->get_chiSquare_Y()) < chisquare_threshold) chisquares->Fill(jt->get_chiSquare_X()+jt->get_chiSquare_Y());
+			if((jt->get_chiSquare_X()+jt->get_chiSquare_Y()) < chisquare_threshold){
+				chisquares->Fill(jt->get_chiSquare_X()+jt->get_chiSquare_Y());
+				ray_clus_n->Fill(jt->get_clus_n());
+			}
 		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()*1./(CM_N+MG_N);
 		
 		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
 			if(!((*it)->get_is_ref())){
@@ -373,7 +378,7 @@ void Analyse::Residus_ref(){
 			}
 		}
 		delete currentCBEvent;
-		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
+		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<int>(eventSuitable) << "|" << setw(20) << jentry << flush;
 		if(jentry%5000 == 0){
 			for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
 				it->second->cd(1);
@@ -395,13 +400,15 @@ void Analyse::Residus_ref(){
 				it->second->Modified();
 				it->second->Update();
 			}
-			c0->cd();
+			c0->cd(1);
 			chisquares->Draw();
+			c0->cd(2);
+			ray_clus_n->Draw();
 			c0->Modified();
 			c0->Update();
 		}
 	}
-	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
+	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<int>(eventSuitable) << "|" << setw(20) << nentries << endl;
 	for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
 		it->second->cd(1);
 		MM_residus[it->first]->Draw();
@@ -434,8 +441,10 @@ void Analyse::Residus_ref(){
 	}
 	//cout << "correlation MG2D_0 : " << (efficacity["Multigen_2D_0"] - efficacity["Multigen_0"]*efficacity["Multigen_1"])/Sqrt(efficacity["Multigen_0"]*(1-efficacity["Multigen_0"])*efficacity["Multigen_1"]*(1-efficacity["Multigen_1"])) << endl;
 	//cout << "correlation MG2D_1 : " << (efficacity["Multigen_2D_1"] - efficacity["Multigen_2"]*efficacity["Multigen_3"])/Sqrt(efficacity["Multigen_2"]*(1-efficacity["Multigen_2"])*efficacity["Multigen_3"]*(1-efficacity["Multigen_3"])) << endl;
-	c0->cd();
+	c0->cd(1);
 	chisquares->Draw();
+	c0->cd(2);
+	ray_clus_n->Draw();
 	c0->Modified();
 	c0->Update();
 }
@@ -1001,8 +1010,8 @@ void Analyse::CalcStripResponseFunction(){
 	float StripAmpl_CM_corr[CM_N][64][32];
 	int signal_evn;
 	signal_tree->SetBranchAddress("Nevent",&signal_evn);
-	signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
-	signal_tree->SetBranchAddress("StripAmpl_MG_corr",StripAmpl_MG_corr);
+	if(CM_N>0) signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
+	if(MG_N>0) signal_tree->SetBranchAddress("StripAmpl_MG_corr",StripAmpl_MG_corr);
 
 	for(int i=0;i<det_N;i++){
 		for(int j=0;j<det_N;j++){
@@ -1015,12 +1024,17 @@ void Analyse::CalcStripResponseFunction(){
 		SRH_name << "SRH_" << i;
 		ostringstream SRF_name;
 		SRF_name << "SRF_" << i;
-		double limit = 20;
+		double limit = 10;
+		if(detectors[i]->get_type() == "MG" && detectors[i]->get_is_X() == false) limit *= 1.2;
 		c[i] = new TCanvas(c_name.str().c_str(),c_name.str().c_str());
 		SRH[i] = new TProfile(SRH_name.str().c_str(),SRH_name.str().c_str(),200,-limit,limit,0,1000);
-		SRF[i] = new TF1(SRF_name.str().c_str(),"(1+[0]*x*x+[1]*x*x*x*x)/(1+[2]*x*x+[3]*x*x*x*x)",-limit,limit);
-		SRF[i]->SetParameters(1.12/100000.,-7.68/100000000000.,3.2/100000.,0.);
-
+		//SRF[i] = new TF1(SRF_name.str().c_str(),"(1+[0]*x*x+[1]*x*x*x*x)/(1+[2]*x*x+[3]*x*x*x*x)",-limit,limit);
+		//SRF[i]->SetParameters(1.12/100000.,-7.68/100000000000.,3.2/100000.,0.);
+		SRF[i] = new TF1(SRF_name.str().c_str(),"exp(-4*log(2)*(1-[0])*x*x/([1]*[1]))/(1+(4*[0]*x*x/([2]*[2])))",-limit,limit);
+		SRF[i]->SetParameters(0.5,0.5,0.5);
+		SRF[i]->SetParLimits(0,0,1);
+		SRF[i]->SetParLimits(1,0,10000);
+		SRF[i]->SetParLimits(2,0,10000);
 		if (fChain == 0) return;
 		for (Long64_t jentry=0; jentry<nentries;jentry++){
 			Long64_t ientry = LoadTree(jentry);

@@ -218,6 +218,9 @@ double Ray_2D::get_t_sigma() const{
 	sigma-=mean*mean;
 	return Sqrt(sigma);
 }
+unsigned int Ray_2D::get_clus_n() const{
+	return clusters.size();
+}
 
 Ray::Ray(){
 	clusters.clear();
@@ -379,6 +382,9 @@ double Ray::get_t_sigma() const{
 	double mean = get_t_mean();
 	sigma-=mean*mean;
 	return Sqrt(sigma);
+}
+unsigned int Ray::get_clus_n() const{
+	return clusters.size();
 }
 
 RayPair::RayPair(){
