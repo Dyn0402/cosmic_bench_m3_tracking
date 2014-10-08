@@ -70,54 +70,58 @@ void T::Init(TTree *tree, int CM_n, int MG_n)
    fChain->SetBranchAddress("evn", &evn, &b_evn);
    evttime = 0;
    //fChain->SetBranchAddress("evttime", &evttime, &b_evttime);
-   CM_NClus = new int[CM_n];
-   fChain->SetBranchAddress("CM_NClus", CM_NClus, &b_CM_NClus);
-   CM_Spark = new int[CM_n];
-   for(int i = 0;i<CM_n;i++){
-      CM_Spark[i] = 0;
+   if(CM_n>0){
+      CM_NClus = new int[CM_n];
+      fChain->SetBranchAddress("CM_NClus", CM_NClus, &b_CM_NClus);
+      CM_Spark = new int[CM_n];
+      for(int i = 0;i<CM_n;i++){
+         CM_Spark[i] = 0;
+      }
+      //fChain->SetBranchAddress("CM_Spark", CM_Spark, &b_CM_Spark);
+      CM_ClusAmpl = new Double_t[CM_n][600];
+      fChain->SetBranchAddress("CM_ClusAmpl", CM_ClusAmpl, &b_CM_ClusAmpl);
+      CM_ClusSize = new Double_t[CM_n][600];
+      fChain->SetBranchAddress("CM_ClusSize", CM_ClusSize, &b_CM_ClusSize);
+      CM_ClusPos = new Double_t[CM_n][600];
+      fChain->SetBranchAddress("CM_ClusPos", CM_ClusPos, &b_CM_ClusPos);
+      CM_ClusMaxStripAmpl = new Double_t[CM_n][600];
+      fChain->SetBranchAddress("CM_ClusMaxStripAmpl", CM_ClusMaxStripAmpl, &b_CM_ClusMaxStripAmpl);
+      CM_ClusMaxStrip = new Int_t[CM_n][600];
+      fChain->SetBranchAddress("CM_ClusMaxStrip", CM_ClusMaxStrip, &b_CM_ClusMaxStrip);
+      CM_ClusMaxSample = new Double_t[CM_n][600];
+      fChain->SetBranchAddress("CM_ClusMaxSample", CM_ClusMaxSample, &b_CM_ClusMaxSample);
+      CM_ClusTOT = new Double_t[CM_n][600];
+      fChain->SetBranchAddress("CM_ClusTOT", CM_ClusTOT, &b_CM_ClusTOT);
+      CM_ClusT = new Double_t[CM_n][600];
+      fChain->SetBranchAddress("CM_ClusT", CM_ClusT, &b_CM_ClusT);
+      CM_StripMaxAmpl = new Double_t[CM_n][32];
+      fChain->SetBranchAddress("CM_StripMaxAmpl", CM_StripMaxAmpl, &b_CM_StripMaxAmpl);
    }
-   //fChain->SetBranchAddress("CM_Spark", CM_Spark, &b_CM_Spark);
-   CM_ClusAmpl = new Double_t[CM_n][600];
-   fChain->SetBranchAddress("CM_ClusAmpl", CM_ClusAmpl, &b_CM_ClusAmpl);
-   CM_ClusSize = new Double_t[CM_n][600];
-   fChain->SetBranchAddress("CM_ClusSize", CM_ClusSize, &b_CM_ClusSize);
-   CM_ClusPos = new Double_t[CM_n][600];
-   fChain->SetBranchAddress("CM_ClusPos", CM_ClusPos, &b_CM_ClusPos);
-   CM_ClusMaxStripAmpl = new Double_t[CM_n][600];
-   fChain->SetBranchAddress("CM_ClusMaxStripAmpl", CM_ClusMaxStripAmpl, &b_CM_ClusMaxStripAmpl);
-   CM_ClusMaxStrip = new Int_t[CM_n][600];
-   fChain->SetBranchAddress("CM_ClusMaxStrip", CM_ClusMaxStrip, &b_CM_ClusMaxStrip);
-   CM_ClusMaxSample = new Double_t[CM_n][600];
-   fChain->SetBranchAddress("CM_ClusMaxSample", CM_ClusMaxSample, &b_CM_ClusMaxSample);
-   CM_ClusTOT = new Double_t[CM_n][600];
-   fChain->SetBranchAddress("CM_ClusTOT", CM_ClusTOT, &b_CM_ClusTOT);
-   CM_ClusT = new Double_t[CM_n][600];
-   fChain->SetBranchAddress("CM_ClusT", CM_ClusT, &b_CM_ClusT);
-   CM_StripMaxAmpl = new Double_t[CM_n][32];
-   fChain->SetBranchAddress("CM_StripMaxAmpl", CM_StripMaxAmpl, &b_CM_StripMaxAmpl);
-   MG_NClus = new int[MG_n];
-   fChain->SetBranchAddress("MG_NClus", MG_NClus, &b_MG_NClus);
-   MG_Spark = new int[MG_n];
-   for(int i = 0;i<MG_n;i++){
-      MG_Spark[i] = 0;
+   if(MG_n>0){
+      MG_NClus = new int[MG_n];
+      fChain->SetBranchAddress("MG_NClus", MG_NClus, &b_MG_NClus);
+      MG_Spark = new int[MG_n];
+      for(int i = 0;i<MG_n;i++){
+         MG_Spark[i] = 0;
+      }
+      //fChain->SetBranchAddress("MG_Spark", MG_Spark, &b_MG_Spark);
+      MG_ClusAmpl = new Double_t[MG_n][300];
+      fChain->SetBranchAddress("MG_ClusAmpl", MG_ClusAmpl, &b_MG_ClusAmpl);
+      MG_ClusSize = new Double_t[MG_n][300];
+      fChain->SetBranchAddress("MG_ClusSize", MG_ClusSize, &b_MG_ClusSize);
+      MG_ClusPos = new Double_t[MG_n][300];
+      fChain->SetBranchAddress("MG_ClusPos", MG_ClusPos, &b_MG_ClusPos);
+      MG_ClusMaxStripAmpl = new Double_t[MG_n][300];
+      fChain->SetBranchAddress("MG_ClusMaxStripAmpl", MG_ClusMaxStripAmpl, &b_MG_ClusMaxStripAmpl);
+      MG_ClusMaxSample = new Double_t[MG_n][300];
+      fChain->SetBranchAddress("MG_ClusMaxSample", MG_ClusMaxSample, &b_MG_ClusMaxSample);
+      MG_ClusTOT = new Double_t[MG_n][300];
+      fChain->SetBranchAddress("MG_ClusTOT", MG_ClusTOT, &b_MG_ClusTOT);
+      MG_ClusT = new Double_t[MG_n][300];
+      fChain->SetBranchAddress("MG_ClusT", MG_ClusT, &b_MG_ClusT);
+      MG_StripMaxAmpl = new Double_t[MG_n][61];
+      fChain->SetBranchAddress("MG_StripMaxAmpl", MG_StripMaxAmpl, &b_MG_StripMaxAmpl);
    }
-   //fChain->SetBranchAddress("MG_Spark", MG_Spark, &b_MG_Spark);
-   MG_ClusAmpl = new Double_t[MG_n][300];
-   fChain->SetBranchAddress("MG_ClusAmpl", MG_ClusAmpl, &b_MG_ClusAmpl);
-   MG_ClusSize = new Double_t[MG_n][300];
-   fChain->SetBranchAddress("MG_ClusSize", MG_ClusSize, &b_MG_ClusSize);
-   MG_ClusPos = new Double_t[MG_n][300];
-   fChain->SetBranchAddress("MG_ClusPos", MG_ClusPos, &b_MG_ClusPos);
-   MG_ClusMaxStripAmpl = new Double_t[MG_n][300];
-   fChain->SetBranchAddress("MG_ClusMaxStripAmpl", MG_ClusMaxStripAmpl, &b_MG_ClusMaxStripAmpl);
-   MG_ClusMaxSample = new Double_t[MG_n][300];
-   fChain->SetBranchAddress("MG_ClusMaxSample", MG_ClusMaxSample, &b_MG_ClusMaxSample);
-   MG_ClusTOT = new Double_t[MG_n][300];
-   fChain->SetBranchAddress("MG_ClusTOT", MG_ClusTOT, &b_MG_ClusTOT);
-   MG_ClusT = new Double_t[MG_n][300];
-   fChain->SetBranchAddress("MG_ClusT", MG_ClusT, &b_MG_ClusT);
-   MG_StripMaxAmpl = new Double_t[MG_n][61];
-   fChain->SetBranchAddress("MG_StripMaxAmpl", MG_StripMaxAmpl, &b_MG_StripMaxAmpl);
    Notify();
 }
 
