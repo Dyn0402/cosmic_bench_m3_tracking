@@ -40,6 +40,8 @@ class Cluster{
 		double get_ampl() const;
 		double get_size() const;
 		double get_pos() const;
+		void set_perp_pos_mm(double coord);
+		double get_perp_pos_mm() const;
 	protected:
 		Cluster();
 		Cluster(const Cluster& other);
@@ -62,6 +64,8 @@ class Cluster{
 		bool is_up;
 		double offset;
 		bool direction;
+		double angle;
+		double perp_pos_mm;
 };
 
 class CM_Cluster: public Cluster{

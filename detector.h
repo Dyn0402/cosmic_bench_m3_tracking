@@ -37,6 +37,7 @@ class Detector{
 		virtual string get_type() const = 0;
 		double get_offset() const;
 		bool get_direction() const;
+		double get_angle() const;
 		//seters
 		void set_ClusTOTCut_Min(double cut);
 		void set_ClusMaxSampleCut_Min(double cut);
@@ -46,13 +47,14 @@ class Detector{
 		Detector();	
 		Detector(const Detector& other);
 		Detector& operator=(const Detector& other);
-		Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_);	
+		Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_);	
 		double z; //altitude inside cosmic bench
 		bool is_X;//coordinate measured by the detector
 		bool is_up;//bloc (up|down) which the detector is part of
 		bool is_ref; //used to test detectors
 		double offset; //used for alignement
 		bool direction; // direction of the axis
+		double angle; //used for alignement
 		//Detector dependent Cuts
 		double ClusTOTCut_Min;
 		double ClusMaxSampleCut_Min;
@@ -67,7 +69,7 @@ class CM_Detector: public Detector{
 		CM_Detector();
 		CM_Detector(const CM_Detector& other);
 		CM_Detector& operator=(const CM_Detector& other);
-		CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_);
+		CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_);
 		~CM_Detector();
 		//CosMulti general charac
 		static const double thinStripPitch; // distance between the middle of 2 adjacent thin strips
@@ -92,7 +94,7 @@ class MG_Detector: public Detector{
 		MG_Detector();
 		MG_Detector(const MG_Detector& other);
 		MG_Detector& operator=(const MG_Detector& other);
-		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_);
+		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_);
 		~MG_Detector();
 		static unsigned int StripToChannel(unsigned int strip_nb);
 		static vector<unsigned int> ChannelToStrip(unsigned int channel_nb);

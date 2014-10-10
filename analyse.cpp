@@ -25,6 +25,7 @@
 #include <TGraph.h>
 #include <TF1.h>
 #include <algorithm>
+#include <TProfile2D.h>
 
 using std::string;
 using std::cout;
@@ -39,6 +40,8 @@ using TMath::Sqrt;
 using TMath::ATan;
 using TMath::MaxElement;
 using std::max_element;
+using std::left;
+using std::right;
 
 Analyse::Analyse(string configFilePath){
 	ptree config_tree;
@@ -49,7 +52,7 @@ Analyse::Analyse(string configFilePath){
 	CM_N = 0;
 	MG_N = 0;
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
-		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction")));
+		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle")));
 		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -58,7 +61,7 @@ Analyse::Analyse(string configFilePath){
 		CM_N++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction")));
+		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle")));
 		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -67,7 +70,7 @@ Analyse::Analyse(string configFilePath){
 	}
 	int total_CM_N = config_tree.get<int>("total_CM_N");
 	int total_MG_N = config_tree.get<int>("total_MG_N");
-	if(total_CM_N<CM_N || total_MG_N<MG_N){
+	if((total_CM_N!=CM_N) || (total_MG_N!=MG_N)){
 		cout << "problem in detectors number" << endl;
 		return;
 	}
@@ -306,6 +309,12 @@ void Analyse::Residus_ref(){
 						double residu = numeric_limits<double>::max();
 						vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
 						for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+							if(kt->get_is_X()){
+								kt->set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
+							}
+							else{
+								kt->set_perp_pos_mm(jt->eval_X((*it)->get_z()));
+							}
 							double current_residu = jt->get_residu_ref(&(*kt));
 							if(current_residu<residu){
 								residu = current_residu;
@@ -355,6 +364,12 @@ void Analyse::Residus_ref(){
 						double residu = numeric_limits<double>::max();
 						vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
 						for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+							if(kt->get_is_X()){
+								kt->set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
+							}
+							else{
+								kt->set_perp_pos_mm(jt->eval_X((*it)->get_z()));
+							}
 							double current_residu = jt->get_residu_ref(&(*kt));
 							if(current_residu<residu){
 								residu = current_residu;
@@ -364,10 +379,12 @@ void Analyse::Residus_ref(){
 						if(jt->eval_X((*it)->get_z())<500 && jt->eval_X((*it)->get_z())>0 && jt->eval_Y((*it)->get_z())<500 && jt->eval_Y((*it)->get_z())>0) muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 						if(matching_cluster == current_clusters.end()) continue;
 						if((*matching_cluster).get_is_X()){
+							(*matching_cluster).set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster).get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
 						}
 						else{
+							(*matching_cluster).set_perp_pos_mm(jt->eval_X((*it)->get_z()));
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster).get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
 						}
@@ -1004,11 +1021,14 @@ void Analyse::bugtest(){
 void Analyse::CalcStripResponseFunction(){
 
 	gStyle->SetPalette(55,0);
+	gStyle->SetOptFit(0111);
 
 	int det_N = CM_N + MG_N;
 	cout << setw(20) << "detector proccessed" << "|" << setw(20) << "event processed" << endl;
 	TProfile * SRH[det_N];
+	TGraph * SRH2D[det_N];
 	TCanvas * c[det_N];
+	TCanvas * d[det_N];
 	TF1 * SRF[det_N];
 	double chisquare_threshold = 500;
 	Long64_t nentries = fChain->GetEntriesFast();
@@ -1035,21 +1055,33 @@ void Analyse::CalcStripResponseFunction(){
 
 		ostringstream c_name;
 		c_name << "c_" << i;
+		ostringstream d_name;
+		d_name << "d_" << i;
 		ostringstream SRH_name;
 		SRH_name << "SRH_" << i;
+		ostringstream SRH2D_name;
+		SRH2D_name << "SRH2D_" << i;
 		ostringstream SRF_name;
 		SRF_name << "SRF_" << i;
-		double limit = 10;
-		if(detectors[i]->get_type() == "MG" && detectors[i]->get_is_X() == false) limit *= 1.2;
+
+		double limit = 6;
+		if(detectors[i]->get_type() == "MG" && detectors[i]->get_is_X() == false) limit *= 2.;
 		c[i] = new TCanvas(c_name.str().c_str(),c_name.str().c_str());
+		d[i] = new TCanvas(d_name.str().c_str(),d_name.str().c_str());
 		SRH[i] = new TProfile(SRH_name.str().c_str(),SRH_name.str().c_str(),200,-limit,limit,0,1000);
-		//SRF[i] = new TF1(SRF_name.str().c_str(),"(1+[0]*x*x+[1]*x*x*x*x)/(1+[2]*x*x+[3]*x*x*x*x)",-limit,limit);
-		//SRF[i]->SetParameters(1.12/100000.,-7.68/100000000000.,3.2/100000.,0.);
-		SRF[i] = new TF1(SRF_name.str().c_str(),"exp(-4*log(2)*(1-[0])*x*x/([1]*[1]))/(1+(4*[0]*x*x/([2]*[2])))",-limit,limit);
-		SRF[i]->SetParameters(0.5,0.5,0.5);
+		SRH2D[i] = new TGraph();
+		SRH2D[i]->GetXaxis()->SetLimits(-limit,limit);
+		int graph_point_nb = 0;
+		
+		SRF[i] = new TF1(SRF_name.str().c_str(),"([3] + exp(-4*log(2)*(1-[0])*(x-[4])*(x-[4])/([1]*[1]))/(1+(4*[0]*(x-[4])*(x-[4])/([2]*[2]))))/(1+[3])",-limit,limit);
+		SRF[i]->SetParameters(0.5,0.5,0.5,0.1,0);
 		SRF[i]->SetParLimits(0,0,1);
 		SRF[i]->SetParLimits(1,0,10000);
 		SRF[i]->SetParLimits(2,0,10000);
+		SRF[i]->SetParLimits(3,0,0.5);
+		SRF[i]->SetParLimits(4,-4,4);
+
+
 		if (fChain == 0) return;
 		for (Long64_t jentry=0; jentry<nentries;jentry++){
 			Long64_t ientry = LoadTree(jentry);
@@ -1097,6 +1129,12 @@ void Analyse::CalcStripResponseFunction(){
 							double residu = numeric_limits<double>::max();
 							vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
 							for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+								if(kt->get_is_X()){
+									kt->set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
+								}
+								else{
+									kt->set_perp_pos_mm(jt->eval_X((*it)->get_z()));
+								}
 								double current_residu = jt->get_residu_ref(&(*kt));
 								if(current_residu<residu){
 									residu = current_residu;
@@ -1104,11 +1142,21 @@ void Analyse::CalcStripResponseFunction(){
 								}
 							}
 							if(matching_cluster == current_clusters.end()) continue;
-							for(int strip_nb=0;strip_nb<matching_cluster->get_size();strip_nb++){
-								int strip = matching_cluster->get_pos() - 0.5*matching_cluster->get_size() + strip_nb;
-								if(strip<0) continue;
-								int channel = MG_Detector::StripToChannel(strip);
-								SRH[i]->Fill(matching_cluster->get_pos_mm() - strip*MG_Detector::StripPitch, *max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32));
+							
+							double normalization = matching_cluster->get_ampl()/matching_cluster->get_size();
+							double matching_position = (matching_cluster->get_is_X()) ? jt->eval_X((*it)->get_z()) : jt->eval_Y((*it)->get_z());
+							/*
+							for(int strip_nb = matching_cluster->get_pos()-1;strip_nb<(matching_cluster->get_pos()+2);strip_nb++){
+								int channel = MG_Detector::StripToChannel(strip_nb);
+								double current_max_ampl = *max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32);
+								if(current_max_ampl>normalization) normalization = current_max_ampl;
+							}
+							*/
+							for(int strip_nb=0;strip_nb<1024;strip_nb++){
+								int channel = MG_Detector::StripToChannel(strip_nb);
+								SRH[i]->Fill(matching_position - strip_nb*MG_Detector::StripPitch, (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+								SRH2D[i]->SetPoint(graph_point_nb, matching_position - strip_nb*MG_Detector::StripPitch, (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+								graph_point_nb++;
 							}
 							current_clusters.erase(matching_cluster);
 						}
@@ -1124,15 +1172,40 @@ void Analyse::CalcStripResponseFunction(){
 				SRH[i]->Draw();
 				c[i]->Modified();
 				c[i]->Update();
+				d[i]->cd();
+				SRH2D[i]->Draw("AP");
+				d[i]->Modified();
+				d[i]->Update();
 			}
 		}
-		cout << "\r" << setw(20) << i << "|" << setw(20) << nentries << flush;
+		cout << "\r" << setw(20) << i << "|" << setw(20) << nentries << endl;
+		
+		double scaling_factor = 0;
+		for(int n=0;n<200;n++){
+			if(SRH[i]->GetBinCenter(n)<-2) continue;
+			if(SRH[i]->GetBinCenter(n)>2) continue;
+			if(SRH[i]->GetBinContent(n)>scaling_factor) scaling_factor = SRH[i]->GetBinContent(n);
+		}
+		SRH[i]->Scale(1./scaling_factor);
+		
 		SRH[i]->Fit(SRF[i],"QN");
 		c[i]->cd();
 		SRH[i]->Draw();
 		SRF[i]->Draw("SAME");
 		c[i]->Modified();
 		c[i]->Update();
+		d[i]->cd();
+		SRH2D[i]->Draw("AP");
+		d[i]->Modified();
+		d[i]->Update();
+		cout << setw(5) << " " << setw(30) << left << "offset : " << setw(10) << right << SRF[i]->GetParameter(3) << endl;
+		cout << setw(5) << " " << setw(30) << left << "misalignement : " << setw(10) << right << SRF[i]->GetParameter(4) << endl;
+		cout << setw(5) << " " << setw(30) << left << "gaussian width : " << setw(10) << right << SRF[i]->GetParameter(1) << endl;
+		cout << setw(5) << " " << setw(30) << left << "lorentzian width : " << setw(10) << right << SRF[i]->GetParameter(2) << endl;
+		cout << setw(5) << " " << setw(30) << left << "gauss/lorentz ratio : " << setw(10) << right << SRF[i]->GetParameter(0) << endl;
+		ostringstream fitQuality;
+		fitQuality << SRF[i]->GetChisquare() << "/" << SRF[i]->GetNDF();
+		cout << setw(5) << " " << setw(30) << left << "Chi2/NDF : " << setw(10) << right << fitQuality.str() << endl;
 	}
-	cout << "\r" << setw(20) << det_N << "|" << setw(20) << nentries << endl;
+	//cout << "\r" << setw(20) << det_N << "|" << setw(20) << nentries << endl;
 }

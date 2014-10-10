@@ -11,6 +11,7 @@ using std::cout;
 using std::endl;
 using std::string;
 using TMath::Min;
+using TMath::Tan;
 
 Cluster::Cluster(){
 	type.clear();
@@ -29,6 +30,8 @@ Cluster::Cluster(){
 	is_up = -1;
 	offset = 0;
 	direction = false;
+	perp_pos_mm = -1;
+	angle = 0;
 }
 Cluster::Cluster(const Cluster& other){
 	type.clear();
@@ -48,6 +51,8 @@ Cluster::Cluster(const Cluster& other){
 	is_up = other.is_up;
 	offset = other.offset;
 	direction = other.direction;
+	perp_pos_mm = other.perp_pos_mm;
+	angle = other.angle;
 }
 Cluster& Cluster::operator=(const Cluster& other){
 	type.clear();
@@ -67,6 +72,8 @@ Cluster& Cluster::operator=(const Cluster& other){
 	is_up = other.is_up;
 	offset = other.offset;
 	direction = other.direction;
+	perp_pos_mm = other.perp_pos_mm;
+	angle = other.angle;
 	return *this;
 }
 Cluster::Cluster(T * treeObject, int entry){
@@ -91,6 +98,8 @@ Cluster::Cluster(T * treeObject, int entry){
 	is_up = -1;
 	offset = 0;
 	direction = false;
+	perp_pos_mm = -1;
+	angle = 0;
 }
 string Cluster::get_type() const{
 	return type;
@@ -109,6 +118,12 @@ double Cluster::get_pos() const{
 }
 bool Cluster::get_is_up() const{
 	return is_up;
+}
+void Cluster::set_perp_pos_mm(double coord){
+	perp_pos_mm = coord;
+}
+double Cluster::get_perp_pos_mm() const{
+	return perp_pos_mm;
 }
 Cluster::~Cluster(){
 
@@ -149,6 +164,7 @@ CM_Cluster::CM_Cluster(T * treeObject,int number_,CM_Detector * det, int entry):
 	is_up = det->get_is_up();
 	offset = det->get_offset();
 	direction = det->get_direction();
+	angle = det->get_angle();
 	ampl = treeObject->CM_ClusAmpl[cm_n_in_tree][number];
 	size = treeObject->CM_ClusSize[cm_n_in_tree][number];
 	pos = treeObject->CM_ClusPos[cm_n_in_tree][number];
@@ -205,12 +221,18 @@ string CM_Cluster::get_strip_type() const{
 }
 double CM_Cluster::get_pos_mm() const{
 	if(strip_type == "Wide"){
+		double pos_mm = 0;
 		if(direction){
-			return ((63.-maxStrip)*500./32.) + offset;
+			pos_mm = ((63.-maxStrip)*500./32.);
 		}
 		else{
-			return (maxStrip*500./32.) + offset;
+			pos_mm = (maxStrip*500./32.);
 		}
+		if(perp_pos_mm>-1){
+			pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		}
+		pos_mm += offset;
+		return pos_mm;
 	}
 	else return -1;
 }
@@ -244,6 +266,7 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& thinStrip_clus, const CM_Cl
 	number = thinStrip_clus.number;
 	offset = thinStrip_clus.offset;
 	direction = thinStrip_clus.direction;
+	angle = thinStrip_clus.angle;
 	ampl = thinStrip_clus.ampl + wideStrip_clus.ampl;
 	size = thinStrip_clus.size*wideStrip_clus.size;
 	pos = (31.-thinStrip_clus.pos)+32.*(63.-wideStrip_clus.maxStrip);
@@ -266,6 +289,7 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& wideStrip_clus){
 	number = wideStrip_clus.number;
 	offset = wideStrip_clus.offset;
 	direction = wideStrip_clus.direction;
+	angle = wideStrip_clus.angle;
 	ampl = wideStrip_clus.ampl;
 	size = 32*wideStrip_clus.size;
 	pos = 15.5+32.*(63.-wideStrip_clus.maxStrip);
@@ -277,12 +301,18 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& wideStrip_clus){
 	strip_type = "Demux";
 }
 double CM_Demux_Cluster::get_pos_mm() const{
+	double pos_mm = 0;
 	if(direction){
-		return (pos*500./1024.)+offset;
+		pos_mm = pos*500./1024.;
 	}
 	else{
-		return ((1024-pos)*500./1024.)+offset;
+		pos_mm = (1024-pos)*500./1024.;
 	}
+	if(perp_pos_mm>-1){
+		pos_mm += (perp_pos_mm - 250)*Tan(angle);
+	}
+	pos_mm += offset;
+	return pos_mm;
 }
 CM_Demux_Cluster::~CM_Demux_Cluster(){
 	
@@ -317,6 +347,7 @@ MG_Cluster::MG_Cluster(T * treeObject,int number_,MG_Detector * det, int entry):
 	is_up = det->get_is_up();
 	offset = det->get_offset();
 	direction = det->get_direction();
+	angle = det->get_angle();
 	ampl = treeObject->MG_ClusAmpl[mg_n_in_tree][number];
 	size = treeObject->MG_ClusSize[mg_n_in_tree][number];
 	pos = treeObject->MG_ClusPos[mg_n_in_tree][number];
@@ -348,10 +379,16 @@ bool MG_Cluster::is_in_det(Detector * det) const{
 	return ((dynamic_cast<MG_Detector*>(det))->get_mg_n_in_tree() == mg_n_in_tree);
 }
 double MG_Cluster::get_pos_mm() const{
+	double pos_mm = 0;
 	if(direction){
-		return (pos*500./1024.)+offset;
+		pos_mm = pos*500./1024.;
 	}
 	else{
-		return ((1024-pos)*500./1024.)+offset;
+		pos_mm = (1024-pos)*500./1024.;
 	}
+	if(perp_pos_mm>-1){
+		pos_mm += (perp_pos_mm - 250)*Tan(angle);
+	}
+	pos_mm += offset;
+	return pos_mm;
 }

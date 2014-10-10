@@ -64,6 +64,7 @@ class Ray{
 		~Ray();
 		void add_cluster(Cluster * clus);
 		void process();
+		void angle_correction();
 		double get_chiSquare_X() const;
 		double get_chiSquare_Y() const;
 		double get_slope_X() const;

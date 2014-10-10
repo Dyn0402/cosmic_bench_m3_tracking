@@ -394,6 +394,8 @@ void CosmicBenchEvent::createPairs(){
 		}
 		if(best_it == suitableRays[true][true].end() || best_jt == suitableRays[true][false].end() || best_kt == suitableRays[false][true].end() || best_lt == suitableRays[false][false].end()) break;
 		rayPairs.push_back(RayPair(Ray(*best_it,*best_jt),Ray(*best_kt,*best_lt)));
+		rayPairs.back().upRay.angle_correction();
+		rayPairs.back().downRay.angle_correction();
 		suitableRays[true][true].erase(best_it);
 		suitableRays[true][false].erase(best_jt);
 		suitableRays[false][true].erase(best_kt);
@@ -539,6 +541,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(){
 	vector<Ray> returnRays;
 	for(unsigned int i = 0;i<min_size;i++){
 		returnRays.push_back(Ray(suitableRays[true][i],suitableRays[false][i]));
+		returnRays.back().angle_correction();
 	}
 	for(map<bool, map<double,vector<Cluster*> > >::iterator jt = currentClusters.begin();jt!=currentClusters.end();++jt){
 		for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){

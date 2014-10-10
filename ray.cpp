@@ -312,6 +312,35 @@ void Ray::process(){
 	*this = Ray(*rayX,*rayY);
 	delete rayX; delete rayY;
 }
+void Ray::angle_correction(){
+	double delta_param = 100;
+	while(delta_param>0.1){
+		double current_Z_intercept_X = Z_intercept_X;
+		double current_Z_intercept_Y = Z_intercept_Y;
+		double current_slope_X = slope_X;
+		double current_slope_Y = slope_Y;
+
+		for(vector<Cluster*>::iterator it = clusters.begin();it!=clusters.end();++it){
+			if((*it)->get_is_X()){
+				(*it)->set_perp_pos_mm(this->eval_Y((*it)->z));
+			}
+			else{
+				(*it)->set_perp_pos_mm(this->eval_X((*it)->z));
+			}
+		}
+		this->process();
+		delta_param = Abs(Z_intercept_X - current_Z_intercept_X)+Abs(Z_intercept_Y - current_Z_intercept_Y)+Abs(slope_X - current_slope_X)+Abs(slope_Y - current_slope_Y);
+	}
+	for(vector<Cluster*>::iterator it = clusters.begin();it!=clusters.end();++it){
+		if((*it)->get_is_X()){
+			(*it)->set_perp_pos_mm(this->eval_Y((*it)->z));
+		}
+		else{
+			(*it)->set_perp_pos_mm(this->eval_X((*it)->z));
+		}
+	}
+	this->process();
+}
 double Ray::get_chiSquare_X() const{
 	return chiSquare_X;
 }
