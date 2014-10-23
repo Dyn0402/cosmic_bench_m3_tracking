@@ -64,7 +64,13 @@ int main(int argc, char ** argv){
 		blah->bugtest();
 	}
 	else if(argv[2] == srf){
-		blah->CalcStripResponseFunction();
+		if(argc<4){
+			blah->CalcStripResponseFunction();
+		}
+		else{
+			int i = atoi(argv[3]);
+			blah->CalcStripResponseFunction(i);
+		}
 	}
 	else{
 		cout << "function not found" << endl;

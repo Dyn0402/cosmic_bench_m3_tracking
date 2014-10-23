@@ -9,7 +9,7 @@ T::T(){
    
 }
 
-T::T(TTree *tree, int CM_n, int MG_n)
+T::T(TTree *tree, int CM_n, int MG_n, bool use_SRF)
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
@@ -21,7 +21,7 @@ T::T(TTree *tree, int CM_n, int MG_n)
       tree = (TTree*)gDirectory->Get("T");
 
    }*/
-   Init(tree, CM_n, MG_n);
+   Init(tree, CM_n, MG_n, use_SRF);
 }
 
 T::~T()
@@ -51,7 +51,7 @@ Long64_t T::LoadTree(Long64_t entry)
    return centry;
 }
 
-void T::Init(TTree *tree, int CM_n, int MG_n)
+void T::Init(TTree *tree, int CM_n, int MG_n, bool use_SRF)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -108,9 +108,14 @@ void T::Init(TTree *tree, int CM_n, int MG_n)
       MG_ClusAmpl = new Double_t[MG_n][300];
       fChain->SetBranchAddress("MG_ClusAmpl", MG_ClusAmpl, &b_MG_ClusAmpl);
       MG_ClusSize = new Double_t[MG_n][300];
-      fChain->SetBranchAddress("MG_ClusSize", MG_ClusSize, &b_MG_ClusSize);
       MG_ClusPos = new Double_t[MG_n][300];
-      fChain->SetBranchAddress("MG_ClusPos", MG_ClusPos, &b_MG_ClusPos);
+      if(use_SRF){
+         fChain->SetBranchAddress("MG_ClusPosSRF", MG_ClusPos, &b_MG_ClusPos);
+      }
+      else{
+         fChain->SetBranchAddress("MG_ClusPos", MG_ClusPos, &b_MG_ClusPos);
+      }
+      fChain->SetBranchAddress("MG_ClusSize", MG_ClusSize, &b_MG_ClusSize);
       MG_ClusMaxStripAmpl = new Double_t[MG_n][300];
       fChain->SetBranchAddress("MG_ClusMaxStripAmpl", MG_ClusMaxStripAmpl, &b_MG_ClusMaxStripAmpl);
       MG_ClusMaxSample = new Double_t[MG_n][300];

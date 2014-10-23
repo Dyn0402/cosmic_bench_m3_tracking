@@ -25,7 +25,7 @@
 #include <TGraph.h>
 #include <TF1.h>
 #include <algorithm>
-#include <TProfile2D.h>
+#include <TGraphErrors.h>
 
 using std::string;
 using std::cout;
@@ -40,6 +40,7 @@ using TMath::Sqrt;
 using TMath::ATan;
 using TMath::MaxElement;
 using TMath::Abs;
+using TMath::FloorNint;
 using std::max_element;
 using std::left;
 using std::right;
@@ -75,7 +76,7 @@ Analyse::Analyse(string configFilePath){
 		cout << "problem in detectors number" << endl;
 		return;
 	}
-	Init(tree,total_CM_N,total_MG_N);
+	Init(tree,total_CM_N,total_MG_N,config_tree.get<bool>("use_SRF"));
 	signal_file_name = config_tree.get<string>("signal_file");
 }
 Analyse::~Analyse(){
@@ -1021,19 +1022,28 @@ void Analyse::bugtest(){
 	cout << "\r"<< setw(20) << before << "|" << setw(20) << afterAbsorption << "|" << setw(20) << afterDeviation << endl;
 }
 
-void Analyse::CalcStripResponseFunction(){
+void Analyse::CalcStripResponseFunction(int bin_nb){
 
 	gStyle->SetPalette(55,0);
 	gStyle->SetOptFit(0111);
 
 	int det_N = CM_N + MG_N;
 	cout << setw(20) << "detector proccessed" << "|" << setw(20) << "event processed" << endl;
-	TProfile * SRH[det_N];
+	TProfile * SRH;
 	//TGraph * SRH2D[det_N];
-	TH2D * SRH2D[det_N];
-	TCanvas * c[det_N];
-	TCanvas * d[det_N];
-	TF1 * SRF[det_N];
+	TH2D * SRH2D;
+	TCanvas * c;
+	TCanvas * d;
+	TF1 * SRF;
+
+	TCanvas * c_coord[bin_nb];
+	TProfile * SRH_coord[bin_nb];
+	TF1 * SRF_coord[bin_nb];
+	TCanvas * c_param;
+	TGraphErrors * gauss_width_graph;
+	TGraphErrors * lorentz_width_graph;
+	TGraphErrors * offset_graph;
+
 	double chisquare_threshold = 10;
 	Long64_t nentries = fChain->GetEntriesFast();
 
@@ -1054,15 +1064,19 @@ void Analyse::CalcStripResponseFunction(){
 
 	int det_x_n = 0;
 	int det_y_n = 0;
+	int nref_nb = 0;
 	for(int j=0;j<det_N;j++){
 		if(detectors[j]->get_is_X()) det_x_n++;
 		else det_y_n++;
+		if(!(detectors[j]->is_ref)) nref_nb++;
+	}
+	if(nref_nb>1){
+		cout << "there is more than 1 non ref det, exiting" << endl;
+		return;
 	}
 
 	for(int i=0;i<det_N;i++){
-		for(int j=0;j<det_N;j++){
-			detectors[j]->is_ref = (i!=j);
-		}
+		if(detectors[i]->is_ref) continue;
 		int det_in_nref_dir = (detectors[i]->get_is_X()) ? det_x_n : det_y_n;
 
 		ostringstream c_name;
@@ -1079,23 +1093,44 @@ void Analyse::CalcStripResponseFunction(){
 		double limit = 6;
 		int bin_n = 200;
 		if(detectors[i]->get_type() == "MG" && detectors[i]->get_is_X() == false) limit *= 2.;
-		c[i] = new TCanvas(c_name.str().c_str(),c_name.str().c_str());
-		d[i] = new TCanvas(d_name.str().c_str(),d_name.str().c_str());
-		SRH[i] = new TProfile(SRH_name.str().c_str(),SRH_name.str().c_str(),bin_n,-limit,limit,0,1000);
+		c = new TCanvas(c_name.str().c_str(),c_name.str().c_str());
+		d = new TCanvas(d_name.str().c_str(),d_name.str().c_str());
+		SRH = new TProfile(SRH_name.str().c_str(),SRH_name.str().c_str(),bin_n,-limit,limit,0,1000);
 		//SRH2D[i] = new TGraph();
 		//int graph_point_nb = 0;
-		SRH2D[i] = new TH2D(SRH2D_name.str().c_str(),SRH2D_name.str().c_str(),200,-limit,limit,100,0,10);
+		SRH2D = new TH2D(SRH2D_name.str().c_str(),SRH2D_name.str().c_str(),200,-limit,limit,100,0,10);
 		
-		SRF[i] = new TF1(SRF_name.str().c_str(),"[3] + ((1-[3])*(exp(-4*log(2)*(1-[0])*(x-[4])*(x-[4])/([1]*[1])))/(1+(4*[0]*(x-[4])*(x-[4])/([2]*[2]))))",-limit,limit);
+		SRF = new TF1(SRF_name.str().c_str(),"[3] + ((1-[3])*(exp(-4*log(2)*(1-[0])*(x-[4])*(x-[4])/([1]*[1])))/(1+(4*[0]*(x-[4])*(x-[4])/([2]*[2]))))",-limit,limit);
 		//([3] + (exp(-4*log(2)*(1-[0])*(x-[4])*(x-[4])/([1]*[1]))/(1+(4*[0]*(x-[4])*(x-[4])/([2]*[2]))))/(1+[3]))
 		//[3] + ((1-[3])*(exp(-4*log(2)*(1-[0])*(x-[4])*(x-[4])/([1]*[1])))/(1+(4*[0]*(x-[4])*(x-[4])/([2]*[2]))))
-		SRF[i]->SetParameters(0.5,0.5,0.5,0.1,0);
-		SRF[i]->SetParLimits(0,0,1);
-		SRF[i]->SetParLimits(1,0,10000);
-		SRF[i]->SetParLimits(2,0,10000);
-		SRF[i]->SetParLimits(3,0,0.5);
-		SRF[i]->SetParLimits(4,-4,4);
+		SRF->SetParameters(0.5,0.5,0.5,0.1,0);
+		SRF->SetParLimits(0,0,1);
+		SRF->SetParLimits(1,0,10000);
+		SRF->SetParLimits(2,0,10000);
+		SRF->SetParLimits(3,0,0.5);
+		SRF->SetParLimits(4,-4,4);
 
+		for(int j=0;j<bin_nb;j++){
+			ostringstream c_graph_name;
+			c_graph_name << "c_" << j*1024/bin_nb << "_"<< (j+1)*1024/bin_nb;
+			ostringstream SRH_graph_name;
+			SRH_graph_name << "SRH_" << j*1024/bin_nb << "_"<< (j+1)*1024/bin_nb;
+			ostringstream SRF_graph_name;
+			SRF_graph_name << "SRF_" << j*1024/bin_nb << "_"<< (j+1)*1024/bin_nb;
+			c_coord[j] = new TCanvas(c_graph_name.str().c_str(),c_graph_name.str().c_str());
+			SRH_coord[j] = new TProfile(SRH_graph_name.str().c_str(),SRH_graph_name.str().c_str(),bin_n,-limit,limit,0,1000);
+			SRF_coord[j] = new TF1(SRF_graph_name.str().c_str(),"[3] + ((1-[3])*(exp(-4*log(2)*(1-[0])*(x-[4])*(x-[4])/([1]*[1])))/(1+(4*[0]*(x-[4])*(x-[4])/([2]*[2]))))",-limit,limit);
+			SRF_coord[j]->SetParameters(0.5,0.5,0.5,0.1,0);
+			SRF_coord[j]->SetParLimits(0,0,1);
+			SRF_coord[j]->SetParLimits(1,0,10000);
+			SRF_coord[j]->SetParLimits(2,0,10000);
+			SRF_coord[j]->SetParLimits(3,0,0.5);
+			SRF_coord[j]->SetParLimits(4,-4,4);
+		}
+
+		gauss_width_graph = new TGraphErrors();
+		lorentz_width_graph = new TGraphErrors();
+		offset_graph = new TGraphErrors();
 
 		if (fChain == 0) return;
 		for (Long64_t jentry=0; jentry<nentries;jentry++){
@@ -1104,7 +1139,7 @@ void Analyse::CalcStripResponseFunction(){
 			fChain->GetEntry(jentry);
 			signal_tree->LoadTree(jentry);
 			signal_tree->GetEntry(jentry);
-			if(signal_evn!=(evn+1)){
+			if(signal_evn!=(evn+0)){
 				cout << "event numbers are different in analyse and signal trees" << endl;
 				return;
 			}
@@ -1155,10 +1190,13 @@ void Analyse::CalcStripResponseFunction(){
 							*/
 							for(int strip_nb=0;strip_nb<1024;strip_nb++){
 								int channel = MG_Detector::StripToChannel(strip_nb);
-								if(Abs(residu)<1.) SRH[i]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+								if(Abs(residu)<50.){
+									SRH->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+									if(bin_nb>0) SRH_coord[FloorNint(matching_position*bin_nb/500.)]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+								}
 								//SRH2D[i]->SetPoint(graph_point_nb, matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
 								//graph_point_nb++;
-								SRH2D[i]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+								SRH2D->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
 							}
 							current_clusters.erase(matching_cluster);
 						}
@@ -1170,15 +1208,21 @@ void Analyse::CalcStripResponseFunction(){
 
 			if(jentry%500 == 0) cout << "\r" << setw(20) << i << "|" << setw(20) << jentry << flush;
 			if(jentry%10000 == 0){
-				c[i]->cd();
-				SRH[i]->Draw();
-				c[i]->Modified();
-				c[i]->Update();
-				d[i]->cd();
+				c->cd();
+				SRH->Draw();
+				c->Modified();
+				c->Update();
+				d->cd();
 				//SRH2D[i]->GetXaxis()->SetLimits(-limit,limit);
-				SRH2D[i]->Draw("colz");
-				d[i]->Modified();
-				d[i]->Update();
+				SRH2D->Draw("colz");
+				d->Modified();
+				d->Update();
+				for(int j=0;j<bin_nb;j++){
+					c_coord[j]->cd();
+					SRH_coord[j]->Draw();
+					c_coord[j]->Modified();
+					c_coord[j]->Update();
+				}
 			}
 		}
 		cout << "\r" << setw(20) << i << "|" << setw(20) << nentries << endl;
@@ -1193,37 +1237,74 @@ void Analyse::CalcStripResponseFunction(){
 		*/
 		//TF1 * scaling_function = new TF1("scaling_function","[0]+[1]*x+[2]*x*x",-1,1);
 		TF1 * scaling_function = new TF1("scaling_function","[0]*exp(-[1]*(x-[2])*(x-[2]))",-1,1);
-		SRH[i]->Fit(scaling_function,"QNR");
+		SRH->Fit(scaling_function,"QNR");
 		//double scaling_factor = scaling_function->GetParameter(0) - 0.25*scaling_function->GetParameter(1)*scaling_function->GetParameter(1)/scaling_function->GetParameter(2);
 		double scaling_factor = scaling_function->GetParameter(0);
-		SRH[i]->Scale(1./scaling_factor);
-		double offset_factor = 0;
-		for(int n=1;n<6;n++){ //bin 0 is undeflow bin and bin bin_n+1 is overflow bin
-			offset_factor += SRH[i]->GetBinContent(n);
-			offset_factor += SRH[i]->GetBinContent(bin_n + 1 - n);
-		}
-		offset_factor/=10.;
-		//SRF[i]->FixParameter(3,offset_factor);
-		//SRF[i]->FixParameter(4,0);
+		SRH->Scale(1./scaling_factor);
+		delete scaling_function;
 		
-		SRH[i]->Fit(SRF[i],"QN");
-		c[i]->cd();
-		SRH[i]->Draw();
-		SRF[i]->Draw("SAME");
-		c[i]->Modified();
-		c[i]->Update();
-		d[i]->cd();
-		SRH2D[i]->Draw("colz");
-		d[i]->Modified();
-		d[i]->Update();
-		cout << setw(5) << " " << setw(30) << left << "offset : " << setw(10) << right << SRF[i]->GetParameter(3) << endl;
-		cout << setw(5) << " " << setw(30) << left << "misalignement : " << setw(10) << right << SRF[i]->GetParameter(4) << endl;
-		cout << setw(5) << " " << setw(30) << left << "gaussian width : " << setw(10) << right << SRF[i]->GetParameter(1) << endl;
-		cout << setw(5) << " " << setw(30) << left << "lorentzian width : " << setw(10) << right << SRF[i]->GetParameter(2) << endl;
-		cout << setw(5) << " " << setw(30) << left << "gauss/lorentz ratio : " << setw(10) << right << SRF[i]->GetParameter(0) << endl;
+		SRH->Fit(SRF,"QN");
+		c->cd();
+		SRH->Draw();
+		SRF->Draw("SAME");
+		c->Modified();
+		c->Update();
+		d->cd();
+		SRH2D->Draw("colz");
+		d->Modified();
+		d->Update();
+		cout << "global fit " << endl;
+		cout << setw(5) << " " << setw(30) << left << "offset : " << setw(10) << right << SRF->GetParameter(3) << endl;
+		cout << setw(5) << " " << setw(30) << left << "misalignement : " << setw(10) << right << SRF->GetParameter(4) << endl;
+		cout << setw(5) << " " << setw(30) << left << "gaussian width : " << setw(10) << right << SRF->GetParameter(1) << endl;
+		cout << setw(5) << " " << setw(30) << left << "lorentzian width : " << setw(10) << right << SRF->GetParameter(2) << endl;
+		cout << setw(5) << " " << setw(30) << left << "gauss/lorentz ratio : " << setw(10) << right << SRF->GetParameter(0) << endl;
 		ostringstream fitQuality;
-		fitQuality << SRF[i]->GetChisquare() << "/" << SRF[i]->GetNDF();
+		fitQuality << SRF->GetChisquare() << "/" << SRF->GetNDF();
 		cout << setw(5) << " " << setw(30) << left << "Chi2/NDF : " << setw(10) << right << fitQuality.str() << endl;
+
+		for(int i_coord=0;i_coord<bin_nb;i_coord++){
+			scaling_function = new TF1("scaling_function","[0]*exp(-[1]*(x-[2])*(x-[2]))",-1,1);
+			SRH_coord[i_coord]->Fit(scaling_function,"QNR");
+			SRH_coord[i_coord]->Scale(1./scaling_function->GetParameter(0));
+			delete scaling_function;
+			SRH_coord[i_coord]->Fit(SRF_coord[i_coord],"QN");
+			gauss_width_graph->SetPoint(i_coord,(250./bin_nb)+(i_coord*500./bin_nb),SRF_coord[i_coord]->GetParameter(1));
+			gauss_width_graph->SetPointError(i_coord,250./bin_nb,SRF_coord[i_coord]->GetParError(1));
+			lorentz_width_graph->SetPoint(i_coord,(250./bin_nb)+(i_coord*500./bin_nb),SRF_coord[i_coord]->GetParameter(2));
+			lorentz_width_graph->SetPointError(i_coord,250./bin_nb,SRF_coord[i_coord]->GetParError(2));
+			offset_graph->SetPoint(i_coord,(250./bin_nb)+(i_coord*500./bin_nb),SRF_coord[i_coord]->GetParameter(3));
+			offset_graph->SetPointError(i_coord,250./bin_nb,SRF_coord[i_coord]->GetParError(3));
+			c_coord[i_coord]->cd();
+			SRH_coord[i_coord]->Draw();
+			SRF_coord[i_coord]->Draw("SAME");
+			c_coord[i_coord]->Modified();
+			c_coord[i_coord]->Update();
+			cout << i_coord+1 << " fit " << endl;
+			cout << setw(5) << " " << setw(30) << left << "offset : " << setw(10) << right << SRF_coord[i_coord]->GetParameter(3) << endl;
+			cout << setw(5) << " " << setw(30) << left << "misalignement : " << setw(10) << right << SRF_coord[i_coord]->GetParameter(4) << endl;
+			cout << setw(5) << " " << setw(30) << left << "gaussian width : " << setw(10) << right << SRF_coord[i_coord]->GetParameter(1) << endl;
+			cout << setw(5) << " " << setw(30) << left << "lorentzian width : " << setw(10) << right << SRF_coord[i_coord]->GetParameter(2) << endl;
+			cout << setw(5) << " " << setw(30) << left << "gauss/lorentz ratio : " << setw(10) << right << SRF_coord[i_coord]->GetParameter(0) << endl;
+			ostringstream fitQuality_coord;
+			fitQuality_coord << SRF_coord[i_coord]->GetChisquare() << "/" << SRF_coord[i_coord]->GetNDF();
+			cout << setw(5) << " " << setw(30) << left << "Chi2/NDF : " << setw(10) << right << fitQuality_coord.str() << endl;
+		}
+		if(bin_nb>0){
+			c_param = new TCanvas("param_evolution","param_evolution");
+			c_param->Divide(3);
+			gauss_width_graph->SetTitle("gauss_width");
+			c_param->cd(1);
+			gauss_width_graph->Draw("AP");
+			lorentz_width_graph->SetTitle("lorentz_width");
+			c_param->cd(2);
+			lorentz_width_graph->Draw("AP");
+			offset_graph->SetTitle("offset");
+			c_param->cd(3);
+			offset_graph->Draw("AP");
+			c_param->Modified();
+			c_param->Update();
+		}
 	}
 	//cout << "\r" << setw(20) << det_N << "|" << setw(20) << nentries << endl;
 }
