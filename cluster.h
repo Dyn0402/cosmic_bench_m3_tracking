@@ -2,20 +2,11 @@
 #define cluster_h
 #include <string>
 #include "T.h"
-#include "ray.h"
 #include "cluster.h"
 #include "detector.h"
 
 using std::string;
 
-class Event;
-class CM_Event;
-class CM_Demux_Event;
-class MG_Event;
-class CosmicBenchEvent;
-class Ray_2D;
-class Ray;
-class RayPair;
 class Cluster;
 class CM_Cluster;
 class CM_Demux_Cluster;
@@ -27,10 +18,6 @@ class CosmicBench;
 class T;
 
 class Cluster{
-	friend class Ray;
-	friend class Ray_2D;
-	friend class RayPair;
-	friend class CosmicBenchEvent;
 	public:
 		virtual ~Cluster();
 		string get_type() const;
@@ -49,13 +36,14 @@ class Cluster{
 		void set_perp_pos_mm(double coord);
 		double get_perp_pos_mm() const;
 		int find_det(const vector<Detector*> det_array) const;
+		virtual bool is_in_det(Detector * det) const = 0;
+		virtual int get_n_in_tree() const = 0;
 	protected:
 		Cluster();
 		Cluster(const Cluster& other);
 		Cluster& operator=(const Cluster& other);
 		Cluster(T * treeObject, int entry = -1);
 		Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_);
-		virtual bool is_in_det(Detector * det) const = 0;
 		int evn;
 		double evttime;
 		int number;
@@ -77,11 +65,7 @@ class Cluster{
 };
 
 class CM_Cluster: public Cluster{
-	friend class Ray;
-	friend class Ray_2D;
-	friend class RayPair;
 	friend class CM_Demux_Cluster;
-	friend class CosmicBenchEvent;
 	public:
 		CM_Cluster();
 		CM_Cluster(const CM_Cluster& other);
@@ -94,6 +78,7 @@ class CM_Cluster: public Cluster{
 		string get_strip_type() const;
 		virtual double get_pos_mm() const;
 		virtual double correct_strip_nb(int strip_nb) const;
+		int get_n_in_tree() const;
 	protected:
 		int maxStrip;
 		string strip_type;
@@ -101,10 +86,6 @@ class CM_Cluster: public Cluster{
 };
 
 class CM_Demux_Cluster: public CM_Cluster{
-	friend class Ray;
-	friend class Ray_2D;
-	friend class RayPair;
-	friend class CosmicBenchEvent;
 	public:
 		CM_Demux_Cluster();
 		CM_Demux_Cluster(const CM_Demux_Cluster& other);
@@ -117,10 +98,6 @@ class CM_Demux_Cluster: public CM_Cluster{
 };
 
 class MG_Cluster: public Cluster{
-	friend class Ray;
-	friend class Ray_2D;
-	friend class RayPair;
-	friend class CosmicBenchEvent;
 	public:
 		MG_Cluster();
 		MG_Cluster(const MG_Cluster& other);
@@ -132,6 +109,7 @@ class MG_Cluster: public Cluster{
 		bool is_in_det(Detector * det) const;
 		double get_pos_mm() const;
 		double correct_strip_nb(int strip_nb) const;
+		int get_n_in_tree() const;
 	protected:
 		int mg_n_in_tree;
 };

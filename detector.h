@@ -2,32 +2,11 @@
 #define detector_h
 #include <string>
 #include <vector>
-//#include "event.h"
 
 using std::string;
 using std::vector;
 
-//class Event;
-//class CM_Event;
-//class CM_Demux_Event;
-//class MG_Event;
-//class CosmicBenchEvent;
-class Ray_2D;
-class Ray;
-class RayPair;
-class Cluster;
-class CM_Cluster;
-class CM_Demux_Cluster;
-class MG_Cluster;
-class Detector;
-class CM_Detector;
-class MG_Detector;
-class CosmicBench;
-class T;
-class Analyse;
-
 class Detector{
-	friend class Analyse;
 	public:
 		//getters
 		double get_z() const;
@@ -42,6 +21,8 @@ class Detector{
 		void set_ClusTOTCut_Min(double cut);
 		void set_ClusMaxSampleCut_Min(double cut);
 		void set_ClusMaxSampleCut_Max(double cut);
+		bool test_ClusTOT(double TOT) const;
+		bool test_ClusMaxSample(double maxSample) const;
 		double get_RMS(int i) const;
 		virtual void set_RMS(vector<double> RMS_) = 0;
 		virtual ~Detector();
@@ -66,8 +47,6 @@ class Detector{
 };
 
 class CM_Detector: public Detector{
-	friend class CM_Cluster;
-	friend class CM_Demux_Cluster;
 	public:	
 		CM_Detector();
 		CM_Detector(const CM_Detector& other);
@@ -80,6 +59,8 @@ class CM_Detector: public Detector{
 		//Cut setters
 		void set_ClusMaxStripAmplCut_Min_Wide(double cut);
 		void set_ClusSizeCut_Max_Wide(double cut);
+		bool test_ClusMaxStripAmpl_Wide(double maxStripAmpl) const;
+		bool test_ClusSize_Wide(double size) const;
 		int get_cm_n_in_tree() const;
 		bool get_use_thin_strip() const;
 		string get_type() const;
@@ -93,7 +74,6 @@ class CM_Detector: public Detector{
 };
 
 class MG_Detector: public Detector{
-	friend class MG_Cluster;
 	public:
 		MG_Detector();
 		MG_Detector(const MG_Detector& other);
@@ -106,6 +86,7 @@ class MG_Detector: public Detector{
 		static const double StripPitch; // distance between the middle of 2 adjacent strips
 		//Cut setters
 		void set_ClusSizeCut_Min(double cut);
+		bool test_ClusSize(double size);
 		int get_mg_n_in_tree() const;
 		string get_type() const;
 		void set_RMS(vector<double> RMS_);

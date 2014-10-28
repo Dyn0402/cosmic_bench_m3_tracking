@@ -7,17 +7,12 @@
 #include "ray.h"
 #include "T.h"
 #include "detector.h"
+#include "analyse.h"
 
 using std::string;
 using std::vector;
 using std::map;
 
-class Event;
-class CM_Event;
-class CM_Demux_Event;
-class MG_Event;
-class CosmicBenchEvent;
-class Ray_2D;
 class Ray;
 class RayPair;
 class Cluster;
@@ -127,7 +122,7 @@ class CosmicBenchEvent{
 		void Demux_CM();
 		vector<Ray> get_absorption_rays();
 		static vector<map<double,int> > combinaisons(map<double,int> sizes);
-		void MultiCluster();
+		//void MultiCluster();
 	protected:
 		int evn;
 		vector<Event*> events;

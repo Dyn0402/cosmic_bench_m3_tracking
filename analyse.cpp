@@ -1263,7 +1263,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 	for(int j=0;j<det_N;j++){
 		if(detectors[j]->get_is_X()) det_x_n++;
 		else det_y_n++;
-		if(!(detectors[j]->is_ref)) nref_nb++;
+		if(!(detectors[j]->get_is_ref())) nref_nb++;
 	}
 	if(nref_nb>1){
 		cout << "there is more than 1 non ref det, exiting" << endl;
@@ -1271,7 +1271,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 	}
 
 	for(int i=0;i<det_N;i++){
-		if(detectors[i]->is_ref) continue;
+		if(detectors[i]->get_is_ref()) continue;
 		int det_in_nref_dir = (detectors[i]->get_is_X()) ? det_x_n : det_y_n;
 
 		ostringstream c_name;

@@ -498,9 +498,9 @@ void CosmicBenchEvent::createPairs(){
 				//CM_Demux_Event * currentEvent = dynamic_cast<CM_Demux_Event*>(*it);
 				vector<CM_Demux_Cluster> currentCluster = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
 				for(vector<CM_Demux_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
-					z = jt->z;
-					is_up = jt->is_up;
-					is_X = jt->is_X;
+					z = jt->get_z();
+					is_up = jt->get_is_up();
+					is_X = jt->get_is_X();
 					if(z>max_z) max_z = z;
 					if(z<min_z) min_z = z;
 					currentClusters[is_up][is_X][z].push_back(new CM_Demux_Cluster(*jt));
@@ -510,9 +510,9 @@ void CosmicBenchEvent::createPairs(){
 				//MG_Event * currentEvent = dynamic_cast<MG_Event*>(*it);
 				vector<MG_Cluster> currentCluster = (dynamic_cast<MG_Event*>(*it))->get_clusters();
 				for(vector<MG_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
-					z = jt->z;
-					is_up = jt->is_up;
-					is_X = jt->is_X;
+					z = jt->get_z();
+					is_up = jt->get_is_up();
+					is_X = jt->get_is_X();
 					if(z>max_z) max_z = z;
 					if(z<min_z) min_z = z;
 					currentClusters[is_up][is_X][z].push_back(new MG_Cluster(*jt));
@@ -688,14 +688,14 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(){
 				//CM_Demux_Event * currentEvent = dynamic_cast<CM_Demux_Event*>(*it);
 				vector<CM_Demux_Cluster> currentCluster = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
 				for(vector<CM_Demux_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
-					currentClusters[jt->is_X][jt->z].push_back(new CM_Demux_Cluster(*jt));
+					currentClusters[jt->get_is_X()][jt->get_z()].push_back(new CM_Demux_Cluster(*jt));
 				}
 			}
 			else if(det_type == "MG"){
 				//MG_Event * currentEvent = dynamic_cast<MG_Event*>(*it);
 				vector<MG_Cluster> currentCluster = (dynamic_cast<MG_Event*>(*it))->get_clusters();
 				for(vector<MG_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
-					currentClusters[jt->is_X][jt->z].push_back(new MG_Cluster(*jt));
+					currentClusters[jt->get_is_X()][jt->get_z()].push_back(new MG_Cluster(*jt));
 				}
 			}
 			else continue;

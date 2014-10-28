@@ -43,7 +43,7 @@ absorptionMap: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o 
 tracking: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-MultiCluster: MultiCluster.o detector.o event.o cluster.o Tanalyse.o Tsignal.o
+MultiCluster: MultiCluster.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
 absorptionMapDict: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o point.o MyDict.o
@@ -52,7 +52,7 @@ absorptionMapDict: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detecto
 trackingDict: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-MultiClusterDict: MultiCluster.o detector.o event.o cluster.o Tanalyse.o Tsignal.o MyDict.o
+MultiClusterDict: MultiCluster.o detector.o event.o cluster.o Tanalyse.o Tsignal.o ray.o point.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
 libAnalyse.so: analyse.o T.o event.o ray.o cluster.o detector.o point.o Tanalyse.o Tsignal.o MyDict.o

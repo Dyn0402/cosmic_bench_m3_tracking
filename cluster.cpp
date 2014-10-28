@@ -232,27 +232,12 @@ bool CM_Cluster::is_suitable(T * treeObject,int number_,CM_Detector * detector, 
 	int n_in_tree = detector->get_cm_n_in_tree();
 	if(treeObject->CM_ClusPos[n_in_tree][number_]>63 || treeObject->CM_ClusPos[n_in_tree][number_]<0) return false;
 	if(treeObject->CM_ClusMaxStrip[n_in_tree][number_]>63 || treeObject->CM_ClusMaxStrip[n_in_tree][number_]<0) return false;
-	if(treeObject->CM_ClusTOT[n_in_tree][number_]<detector->ClusTOTCut_Min){
-		//cout << "TOT" << endl;
-		return false;
+	if(!(detector->test_ClusTOT(treeObject->CM_ClusTOT[n_in_tree][number_]))) return false;
+	if(!(detector->test_ClusMaxSample(treeObject->CM_ClusMaxSample[n_in_tree][number_]))) return false;
+	if(treeObject->CM_ClusPos[n_in_tree][number_]>31){
+		if(!(detector->test_ClusMaxStripAmpl_Wide(treeObject->CM_ClusMaxStripAmpl[n_in_tree][number_]))) return false;
+		if(!(detector->test_ClusSize_Wide(treeObject->CM_ClusSize[n_in_tree][number_]))) return false;
 	}
-	if(treeObject->CM_ClusMaxSample[n_in_tree][number_]<detector->ClusMaxSampleCut_Min){
-		//cout << "ClusMaxSample Min" << endl;
-		return false;
-	}
-	if(treeObject->CM_ClusMaxSample[n_in_tree][number_]>detector->ClusMaxSampleCut_Max){
-		//cout << "ClusMaxSample Max" << endl;
-		return false;
-	}
-	if(treeObject->CM_ClusPos[n_in_tree][number_]>31 && treeObject->CM_ClusMaxStripAmpl[n_in_tree][number_]<detector->ClusMaxStripAmplCut_Min_Wide){
-		//cout << "ClusMaxStripAmpl Min" << endl;
-		return false;
-	}
-	if(treeObject->CM_ClusPos[n_in_tree][number_]>31 && treeObject->CM_ClusSize[n_in_tree][number_]>detector->ClusSizeCut_Max_Wide){
-		//cout << "ClusMaxStripAmpl Max" << endl;
-		return false;
-	}
-	//cout << "gnah" << endl;
 	return true;
 }
 bool CM_Cluster::is_in_det(Detector * det) const{
@@ -295,6 +280,9 @@ double CM_Cluster::correct_strip_nb(int strip_nb) const{
 		return pos_mm;
 	}
 	else return -1;
+}
+int CM_Cluster::get_n_in_tree() const{
+	return cm_n_in_tree;
 }
 
 CM_Demux_Cluster::CM_Demux_Cluster(): CM_Cluster(){
@@ -455,10 +443,9 @@ bool MG_Cluster::is_suitable(T * treeObject,int number_,MG_Detector * detector, 
 	}
 	int n_in_tree = detector->get_mg_n_in_tree();
 	if(treeObject->MG_ClusPos[n_in_tree][number_]>1023 || treeObject->MG_ClusPos[n_in_tree][number_]<0) return false;
-	if(treeObject->MG_ClusTOT[n_in_tree][number_]<detector->ClusTOTCut_Min) return false;
-	if(treeObject->MG_ClusMaxSample[n_in_tree][number_]<detector->ClusMaxSampleCut_Min) return false;
-	if(treeObject->MG_ClusMaxSample[n_in_tree][number_]>detector->ClusMaxSampleCut_Max) return false;
-	if(treeObject->MG_ClusSize[n_in_tree][number_]<detector->ClusSizeCut_Min) return false;
+	if(!(detector->test_ClusTOT(treeObject->MG_ClusTOT[n_in_tree][number_]))) return false;
+	if(!(detector->test_ClusMaxSample(treeObject->MG_ClusMaxSample[n_in_tree][number_]))) return false;
+	if(!(detector->test_ClusSize(treeObject->MG_ClusSize[n_in_tree][number_]))) return false;
 	return true;
 }
 bool MG_Cluster::is_in_det(Detector * det) const{
@@ -492,4 +479,7 @@ double MG_Cluster::correct_strip_nb(int strip_nb) const{
 	}
 	pos_mm += offset;
 	return pos_mm;
+}
+int MG_Cluster::get_n_in_tree() const{
+	return mg_n_in_tree;
 }

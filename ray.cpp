@@ -75,7 +75,7 @@ Ray_2D::Ray_2D(const Ray& other, char coord_){
 	}
 	clusters.clear();
 	for(vector<Cluster*>::const_iterator it = other.clusters.begin(); it!=other.clusters.end();++it){
-		if(((*it)->is_X && coord == 'X')||(coord == 'Y' && !(*it)->is_X)){
+		if(((*it)->get_is_X() && coord == 'X')||(coord == 'Y' && !(*it)->get_is_X())){
 			if((*it)->get_type() == "CM_Demux") clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
 			else if((*it)->get_type() == "MG") clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
 		}
@@ -88,16 +88,16 @@ Ray_2D::~Ray_2D(){
 	clusters.clear();
 }
 void Ray_2D::add_cluster(Cluster * clus){
-	if(clus->type != "MG" && clus->type != "CM_Demux") return;
+	if(clus->get_type() != "MG" && clus->get_type() != "CM_Demux") return;
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
-		if(clus->type == "MG" && (*it)->type == "MG"){
-			if((dynamic_cast<MG_Cluster*>(clus))->mg_n_in_tree == (dynamic_cast<MG_Cluster*>(*it))->mg_n_in_tree) return;
+		if(clus->get_type() == "MG" && (*it)->get_type() == "MG"){
+			if(clus->get_n_in_tree() == (*it)->get_n_in_tree()) return;
 		}
-		else if(clus->type == "CM_Demux" && (*it)->type == "CM_Demux"){
-			if((dynamic_cast<CM_Demux_Cluster*>(clus))->cm_n_in_tree == (dynamic_cast<CM_Demux_Cluster*>(*it))->cm_n_in_tree) return;
+		else if(clus->get_type() == "CM_Demux" && (*it)->get_type() == "CM_Demux"){
+			if(clus->get_n_in_tree() == (*it)->get_n_in_tree()) return;
 		}
 	}
-	if((clus->is_X && coord == 'X')||(coord == 'Y' && !clus->is_X)){
+	if((clus->get_is_X() && coord == 'X')||(coord == 'Y' && !clus->get_is_X())){
 		if(clus->get_type() == "CM_Demux") clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(clus)));
 		else if(clus->get_type() == "MG") clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(clus)));
 	}
@@ -111,9 +111,9 @@ void Ray_2D::process(){
 	bool has_up = false;
 	bool has_down = false;
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
-		if((*it)->z>maxZ) maxZ = (*it)->z;
-		if((*it)->z<minZ) minZ = (*it)->z;
-		pos->SetPoint(i,(*it)->z,(*it)->get_pos_mm());
+		if((*it)->get_z()>maxZ) maxZ = (*it)->get_z();
+		if((*it)->get_z()<minZ) minZ = (*it)->get_z();
+		pos->SetPoint(i,(*it)->get_z(),(*it)->get_pos_mm());
 		i++;
 		if((*it)->get_is_up()) has_up = true;
 		else has_down = true;
@@ -153,10 +153,10 @@ double Ray_2D::get_residu(Detector * det) const{
 	double det_coord;
 	bool is_in_ray = false;
 	for(vector<Cluster*>::const_iterator it = clusters.begin(); it!=clusters.end();++it){
-		if((*it)->z>maxZ) maxZ = (*it)->z;
-		if((*it)->z<minZ) minZ = (*it)->z;
+		if((*it)->get_z()>maxZ) maxZ = (*it)->get_z();
+		if((*it)->get_z()<minZ) minZ = (*it)->get_z();
 		if(!((*it)->is_in_det(det))){
-			pos->SetPoint(i,(*it)->z,(*it)->get_pos_mm());
+			pos->SetPoint(i,(*it)->get_z(),(*it)->get_pos_mm());
 			i++;
 		}
 		else{
@@ -178,10 +178,10 @@ double Ray_2D::get_residu(Detector * det) const{
 double Ray_2D::get_residu_ref(Cluster * clus) const{
 	bool is_in_ray = false;
 	if(clus->get_type() == "CM_Demux"){
-		int det_n = dynamic_cast<CM_Demux_Cluster*>(clus)->cm_n_in_tree;
+		int det_n = clus->get_n_in_tree();
 		for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
 			if((*it)->get_type() == "CM_Demux"){
-				if(dynamic_cast<CM_Demux_Cluster*>(*it)->cm_n_in_tree == det_n){
+				if((*it)->get_n_in_tree() == det_n){
 					is_in_ray = true;
 					break;
 				}
@@ -189,10 +189,10 @@ double Ray_2D::get_residu_ref(Cluster * clus) const{
 		}
 	}
 	else if(clus->get_type() == "MG"){
-		int det_n = dynamic_cast<MG_Cluster*>(clus)->mg_n_in_tree;
+		int det_n = clus->get_n_in_tree();
 		for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
 			if((*it)->get_type() == "MG"){
-				if(dynamic_cast<MG_Cluster*>(*it)->mg_n_in_tree == det_n){
+				if((*it)->get_n_in_tree() == det_n){
 					is_in_ray = true;
 					break;
 				}
@@ -201,13 +201,13 @@ double Ray_2D::get_residu_ref(Cluster * clus) const{
 	}
 	else is_in_ray = true;
 	if(is_in_ray) return numeric_limits<double>::max();
-	return clus->get_pos_mm() - (Z_intercept + slope*clus->z);
+	return clus->get_pos_mm() - (Z_intercept + slope*clus->get_z());
 }
 double Ray_2D::get_t_mean() const{
 	double t = 0;
 	double size = clusters.size();
 	for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
-		t+=(*it)->t;
+		t+=(*it)->get_t();
 	}
 	t/=size;
 	return t;
@@ -216,7 +216,7 @@ double Ray_2D::get_t_sigma() const{
 	double sigma = 0;
 	double size = clusters.size();
 	for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
-		sigma+=((*it)->t)*((*it)->t);
+		sigma+=((*it)->get_t())*((*it)->get_t());
 	}
 	sigma/=size;
 	double mean = get_t_mean();
@@ -291,13 +291,13 @@ Ray::~Ray(){
 	clusters.clear();
 }
 void Ray::add_cluster(Cluster * clus){
-	if(clus->type != "MG" && clus->type != "CM_Demux") return;
+	if(clus->get_type() != "MG" && clus->get_type() != "CM_Demux") return;
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
-		if(clus->type == "MG" && (*it)->type == "MG"){
-			if((dynamic_cast<MG_Cluster*>(clus))->mg_n_in_tree == (dynamic_cast<MG_Cluster*>(*it))->mg_n_in_tree) return;
+		if(clus->get_type() == "MG" && (*it)->get_type() == "MG"){
+			if(clus->get_n_in_tree() == (*it)->get_n_in_tree()) return;
 		}
-		else if(clus->type == "CM_Demux" && (*it)->type == "CM_Demux"){
-			if((dynamic_cast<CM_Demux_Cluster*>(clus))->cm_n_in_tree == (dynamic_cast<CM_Demux_Cluster*>(*it))->cm_n_in_tree) return;
+		else if(clus->get_type() == "CM_Demux" && (*it)->get_type() == "CM_Demux"){
+			if(clus->get_n_in_tree() == (*it)->get_n_in_tree()) return;
 		}
 	}
 	if(clus->get_type() == "CM_Demux") clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(clus)));
@@ -322,10 +322,10 @@ void Ray::angle_correction(){
 
 		for(vector<Cluster*>::iterator it = clusters.begin();it!=clusters.end();++it){
 			if((*it)->get_is_X()){
-				(*it)->set_perp_pos_mm(this->eval_Y((*it)->z));
+				(*it)->set_perp_pos_mm(this->eval_Y((*it)->get_z()));
 			}
 			else{
-				(*it)->set_perp_pos_mm(this->eval_X((*it)->z));
+				(*it)->set_perp_pos_mm(this->eval_X((*it)->get_z()));
 			}
 		}
 		this->process();
@@ -333,10 +333,10 @@ void Ray::angle_correction(){
 	}
 	for(vector<Cluster*>::iterator it = clusters.begin();it!=clusters.end();++it){
 		if((*it)->get_is_X()){
-			(*it)->set_perp_pos_mm(this->eval_Y((*it)->z));
+			(*it)->set_perp_pos_mm(this->eval_Y((*it)->get_z()));
 		}
 		else{
-			(*it)->set_perp_pos_mm(this->eval_X((*it)->z));
+			(*it)->set_perp_pos_mm(this->eval_X((*it)->get_z()));
 		}
 	}
 	this->process();
@@ -388,7 +388,7 @@ double Ray::get_residu(Detector * det) const{
 	}
 }
 double Ray::get_residu_ref(Cluster * clus) const{
-	if(clus->is_X){
+	if(clus->get_is_X()){
 		Ray_2D sub_ray = Ray_2D(*this,'X');
 		return sub_ray.get_residu_ref(clus);
 	}
@@ -401,7 +401,7 @@ double Ray::get_t_mean() const{
 	double t = 0;
 	double size = clusters.size();
 	for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
-		t+=(*it)->t;
+		t+=(*it)->get_t();
 	}
 	t/=size;
 	return t;
@@ -410,7 +410,7 @@ double Ray::get_t_sigma() const{
 	double sigma = 0;
 	double size = clusters.size();
 	for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
-		sigma+=((*it)->t)*((*it)->t);
+		sigma+=((*it)->get_t())*((*it)->get_t());
 	}
 	sigma/=size;
 	double mean = get_t_mean();
@@ -472,13 +472,13 @@ RayPair::RayPair(const Ray& ray1, const Ray& ray2){
 	delta_y = 0;
 	delta_theta_x = 0;
 	delta_theta_y = 0;
-	bool is_1_up = (*(ray1.clusters.begin()))->is_up;
+	bool is_1_up = (*(ray1.clusters.begin()))->get_is_up();
 	for(vector<Cluster*>::const_iterator it = ray1.clusters.begin()+1;it!=ray1.clusters.end();++it){
-		if((*it)->is_up != is_1_up) return;
+		if((*it)->get_is_up() != is_1_up) return;
 	}
-	bool is_2_up = (*(ray2.clusters.begin()))->is_up;
+	bool is_2_up = (*(ray2.clusters.begin()))->get_is_up();
 	for(vector<Cluster*>::const_iterator it = ray2.clusters.begin()+1;it!=ray2.clusters.end();++it){
-		if((*it)->is_up != is_2_up) return;
+		if((*it)->get_is_up() != is_2_up) return;
 	}
 	if(!(is_1_up != is_2_up)) return;
 	upRay = (is_1_up) ? Ray(ray1) : Ray(ray2);
@@ -499,10 +499,10 @@ void RayPair::process(){
 	double z_up = numeric_limits<double>::max();
 	double z_down = numeric_limits<double>::min();
 	for(vector<Cluster*>::const_iterator it = upRay.clusters.begin();it!=upRay.clusters.end();++it){
-		if((*it)->z<z_up) z_up = (*it)->z;
+		if((*it)->get_z()<z_up) z_up = (*it)->get_z();
 	}
 	for(vector<Cluster*>::const_iterator it = downRay.clusters.begin();it!=downRay.clusters.end();++it){
-		if((*it)->z>z_down) z_down = (*it)->z;
+		if((*it)->get_z()>z_down) z_down = (*it)->get_z();
 	}
 	double L_xy = (z_up-z_down)*Sqrt(1+(upRay.slope_X*upRay.slope_X)+(upRay.slope_Y*upRay.slope_Y));
 	delta_x = (downRay.eval_X(z_down)-upRay.eval_X(z_down))*Cos(theta_up_x)*L_xy*Cos(delta_theta_x+theta_up_x)/Cos(delta_theta_x);

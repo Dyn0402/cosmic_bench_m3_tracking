@@ -64,6 +64,15 @@ void Detector::set_ClusMaxSampleCut_Min(double cut){
 void Detector::set_ClusMaxSampleCut_Max(double cut){
 	ClusMaxSampleCut_Max = cut;
 }
+bool Detector::test_ClusTOT(double TOT) const{
+	if(TOT<ClusTOTCut_Min) return false;
+	return true;
+}
+bool Detector::test_ClusMaxSample(double maxSample) const{
+	if(maxSample<ClusMaxSampleCut_Min) return false;
+	if(maxSample>ClusMaxSampleCut_Max) return false;
+	return true;
+}
 Detector::Detector(){
 	z = -1;
 	is_X = false;
@@ -156,6 +165,14 @@ void CM_Detector::set_ClusMaxStripAmplCut_Min_Wide(double cut){
 void CM_Detector::set_ClusSizeCut_Max_Wide(double cut){
 	ClusSizeCut_Max_Wide = cut;
 }
+bool CM_Detector::test_ClusMaxStripAmpl_Wide(double maxStripAmpl) const{
+	if(maxStripAmpl<ClusMaxStripAmplCut_Min_Wide) return false;
+	return true;
+}
+bool CM_Detector::test_ClusSize_Wide(double size) const{
+	if(size>ClusSizeCut_Max_Wide) return false;
+	return true;
+}
 int CM_Detector::get_cm_n_in_tree() const{
 	return cm_n_in_tree;
 }
@@ -226,6 +243,10 @@ vector<unsigned int> MG_Detector::ChannelToStrip(unsigned int channel_nb){
 const double MG_Detector::StripPitch = 500./1024.; // distance between the middle of 2 adjacent strips
 void MG_Detector::set_ClusSizeCut_Min(double cut){
 	ClusSizeCut_Min = cut;
+}
+bool MG_Detector::test_ClusSize(double size){
+	if(size<ClusSizeCut_Min) return false;
+	return true;
 }
 int MG_Detector::get_mg_n_in_tree() const{
 	return mg_n_in_tree;

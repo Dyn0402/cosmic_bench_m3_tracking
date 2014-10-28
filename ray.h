@@ -7,23 +7,10 @@
 
 using std::vector;
 
-class Event;
-class CM_Event;
-class CM_Demux_Event;
-class MG_Event;
-class CosmicBenchEvent;
-class Ray_2D;
 class Ray;
-class RayPair;
+class Ray_2D;
 class Cluster;
-class CM_Cluster;
-class CM_Demux_Cluster;
-class MG_Cluster;
 class Detector;
-class CM_Detector;
-class MG_Detector;
-class CosmicBench;
-class T;
 
 class Ray_2D{
 	friend class Ray;
