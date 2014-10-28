@@ -31,7 +31,6 @@ class CosmicBench;
 class T;
 
 class Event{
-	friend class CosmicBenchEvent;
 	public:
 		int get_evn() const;
 		string get_type() const;
@@ -39,36 +38,48 @@ class Event{
 		bool get_is_ref() const;
 		double get_z() const;
 		virtual ~Event();
+		virtual void MultiCluster() = 0;
 	protected:
 		Event();
 		Event(const Event& other);
 		Event& operator=(const Event& other);
-		Event(T * treeObject,int entry = -1);
+		Event(T * treeObject, bool use_srf_,int entry = -1);
 		int evn;
 		double z;
 		string type;
 		int n_in_tree;
 		bool has_spark;
 		bool is_ref;
+		int NClus;
+		bool use_srf;
+		vector<vector<double> > strip_ampl;
+		struct StripInfo {
+			double MaxAmpl;
+			int MaxSample;
+			int TOT;
+			double Time;
+		};
 };
 
 class CM_Event: public Event{
-	friend class CosmicBenchEvent;
 	friend class CM_Demux_Event;
 	public:
 		CM_Event();
 		CM_Event(const CM_Event& other);
 		CM_Event& operator=(const CM_Event& other);
-		CM_Event(T * treeObject,CM_Detector * det,int entry = -1);
+		CM_Event(T * treeObject,CM_Detector * det, bool use_srf_, int entry = -1);
+		CM_Event(CM_Detector detector_, vector<vector<double> > strip_ampl_, bool use_srf_);
 		~CM_Event();
+		void MultiCluster();
+		vector<CM_Cluster> get_clusters() const;
 	protected:
+		CM_Detector detector;
 		bool use_thin_strip;
 		vector<CM_Cluster> clusters;
 };
 
 class CM_Demux_Event: public Event{
 	friend class Analyse;
-	friend class CosmicBenchEvent;
 	public:
 		CM_Demux_Event();
 		CM_Demux_Event(const CM_Demux_Event& other);
@@ -76,21 +87,24 @@ class CM_Demux_Event: public Event{
 		CM_Demux_Event(const CM_Event& rawEvent);
 		vector<CM_Demux_Cluster> get_clusters() const;
 		~CM_Demux_Event();
+		void MultiCluster();
 	protected:
 		vector<CM_Demux_Cluster> clusters;
 };
 
 class MG_Event: public Event{
 	friend class Analyse;
-	friend class CosmicBenchEvent;
 	public:
 		MG_Event();
 		MG_Event(const MG_Event& other);
 		MG_Event& operator=(const MG_Event& other);
-		MG_Event(T * treeObject,MG_Detector * det, int entry = -1);
-		vector<MG_Cluster> get_clusters() const;
+		MG_Event(T * treeObject,MG_Detector * det, bool use_srf_, int entry = -1);
+		MG_Event(MG_Detector detector_, vector<vector<double> > strip_ampl_, bool use_srf_);
 		~MG_Event();
+		void MultiCluster();
+		vector<MG_Cluster> get_clusters() const;
 	protected:
+		MG_Detector detector;
 		vector<MG_Cluster> clusters;
 };
 
@@ -101,7 +115,7 @@ class CosmicBenchEvent{
 		CosmicBenchEvent();
 		CosmicBenchEvent(const CosmicBenchEvent& other);
 		CosmicBenchEvent& operator=(const CosmicBenchEvent& other);
-		CosmicBenchEvent(CosmicBench * detectors, T * treeObject, int entry = -1);
+		CosmicBenchEvent(CosmicBench * detectors, T * treeObject, bool use_srf_, int entry = -1);
 		~CosmicBenchEvent();
 		void createPairs();
 		RayPair get_rayPair(unsigned int i) const;
@@ -112,6 +126,7 @@ class CosmicBenchEvent{
 		void Demux_CM();
 		vector<Ray> get_absorption_rays();
 		static vector<map<double,int> > combinaisons(map<double,int> sizes);
+		void MultiCluster();
 	protected:
 		int evn;
 		vector<Event*> events;

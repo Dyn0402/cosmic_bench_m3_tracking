@@ -1,16 +1,23 @@
 #define event_cpp
 #include "event.h"
-#include <string>
-#include <map>
-#include <vector>
-#include <limits>
+
 #include "T.h"
 #include "detector.h"
 #include "cluster.h"
 #include "ray.h"
-#include <iostream>
-#include <TMath.h>
 
+#include <string>
+#include <map>
+#include <vector>
+#include <limits>
+#include <iostream>
+#include <utility>
+
+#include <TMath.h>
+#include <TF1.h>
+#include <TGraphErrors.h>
+
+using std::pair;
 using std::string;
 using std::map;
 using std::vector;
@@ -44,6 +51,8 @@ Event::Event(){
 	has_spark = true;
 	is_ref = false;
 	z = -1;
+	NClus = -1;
+	use_srf = false;
 }
 Event::Event(const Event& other){
 	evn = other.evn;
@@ -52,6 +61,8 @@ Event::Event(const Event& other){
 	has_spark = other.has_spark;
 	is_ref = other.is_ref;
 	z = other.z;
+	NClus = other.NClus;
+	use_srf = other.use_srf;
 }
 Event& Event::operator=(const Event& other){
 	evn = other.evn;
@@ -60,9 +71,11 @@ Event& Event::operator=(const Event& other){
 	has_spark = other.has_spark;
 	is_ref = other.is_ref;
 	z = other.z;
+	NClus = other.NClus;
+	use_srf = other.use_srf;
 	return *this;
 }
-Event::Event(T * treeObject,int entry){
+Event::Event(T * treeObject, bool use_srf_,int entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
@@ -71,6 +84,8 @@ Event::Event(T * treeObject,int entry){
 	has_spark = true;
 	is_ref = false;
 	z = -1;
+	NClus = -1;
+	use_srf = use_srf_;
 }
 Event::~Event(){
 
@@ -93,20 +108,23 @@ double Event::get_z() const{
 
 CM_Event::CM_Event(): Event(){
 	type = "CM";
+	detector = CM_Detector();
 }
 CM_Event::CM_Event(const CM_Event& other): Event(other){
 	clusters.clear();
 	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = "CM";
+	detector = other.detector;
 }
 CM_Event& CM_Event::operator=(const CM_Event& other){
 	Event::operator=(other);
 	clusters.clear();
 	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = "CM";
+	detector = other.detector;
 	return *this;
 }
-CM_Event::CM_Event(T * treeObject,CM_Detector * det,int entry): Event(treeObject,entry){
+CM_Event::CM_Event(T * treeObject,CM_Detector * det, bool use_srf_,int entry): Event(treeObject,use_srf_,entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
@@ -122,7 +140,24 @@ CM_Event::CM_Event(T * treeObject,CM_Detector * det,int entry): Event(treeObject
 	z = det->get_z();
 	has_spark = (treeObject->CM_Spark[n_in_tree]==1) ? true : false;
 	is_ref = det->get_is_ref();
+	detector = *det;
 	type = "CM";
+}
+CM_Event::CM_Event(CM_Detector detector_, vector<vector<double> > strip_ampl_, bool use_srf_): Event(){
+	if(strip_ampl_.size()!=64){
+		cout << "problem in size" << endl;
+		detector = CM_Detector();
+		return;
+	}
+	strip_ampl = strip_ampl_;
+	detector = detector_;
+	use_srf = use_srf_;
+}
+void CM_Event::MultiCluster(){
+	// TODO : implement multicluster for CM
+}
+vector<CM_Cluster> CM_Event::get_clusters() const{
+	return clusters;
 }
 CM_Event::~CM_Event(){
 	clusters.clear();
@@ -172,26 +207,32 @@ CM_Demux_Event::CM_Demux_Event(const CM_Event& rawEvent){
 vector<CM_Demux_Cluster> CM_Demux_Event::get_clusters() const{
 	return clusters;
 }
+void CM_Demux_Event::MultiCluster(){
+	// TODO : implement multicluster for CM
+}
 CM_Demux_Event::~CM_Demux_Event(){
 	clusters.clear();
 }
 
 MG_Event::MG_Event(): Event(){
 	type = "MG";
+	detector = MG_Detector();
 }
 MG_Event::MG_Event(const MG_Event& other): Event(other){
 	clusters.clear();
 	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = "MG";
+	detector = other.detector;
 }
 MG_Event& MG_Event::operator=(const MG_Event& other){
 	Event::operator=(other);
 	clusters.clear();
 	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = "MG";
+	detector = other.detector;
 	return *this;
 }
-MG_Event::MG_Event(T * treeObject,MG_Detector * det, int entry): Event(treeObject,entry){
+MG_Event::MG_Event(T * treeObject,MG_Detector * det, bool use_srf_,int entry): Event(treeObject,use_srf_,entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
@@ -204,10 +245,173 @@ MG_Event::MG_Event(T * treeObject,MG_Detector * det, int entry): Event(treeObjec
 	has_spark = (treeObject->MG_Spark[n_in_tree]==1) ? true : false;
 	is_ref = det->get_is_ref();
 	z = det->get_z();
+	detector = *det;
 	type = "MG";
+}
+MG_Event::MG_Event(MG_Detector detector_, vector<vector<double> > strip_ampl_, bool use_srf_): Event(){
+	if(strip_ampl_.size()!=61){
+		cout << "problem in size" << endl;
+		detector = MG_Detector();
+		return;
+	}
+	strip_ampl = strip_ampl_;
+	detector = detector_;
+	use_srf = use_srf_;
 }
 vector<MG_Cluster> MG_Event::get_clusters() const{
 	return clusters;
+}
+void MG_Event::MultiCluster(){
+	//first loop : find channels with signal and store them with their caracteristics
+	double sigma = 3;
+	int SampleMin = 5;
+	int SampleMax = 21;
+	int TOTCut = 7;
+	int p = 61;
+	int n = 1024;
+	map<int,bool> channelOverThreshold;
+	map<int,StripInfo> allChannels;
+	for(int i=0;i<p;i++){
+		StripInfo current_strip;
+		current_strip.MaxAmpl = 0;
+		current_strip.MaxSample = 0;
+		current_strip.TOT = 0;
+		current_strip.Time = 0;
+		for(int j=SampleMin;j<SampleMax;j++){
+			if(strip_ampl[i][j]>current_strip.MaxAmpl){
+				current_strip.MaxAmpl = strip_ampl[i][j];
+				current_strip.MaxSample = j;
+				if(j>0 && j<31){
+					double a = 0.5*strip_ampl[i][j+1] - 2*strip_ampl[i][j] + strip_ampl[i][j-1];
+					double b = strip_ampl[i][j] - strip_ampl[i][j-1] - a*((2*j)-1);
+					current_strip.Time = -0.5*b/a;
+				}
+				else current_strip.Time = 0;
+			}
+			if(strip_ampl[i][j]>sigma*(detector.get_RMS(i))) current_strip.TOT++;
+		}
+		if(current_strip.TOT>TOTCut) channelOverThreshold.insert(pair<int,bool>(i,true));
+		allChannels.insert(pair<int,StripInfo>(i,current_strip));
+	}
+	//second loop : group the channels in clusters
+	vector<pair<int,int> > cluster_list;
+	vector<int> global_used_channel;
+	while(global_used_channel.size()<channelOverThreshold.size()){
+		pair<int,int> biggest_current_cluster(0,-1);
+		vector<int> current_used_channel;
+		for(int i=0;i<n;i++){
+			if(channelOverThreshold.count(MG_Detector::StripToChannel(i))>0 && find(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel(i)) == global_used_channel.end()){
+				pair<int,int> current_cluster(i,i);
+				vector<int> used_channel;
+				used_channel.push_back(MG_Detector::StripToChannel(i));
+				map<int,int> hole_channel;
+				for(int j=i+1;j<n;j++){
+					if(/*find(used_channel.begin(),used_channel.end(),MG_Detector::StripToChannel(j)) == used_channel.end() &&*/ find(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel(j)) == global_used_channel.end() /*&& !(hole_channel.count(MG_Detector::StripToChannel(j))>0)*/){
+						if(channelOverThreshold.count(MG_Detector::StripToChannel(j))>0){
+							current_cluster.second = j;
+							used_channel.push_back(MG_Detector::StripToChannel(j));
+						}
+						else if(hole_channel.size()<0){
+							hole_channel.insert(pair<int,int>(MG_Detector::StripToChannel(j),j));
+						}
+						else break;
+					}		
+					else break;
+				}
+				map<int,int>::iterator hole_it = hole_channel.begin();
+				while(hole_it!=hole_channel.end()){
+					if(hole_it->second > current_cluster.second){
+						hole_channel.erase(hole_it);
+						hole_it = hole_channel.begin();
+					}
+					else{
+						++hole_it;
+					}
+				}
+				for(hole_it = hole_channel.begin();hole_it!=hole_channel.end();++hole_it){
+					used_channel.push_back(hole_it->first);
+				}
+				if((current_cluster.second - current_cluster.first)>(biggest_current_cluster.second - biggest_current_cluster.first)){
+					biggest_current_cluster = current_cluster;
+					current_used_channel = used_channel;
+				}
+			}
+		}
+		if(biggest_current_cluster.second != -1){
+			cluster_list.push_back(biggest_current_cluster);
+			global_used_channel.insert(global_used_channel.end(),current_used_channel.begin(),current_used_channel.end());
+		}
+	}
+	//third loop : store the clusters and their caracteristics
+	NClus = cluster_list.size();
+	MG_Detector * detector_p = &detector;
+	for(unsigned int i=0;i<cluster_list.size();i++){
+		TF1 * SRFfit = new TF1("SRFfit",detector_p,&MG_Detector::SRF_fit,0,1024,2,"MG_Detector","SRF_fit");
+		TGraphErrors * SRFgraph = new TGraphErrors();
+		int graph_point_n = 0;
+		double ClusSize = 1 + cluster_list[i].second - cluster_list[i].first;
+		double ClusPos = 0;
+		double ClusAmpl = 0;
+		double ClusMaxStripAmpl = 0;
+		double ClusMaxSample = 0;
+		double ClusT = 0;
+		double ClusTOT = 0;
+		for(int j = cluster_list[i].first;j<((cluster_list[i].second)+1);j++){
+			StripInfo current_strip = allChannels[MG_Detector::StripToChannel(j)];
+			double effective_ampl = current_strip.MaxAmpl/count(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel(j));
+			ClusPos = (ClusPos*ClusAmpl + j*effective_ampl)/(ClusAmpl + effective_ampl);
+			ClusAmpl += effective_ampl;
+			if(effective_ampl>ClusMaxStripAmpl){
+				ClusMaxStripAmpl = effective_ampl;
+				ClusMaxSample = current_strip.MaxSample;
+				ClusT = current_strip.Time;
+				//ClusTOT[i] = current_strip.TOT;
+			}
+			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
+			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
+			SRFgraph->SetPointError(graph_point_n,0.5*500./1024.,detector.get_RMS(MG_Detector::StripToChannel(j)));
+			graph_point_n++;
+		}
+
+		if(graph_point_n>2 && use_srf){
+			for(int iPoint=0;iPoint<graph_point_n;iPoint++){
+				double x_current = -1;
+				double y_current = -1;
+				SRFgraph->GetPoint(iPoint,x_current,y_current);
+				y_current /= ClusMaxStripAmpl;
+				//y_current = strip_ampl[MG_Detector::StripToChannel(static_cast<int>(x_current))][static_cast<int>(ClusMaxSample)]/ClusMaxStripAmpl;
+				SRFgraph->SetPoint(iPoint,x_current,y_current);
+				SRFgraph->SetPointError(iPoint,500./1024.,(SRFgraph->GetEY())[iPoint]/ClusMaxStripAmpl);
+			}
+			SRFfit->SetParameter(0,ClusPos);
+			SRFfit->SetParLimits(0,ClusPos-0.5*ClusSize,ClusPos+0.5*ClusSize);
+			SRFfit->SetParameter(1,0.25*ClusSize);
+			SRFfit->SetParLimits(1,0,ClusSize);
+			SRFgraph->Fit(SRFfit,"QN");
+			/*
+			if(detector.get_n_in_tree() == 0 && i == 0){
+				TCanvas * cSRF = new TCanvas();
+				TLine * posLine = new TLine(ClusPos[i],0,ClusPos[i],1);
+				posLine->SetLineStyle(2);
+				posLine->SetLineColor(4);
+				cSRF->cd();
+				SRFgraph->Draw("AP");
+				SRFfit->Draw("same");
+				posLine->Draw();
+				cSRF->Modified();
+				cSRF->Update();
+				cout << graph_point_n << " " << SRFfit->GetChisquare() << endl;
+				gROOT->GetApplication()->Run(true);
+				delete posLine;
+				delete cSRF;
+			}
+			*/
+			ClusPos = SRFfit->GetParameter(0);
+			ClusSize = SRFfit->GetParameter(1);
+		}
+		delete SRFfit; delete SRFgraph;
+		clusters.push_back(MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT));
+	}
 }
 MG_Event::~MG_Event(){
 	clusters.clear();
@@ -223,9 +427,9 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBenchEvent& other){
 	rayPairs.assign(other.rayPairs.begin(),other.rayPairs.end());
 	events.clear();
 	for(vector<Event*>::const_iterator it = other.events.begin();it!= other.events.end();++it){
-		if((*it)->type == "CM") events.push_back(new CM_Event(*(dynamic_cast<CM_Event*>(*it))));
-		else if((*it)->type == "CM_Demux") events.push_back(new CM_Demux_Event(*(dynamic_cast<CM_Demux_Event*>(*it))));
-		else if((*it)->type == "MG") events.push_back(new MG_Event(*(dynamic_cast<MG_Event*>(*it))));
+		if((*it)->get_type() == "CM") events.push_back(new CM_Event(*(dynamic_cast<CM_Event*>(*it))));
+		else if((*it)->get_type() == "CM_Demux") events.push_back(new CM_Demux_Event(*(dynamic_cast<CM_Demux_Event*>(*it))));
+		else if((*it)->get_type() == "MG") events.push_back(new MG_Event(*(dynamic_cast<MG_Event*>(*it))));
 	}
 }
 CosmicBenchEvent& CosmicBenchEvent::operator=(const CosmicBenchEvent& other){
@@ -234,13 +438,13 @@ CosmicBenchEvent& CosmicBenchEvent::operator=(const CosmicBenchEvent& other){
 	rayPairs.assign(other.rayPairs.begin(),other.rayPairs.end());
 	events.clear();
 	for(vector<Event*>::const_iterator it = other.events.begin();it!= other.events.end();++it){
-		if((*it)->type == "CM") events.push_back(new CM_Event(*(dynamic_cast<CM_Event*>(*it))));
-		else if((*it)->type == "CM_Demux") events.push_back(new CM_Demux_Event(*(dynamic_cast<CM_Demux_Event*>(*it))));
-		else if((*it)->type == "MG") events.push_back(new MG_Event(*(dynamic_cast<MG_Event*>(*it))));
+		if((*it)->get_type() == "CM") events.push_back(new CM_Event(*(dynamic_cast<CM_Event*>(*it))));
+		else if((*it)->get_type() == "CM_Demux") events.push_back(new CM_Demux_Event(*(dynamic_cast<CM_Demux_Event*>(*it))));
+		else if((*it)->get_type() == "MG") events.push_back(new MG_Event(*(dynamic_cast<MG_Event*>(*it))));
 	}
 	return *this;
 }
-CosmicBenchEvent::CosmicBenchEvent(CosmicBench * detectors, T * treeObject, int entry){
+CosmicBenchEvent::CosmicBenchEvent(CosmicBench * detectors, T * treeObject, bool use_srf_, int entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
@@ -251,10 +455,10 @@ CosmicBenchEvent::CosmicBenchEvent(CosmicBench * detectors, T * treeObject, int 
 	int det_N = detectors->get_CM_N() + detectors->get_MG_N();
 	for(int i=0;i<det_N;i++){
 		if((detectors->get_detector(i))->get_type() == "CM"){
-			events.push_back(new CM_Event(treeObject,(dynamic_cast<CM_Detector*>(detectors->get_detector(i))),-1));
+			events.push_back(new CM_Event(treeObject,(dynamic_cast<CM_Detector*>(detectors->get_detector(i))),-1,use_srf_));
 		}
 		else if((detectors->get_detector(i))->get_type() == "MG"){
-			events.push_back(new MG_Event(treeObject,(dynamic_cast<MG_Detector*>(detectors->get_detector(i))),-1));
+			events.push_back(new MG_Event(treeObject,(dynamic_cast<MG_Detector*>(detectors->get_detector(i))),-1,use_srf_));
 		}
 	}
 }
@@ -288,8 +492,9 @@ void CosmicBenchEvent::createPairs(){
 		if((*it)->get_is_ref()){
 			string det_type = (*it)->get_type();
 			if(det_type == "CM_Demux"){
-				CM_Demux_Event * currentEvent = dynamic_cast<CM_Demux_Event*>(*it);
-				for(vector<CM_Demux_Cluster>::iterator jt=(currentEvent->clusters).begin();jt!=(currentEvent->clusters).end();++jt){
+				//CM_Demux_Event * currentEvent = dynamic_cast<CM_Demux_Event*>(*it);
+				vector<CM_Demux_Cluster> currentCluster = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
+				for(vector<CM_Demux_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
 					z = jt->z;
 					is_up = jt->is_up;
 					is_X = jt->is_X;
@@ -299,8 +504,9 @@ void CosmicBenchEvent::createPairs(){
 				}
 			}
 			else if(det_type == "MG"){
-				MG_Event * currentEvent = dynamic_cast<MG_Event*>(*it);
-				for(vector<MG_Cluster>::iterator jt=(currentEvent->clusters).begin();jt!=(currentEvent->clusters).end();++jt){
+				//MG_Event * currentEvent = dynamic_cast<MG_Event*>(*it);
+				vector<MG_Cluster> currentCluster = (dynamic_cast<MG_Event*>(*it))->get_clusters();
+				for(vector<MG_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
 					z = jt->z;
 					is_up = jt->is_up;
 					is_X = jt->is_X;
@@ -428,14 +634,14 @@ unsigned int CosmicBenchEvent::get_event_N() const{
 unsigned int CosmicBenchEvent::get_clus_N() const{
 	unsigned int clus_N = 0;
 	for(vector<Event*>::const_iterator it=events.begin();it!=events.end();++it){
-		if((*it)->type == "CM"){
-			clus_N += ((dynamic_cast<CM_Event*>(*it))->clusters).size();
+		if((*it)->get_type() == "CM"){
+			clus_N += ((dynamic_cast<CM_Event*>(*it))->get_clusters()).size();
 		}
-		else if((*it)->type == "CM_Demux"){
-			clus_N += ((dynamic_cast<CM_Demux_Event*>(*it))->clusters).size();
+		else if((*it)->get_type() == "CM_Demux"){
+			clus_N += ((dynamic_cast<CM_Demux_Event*>(*it))->get_clusters()).size();
 		}
-		else if((*it)->type == "MG"){
-			clus_N += ((dynamic_cast<MG_Event*>(*it))->clusters).size();
+		else if((*it)->get_type() == "MG"){
+			clus_N += ((dynamic_cast<MG_Event*>(*it))->get_clusters()).size();
 		}
 	}
 	return clus_N;
@@ -444,23 +650,23 @@ unsigned int CosmicBenchEvent::get_clus_N_by_det(Detector * det) const{
 	unsigned int clus_N = 0;
 	if(det->get_type() == "CM"){
 		for(vector<Event*>::const_iterator it=events.begin();it!=events.end();++it){
-			if((*it)->type == "CM"){
-				if((*it)->n_in_tree == (dynamic_cast<CM_Detector*>(det))->get_cm_n_in_tree()){
-					clus_N += ((dynamic_cast<CM_Event*>(*it))->clusters).size();
+			if((*it)->get_type() == "CM"){
+				if((*it)->get_n_in_tree() == (dynamic_cast<CM_Detector*>(det))->get_cm_n_in_tree()){
+					clus_N += ((dynamic_cast<CM_Event*>(*it))->get_clusters()).size();
 				}
 			}
-			else if((*it)->type == "CM_Demux"){
-				if((*it)->n_in_tree == (dynamic_cast<CM_Detector*>(det))->get_cm_n_in_tree()){
-					clus_N += ((dynamic_cast<CM_Demux_Event*>(*it))->clusters).size();
+			else if((*it)->get_type() == "CM_Demux"){
+				if((*it)->get_n_in_tree() == (dynamic_cast<CM_Detector*>(det))->get_cm_n_in_tree()){
+					clus_N += ((dynamic_cast<CM_Demux_Event*>(*it))->get_clusters()).size();
 				}
 			}
 		}
 	}
 	else if(det->get_type() == "MG"){
 		for(vector<Event*>::const_iterator it=events.begin();it!=events.end();++it){
-			if((*it)->type == "MG"){
-				if((*it)->n_in_tree == (dynamic_cast<MG_Detector*>(det))->get_mg_n_in_tree()){
-					clus_N += ((dynamic_cast<MG_Event*>(*it))->clusters).size();
+			if((*it)->get_type() == "MG"){
+				if((*it)->get_n_in_tree() == (dynamic_cast<MG_Detector*>(det))->get_mg_n_in_tree()){
+					clus_N += ((dynamic_cast<MG_Event*>(*it))->get_clusters()).size();
 				}
 			}
 		}
@@ -476,14 +682,16 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(){
 		if((*it)->get_is_ref()){
 			string det_type = (*it)->get_type();
 			if(det_type == "CM_Demux"){
-				CM_Demux_Event * currentEvent = dynamic_cast<CM_Demux_Event*>(*it);
-				for(vector<CM_Demux_Cluster>::iterator jt=(currentEvent->clusters).begin();jt!=(currentEvent->clusters).end();++jt){
+				//CM_Demux_Event * currentEvent = dynamic_cast<CM_Demux_Event*>(*it);
+				vector<CM_Demux_Cluster> currentCluster = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
+				for(vector<CM_Demux_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
 					currentClusters[jt->is_X][jt->z].push_back(new CM_Demux_Cluster(*jt));
 				}
 			}
 			else if(det_type == "MG"){
-				MG_Event * currentEvent = dynamic_cast<MG_Event*>(*it);
-				for(vector<MG_Cluster>::iterator jt=(currentEvent->clusters).begin();jt!=(currentEvent->clusters).end();++jt){
+				//MG_Event * currentEvent = dynamic_cast<MG_Event*>(*it);
+				vector<MG_Cluster> currentCluster = (dynamic_cast<MG_Event*>(*it))->get_clusters();
+				for(vector<MG_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
 					currentClusters[jt->is_X][jt->z].push_back(new MG_Cluster(*jt));
 				}
 			}

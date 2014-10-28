@@ -1,11 +1,17 @@
 #define detector_cpp
 #include "detector.h"
+
 #include <string>
 #include <vector>
 #include <iostream>
 
+#include <TMath.h>
+
 using std::cout;
 using std::endl;
+
+using TMath::Exp;
+using TMath::Log;
 
 bool operator==(Detector const &det1, Detector const &det2){
 	if(det1.get_type()!= det2.get_type()) return false;
@@ -46,7 +52,7 @@ bool Detector::get_direction() const{
 double Detector::get_angle() const{
 	return angle;
 }
-double get_RMS(int i) const{
+double Detector::get_RMS(int i) const{
 	return RMS[i];
 }
 void Detector::set_ClusTOTCut_Min(double cut){

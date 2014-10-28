@@ -101,6 +101,14 @@ Cluster::Cluster(T * treeObject, int entry){
 	perp_pos_mm = -1;
 	angle = 0;
 }
+Cluster::Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_){
+	pos = pos_;
+	size = size_;
+	ampl = ampl_;
+	maxSample = maxSample_;
+	TOT = TOT_;
+	t = t_;
+}
 string Cluster::get_type() const{
 	return type;
 }
@@ -183,6 +191,19 @@ CM_Cluster::CM_Cluster(T * treeObject,int number_,CM_Detector * det, int entry):
 	TOT = treeObject->CM_ClusTOT[cm_n_in_tree][number];
 	t = treeObject->CM_ClusT[cm_n_in_tree][number];
 	maxStrip = treeObject->CM_ClusMaxStrip[cm_n_in_tree][number];
+	type.clear();
+	type = "CM";
+	(pos>31) ? strip_type = "Wide" : strip_type = "Thin";
+}
+CM_Cluster::CM_Cluster(CM_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_): Cluster(pos_,size_,ampl_,maxSample_, maxStripAmpl_,TOT_,t_){
+	number = number_;
+	cm_n_in_tree = det->get_cm_n_in_tree();
+	z = det->get_z();
+	is_X = det->get_is_X();
+	is_up = det->get_is_up();
+	offset = det->get_offset();
+	direction = det->get_direction();
+	angle = det->get_angle();
 	type.clear();
 	type = "CM";
 	(pos>31) ? strip_type = "Wide" : strip_type = "Thin";
@@ -399,6 +420,19 @@ MG_Cluster::MG_Cluster(T * treeObject,int number_,MG_Detector * det, int entry):
 	type.clear();
 	type = "MG";
 }
+MG_Cluster::MG_Cluster(MG_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_): Cluster(pos_,size_,ampl_,maxSample_, maxStripAmpl_,TOT_,t_){
+	number = number_;
+	mg_n_in_tree = det->get_mg_n_in_tree();
+	z = det->get_z();
+	is_X = det->get_is_X();
+	is_up = det->get_is_up();
+	offset = det->get_offset();
+	direction = det->get_direction();
+	angle = det->get_angle();
+	type.clear();
+	type = "MG";
+}
+
 MG_Cluster::~MG_Cluster(){
 	
 }

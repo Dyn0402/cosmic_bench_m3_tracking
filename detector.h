@@ -2,16 +2,16 @@
 #define detector_h
 #include <string>
 #include <vector>
-#include "event.h"
+//#include "event.h"
 
 using std::string;
 using std::vector;
 
-class Event;
-class CM_Event;
-class CM_Demux_Event;
-class MG_Event;
-class CosmicBenchEvent;
+//class Event;
+//class CM_Event;
+//class CM_Demux_Event;
+//class MG_Event;
+//class CosmicBenchEvent;
 class Ray_2D;
 class Ray;
 class RayPair;
