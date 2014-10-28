@@ -33,11 +33,6 @@ int main(int argc, char ** argv){
 		return 0;
 	}
 	
-	int argcR = 1;
-	char * argvR[1];
-	argvR[0] = argv[0];
-	TRint * theApp = new TRint("RApp",&argcR,argvR,0,0,true);
-	
 	int n = 100;
 	char path[n];
 	ostringstream config_file;
@@ -114,7 +109,6 @@ int main(int argc, char ** argv){
 	}
 	cout << "\r" << nentries << endl;
 	analyseTree->Write();
-	theApp->Run(true);
 	analyseTree->CloseFile();
 	//delete signalTree; delete fIn; delete analyseTree;
 	return 1;

@@ -90,7 +90,7 @@ Analyse::Analyse(string configFilePath){
 		cout << "problem in detectors number" << endl;
 		return;
 	}
-	Init(tree,total_CM_N,total_MG_N,config_tree.get<bool>("use_SRF"));
+	Init(tree,total_CM_N,total_MG_N);
 	signal_file_name = config_tree.get<string>("signal_file");
 }
 Analyse::~Analyse(){

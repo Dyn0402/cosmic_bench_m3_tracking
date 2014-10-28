@@ -68,11 +68,11 @@ public :
    TBranch        *b_MG_StripMaxAmpl;   //!
 
    T();
-   T(TTree *tree, int CM_n, int MG_n, bool use_SRF);
+   T(TTree *tree, int CM_n, int MG_n);
    virtual ~T();
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
-   virtual void     Init(TTree *tree, int CM_n, int MG_n, bool use_SRF);
+   virtual void     Init(TTree *tree, int CM_n, int MG_n);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 };

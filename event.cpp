@@ -63,6 +63,7 @@ Event::Event(const Event& other){
 	z = other.z;
 	NClus = other.NClus;
 	use_srf = other.use_srf;
+	strip_ampl = other.strip_ampl;
 }
 Event& Event::operator=(const Event& other){
 	evn = other.evn;
@@ -73,6 +74,7 @@ Event& Event::operator=(const Event& other){
 	z = other.z;
 	NClus = other.NClus;
 	use_srf = other.use_srf;
+	strip_ampl = other.strip_ampl;
 	return *this;
 }
 Event::Event(T * treeObject, bool use_srf_,int entry){
