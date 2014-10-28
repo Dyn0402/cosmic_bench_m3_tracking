@@ -22,5 +22,7 @@
 #pragma link C++ class CosmicBench+;
 #pragma link C++ class T+;
 #pragma link C++ class Analyse+;
+#pragma link C++ class Tanalyse+;
+#pragma link C++ class Tsignal+;
 
 #endif

@@ -42,6 +42,10 @@ class Cluster{
 		double get_ampl() const;
 		double get_size() const;
 		double get_pos() const;
+		double get_TOT() const;
+		double get_t() const;
+		double get_maxSample() const;
+		double get_maxStripAmpl() const;
 		void set_perp_pos_mm(double coord);
 		double get_perp_pos_mm() const;
 		int find_det(const vector<Detector*> det_array) const;

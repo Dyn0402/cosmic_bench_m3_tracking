@@ -124,6 +124,18 @@ double Cluster::get_size() const{
 double Cluster::get_pos() const{
 	return pos;
 }
+double Cluster::get_TOT() const{
+	return TOT;
+}
+double Cluster::get_t() const{
+	return t;
+}
+double Cluster::get_maxSample() const{
+	return maxSample;
+}
+double Cluster::get_maxStripAmpl() const{
+	return maxStripAmpl;
+}
 bool Cluster::get_is_up() const{
 	return is_up;
 }

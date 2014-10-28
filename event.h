@@ -37,6 +37,7 @@ class Event{
 		int get_n_in_tree() const;
 		bool get_is_ref() const;
 		double get_z() const;
+		int get_NClus() const;
 		virtual ~Event();
 		virtual void MultiCluster() = 0;
 	protected:

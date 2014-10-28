@@ -28,9 +28,9 @@ SOFLAGS       = -shared -fPIC
 
 all: exec
 
-exec: tracking absorptionMap
+exec: tracking absorptionMap MultiCluster
 
-execDict: testDict absorptionMapDict
+execDict: trackingDict absorptionMapDict MultiClusterDict
 
 lib: libAnalyse.so
 
@@ -43,18 +43,24 @@ absorptionMap: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o 
 tracking: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
+MultiCluster: MultiCluster.o detector.o event.o cluster.o Tanalyse.o Tsignal.o
+	$(LD) $^ -o $@ $(LDFLAGS)
+
 absorptionMapDict: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o point.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-testDict: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o MyDict.o
+trackingDict: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-libAnalyse.so: analyse.o T.o event.o ray.o cluster.o detector.o point.o MyDict.o
+MultiClusterDict: MultiCluster.o detector.o event.o cluster.o Tanalyse.o Tsignal.o MyDict.o
+	$(LD) $^ -o $@ $(LDFLAGS)
+
+libAnalyse.so: analyse.o T.o event.o ray.o cluster.o detector.o point.o Tanalyse.o Tsignal.o MyDict.o
 	$(CXX) $(SOFLAGS) $(LDFLAGS) -o $@ $^ 
 
-MyDict.cpp: analyse.h T.h event.h ray.h cluster.h detector.h point.h Linkdef.h
+MyDict.cpp: analyse.h T.h event.h ray.h cluster.h detector.h point.h Tanalyse.h Tsignal.h Linkdef.h
 	rootcint -f $@ -c $(CXXFLAGS) -p $^
 
 clean:
-	rm -f *.o *.so *Dict* *dict* absorptionMap tracking
+	rm -f *.o *.so *Dict* *dict* Linkdef absorptionMap tracking MultiCluster
 

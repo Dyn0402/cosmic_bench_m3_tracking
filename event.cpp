@@ -105,6 +105,9 @@ bool Event::get_is_ref() const{
 double Event::get_z() const{
 	return z;
 }
+int Event::get_NClus() const{
+	return NClus;
+}
 
 CM_Event::CM_Event(): Event(){
 	type = "CM";
