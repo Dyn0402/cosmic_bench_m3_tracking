@@ -1,0 +1,485 @@
+#define datareader_cpp
+#include "datareader.h"
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <map>
+#include <string>
+#include <algorithm>
+#include <TBranch.h>
+#include <TH1F.h>
+#include <TFitResultPtr.h>
+#include <TFitResult.h>
+#include <TROOT.h>
+#include <TMath.h>
+#include "dataline.h"
+#include "header.h"
+
+using std::cout;
+using std::endl;
+using std::flush;
+using std::string;
+using std::vector;
+using std::map;
+using std::ifstream;
+using std::ofstream;
+using std::sort;
+
+using TMath::Min;
+
+const int DataReader::Nsample = 32;
+const int DataReader::Nstrip_MG = 61;
+const int DataReader::Nstrip_CM = 64;
+
+DataReader::DataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_){
+	exists = exists_;
+	ped_done = ped_done_;
+	cns_done = cns_done_;
+	MG_N = 0;
+	CM_N = 0;
+	det_type_by_asic = det_type_by_asic_;
+	det_n_by_asic = det_n_by_asic_;
+	if(det_n_by_asic.size()!= det_type_by_asic.size()){
+		cout << "problem in detector caracs" << endl;
+		return;
+	}
+	for(map<int,string>::iterator it=det_type_by_asic.begin();it!=det_type_by_asic.end();++it){
+		if(it->second == "MG") MG_N++;
+		else if(it->second == "CM") CM_N++;
+		else{
+			cout << "detector type unknown : " << it->second << endl;
+			return;
+		}
+	}
+	StripAmpl_MG = new float[MG_N][Nstrip_MG][Nsample];
+	StripAmpl_CM = new float[CM_N][Nstrip_CM][Nsample];
+	StripAmpl_MG_ped = new float[MG_N][Nstrip_MG][Nsample];
+	StripAmpl_CM_ped = new float[CM_N][Nstrip_CM][Nsample];
+	StripAmpl_MG_corr = new float[MG_N][Nstrip_MG][Nsample];
+	StripAmpl_CM_corr = new float[CM_N][Nstrip_CM][Nsample];
+	Pedestal_CM = new float[CM_N][Nstrip_CM];
+	Pedestal_MG = new float[MG_N][Nstrip_MG];
+	outFileName = baseFileName + "_signal.root";
+	PedFileName = baseFileName + "_Ped.dat";
+	RMSPedFileName = baseFileName + "_RMSPed.dat";
+	string fileOption = (exists) ? "UPDATE" : "RECREATE";
+	outFile = new TFile(outFileName.c_str(),fileOption.c_str());
+	outTree->SetMaxTreeSize(100000000000LL);
+	Nevent = 0;
+	if(!exists){
+		outTree = new TTree("T","event");
+		outTree->Branch("Nevent", &Nevent, "Nevent/I"); // event number
+		char leefTsampleNum[100];
+		sprintf(leefTsampleNum,"TsampleNum[%d]/I",Nsample);
+		outTree->Branch("TsampleNum", TsampleNum, leefTsampleNum); // time sample number
+		// For the MG
+		char leefStripAmpl_MG[100];
+		sprintf(leefStripAmpl_MG,"StripAmpl_MG[%d][%d][%d]/F",MG_N,Nstrip_MG,Nsample);
+		outTree->Branch("StripAmpl_MG", StripAmpl_MG, leefStripAmpl_MG); // raw amplitude
+		// For the CM
+		char leefStripAmpl_CM[100];
+		sprintf(leefStripAmpl_CM,"StripAmpl_CM[%d][%d][%d]/F",CM_N,Nstrip_CM,Nsample);
+		outTree->Branch("StripAmpl_CM", StripAmpl_CM, leefStripAmpl_CM); // raw amplitude
+	}
+	else{
+		outTree = (TTree*)(outFile->Get("T"));
+		outTree->SetBranchAddress("Nevent",&Nevent);
+		outTree->SetBranchAddress("TsampleNum",TsampleNum);
+		outTree->SetBranchAddress("StripAmpl_CM",StripAmpl_CM);
+		outTree->SetBranchAddress("StripAmpl_MG",StripAmpl_MG);
+	}
+	if(ped_done){
+		outTree->SetBranchAddress("StripAmpl_CM_ped",StripAmpl_CM_ped);
+		outTree->SetBranchAddress("StripAmpl_MG_ped",StripAmpl_MG_ped);
+	}
+	if(cns_done){
+		outTree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
+		outTree->SetBranchAddress("StripAmpl_MG_corr",StripAmpl_MG_corr);
+	}
+	for(int k=0;k<Nsample;k++){
+		TsampleNum[k] = 0;
+	}
+	for(unsigned int i=0;i<MG_N;i++){
+		for(int j=0;j<Nstrip_MG;j++){
+			for(int k=0;k<Nsample;k++){
+				StripAmpl_MG[i][j][k] = 0;
+			}
+		}
+	}
+	for(unsigned int i=0;i<CM_N;i++){
+		for(int j=0;j<Nstrip_CM;j++){
+			for(int k=0;k<Nsample;k++){
+				StripAmpl_CM[i][j][k] = 0;
+			}
+		}
+	}
+	is_first = true;
+
+}
+DataReader::~DataReader(){
+	outFile->Close();
+	delete outFile;
+}
+void DataReader::add_file_to_process(string inFileName){
+	file_names.push_back(inFileName);
+}
+void DataReader::process(){
+	if(exists){
+		cout << "tree already initiated" << endl;
+		return;
+	}
+	for(vector<string>::iterator it=file_names.begin();it!=file_names.end();++it){
+		int current_offset = outTree->GetEntries();
+		read_file(*it,current_offset);
+	}
+	Write();
+	exists = true;
+}
+void DataReader::Fill(){
+	outTree->Fill();
+}
+void DataReader::Write(){
+	outTree->Write();
+}
+int DataReader::mapping(string det_type, int channel){
+	if(det_type == "MG"){
+		return channel + 1 - (2*(channel%2));
+	}
+	return channel;
+}
+void DataReader::reset_tree_leaf(){
+	Nevent = 0;
+	for(int k=0;k<Nsample;k++){
+		TsampleNum[k] = 0;
+	}
+	for(unsigned int i=0;i<MG_N;i++){
+		for(int j=0;j<Nstrip_MG;j++){
+			for(int k=0;k<Nsample;k++){
+				StripAmpl_MG[i][j][k] = 0;
+			}
+		}
+	}
+	for(unsigned int i=0;i<CM_N;i++){
+		for(int j=0;j<Nstrip_CM;j++){
+			for(int k=0;k<Nsample;k++){
+				StripAmpl_CM[i][j][k] = 0;
+			}
+		}
+	}
+}
+void DataReader::read_file(string file_name,int evn_offset){
+	ifstream iFile(file_name.c_str(),ifstream::binary);
+	if(!iFile.is_open()){
+		cout << "file : " << file_name << " can't be opened" << endl;
+		return;
+	}
+	HeaderC current_header;
+	unsigned int evNinFile = 0;
+	// Loop on event
+	while(iFile.good() && evNinFile<26000){
+		reset_tree_leaf();
+		int isample=-1; int isample_prev=-2;
+		while(isample<Nsample-1 && isample==isample_prev+1){
+			iFile.ignore(2);
+			if(iFile.read((char*)&current_header,sizeof(current_header)).good()){
+				current_header.ntohs_();
+				isample_prev = isample;
+				isample = current_header.get_sampleIndex();
+				if(isample!=isample_prev+1){
+					cout << "problem in sample index" << endl;
+					return;
+				}
+				if(!current_header.check_type()){
+					cout << "problem with header type" << endl;
+					return;
+				}
+				if(is_first){
+					cout << "INFO: pedestal mode is: " << current_header.get_ped_mode() << endl;
+					cout << "INFO: common noise mode is: " << current_header.get_cms_mode() << endl;
+					cout << "INFO: zero suppress mode is: " << current_header.get_zs_mode() << endl;
+					is_first = false;
+				}
+				int ichannel=0;
+				int asicN=0;
+				int detN=0;
+				int channelN=0;
+				DataLine current_data;
+				iFile.read((char*)&current_data,sizeof(current_data));
+				current_data.ntohs_();
+				while(!(current_data.is_final_trailer())){
+					if(current_data.is_first_line()){
+						iFile.ignore(2*sizeof(current_data));
+						iFile.read((char*)&current_data,sizeof(current_data));
+						current_data.ntohs_();
+						asicN = current_data.get_dream_ID();
+						detN = det_n_by_asic[asicN];
+					}
+					if(current_data.is_channel_ID() && current_header.get_zs_mode()){
+						ichannel = current_data.get_channel_ID();
+						channelN = mapping(det_type_by_asic[asicN],ichannel);
+						iFile.read((char*)&current_data,sizeof(current_data));
+						current_data.ntohs_();
+
+						if(det_type_by_asic[asicN] == "MG"){
+							if(channelN>-1 && channelN<Nstrip_MG) StripAmpl_MG[detN][channelN][isample] = current_data.get_data();
+							TsampleNum[isample] = isample;
+						}
+						else if(det_type_by_asic[asicN] == "CM"){
+							if(channelN>-1 && channelN<Nstrip_CM) StripAmpl_CM[detN][channelN][isample] = current_data.get_data();
+							TsampleNum[isample] = isample;
+						}
+					}
+					if(current_data.is_data() && !(current_header.get_zs_mode())){
+						channelN = mapping(det_type_by_asic[asicN],ichannel);
+						if(det_type_by_asic[asicN] == "MG"){
+							if(channelN>-1 && channelN<Nstrip_MG) StripAmpl_MG[detN][channelN][isample] = current_data.get_data();
+							TsampleNum[isample] = isample;
+						}
+						else if(det_type_by_asic[asicN] == "CM"){
+							if(channelN>-1 && channelN<Nstrip_CM) StripAmpl_CM[detN][channelN][isample] = current_data.get_data();
+							TsampleNum[isample] = isample;
+						}
+						ichannel++;
+						ichannel = ichannel%64;
+					}
+					iFile.read((char*)&current_data,sizeof(current_data));
+					current_data.ntohs_();
+				}
+				iFile.read((char*)&current_data,sizeof(current_data));
+				current_data.ntohs_();
+			}
+			else{
+				iFile.close();
+				break;
+			}
+		}
+		Nevent = evNinFile+evn_offset;
+		if((evNinFile%100) == 0) cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << Nevent << ")" << flush;
+		evNinFile++;
+		Fill();
+	}
+	cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << Nevent+1 << ")" << endl;
+	iFile.close();
+}
+
+void DataReader::compute_ped(){
+	for(unsigned int i=0;i<MG_N;i++){
+		for(int j=0;j<Nstrip_MG;j++){
+			Pedestal_MG[i][j] = 0;
+		}
+	}
+	for(unsigned int i=0;i<CM_N;i++){
+		for(int j=0;j<Nstrip_CM;j++){
+			Pedestal_CM[i][j] = 0;
+		}
+	}
+	int nentries = outTree->GetEntries();
+	for(int n=0;n<nentries;n++){
+		outTree->LoadTree(n);
+		outTree->GetEntry(n);
+		for(unsigned int i=0;i<MG_N;i++){
+			for(int j=0;j<Nstrip_MG;j++){
+				vector<float> current_strip(Nsample,0);
+				for(int k=0;k<Nsample;k++){
+					current_strip[k] = StripAmpl_MG[i][j][k];
+				}
+				sort(current_strip.begin(),current_strip.end());
+				Pedestal_MG[i][j] += current_strip[Nsample/2];
+			}
+		}
+		for(unsigned int i=0;i<CM_N;i++){
+			for(int j=0;j<Nstrip_CM;j++){
+				vector<float> current_strip(Nsample,0);
+				for(int k=0;k<Nsample;k++){
+					current_strip[k] = StripAmpl_CM[i][j][k];
+				}
+				sort(current_strip.begin(),current_strip.end());
+				Pedestal_CM[i][j] += current_strip[Nsample/2];
+			}
+		}
+		if((n%100) == 0) cout << "\r" << "computing pedestal (" << n << "/" << nentries << ")" << flush;
+	}
+	cout << "\r" << "computing pedestal (" << nentries << "/" << nentries << ")" << endl;
+	cout << "writing it to file..." << flush;
+	ofstream pedFile(PedFileName.c_str());
+	for(unsigned int i=0;i<CM_N;i++){
+		for(int j=0;j<Nstrip_CM;j++){
+			Pedestal_CM[i][j] /= nentries;
+			pedFile << i << " " << j << " " << Pedestal_CM[i][j] << "\n";
+		}
+	}
+	for(unsigned int i=0;i<MG_N;i++){
+		for(int j=0;j<Nstrip_MG;j++){
+			Pedestal_MG[i][j] /= nentries;
+			pedFile << i << " " << j << " " << Pedestal_MG[i][j] << "\n";
+		}
+	}
+	pedFile.close();
+	cout << "!" << endl;
+}
+
+void DataReader::read_ped(){
+	cout << "reading pedestal from file..." << flush;
+	ifstream pedFile(PedFileName.c_str());
+	for(unsigned int i=0;i<CM_N;i++){
+		for(int j=0;j<Nstrip_CM;j++){
+			pedFile >> i >> j >> Pedestal_CM[i][j];
+		}
+	}
+	for(unsigned int i=0;i<MG_N;i++){
+		for(int j=0;j<Nstrip_MG;j++){
+			pedFile >> i >> j >> Pedestal_CM[i][j];
+		}
+	}
+	pedFile.close();
+	cout << "!" << endl;
+}
+void DataReader::do_ped_sub(){
+	if(ped_done){
+		cout << "pedestal already substracted" << endl;
+		return;
+	}
+	read_ped();
+	char leefStripAmpl_MG[100];
+	sprintf(leefStripAmpl_MG,"StripAmpl_MG_ped[%d][%d][%d]/F",MG_N,Nstrip_MG,Nsample);
+	TBranch *newBranch_MG = outTree->Branch("StripAmpl_MG_ped", StripAmpl_MG_ped,leefStripAmpl_MG);
+	char leefStripAmpl_CM[100];
+	sprintf(leefStripAmpl_CM,"StripAmpl_CM_ped[%d][%d][%d]/F",CM_N,Nstrip_CM,Nsample);
+	TBranch *newBranch_CM = outTree->Branch("StripAmpl_CM_ped", StripAmpl_CM_ped,leefStripAmpl_CM);
+	int nentries = outTree->GetEntries();
+	for(int n=0;n<nentries;n++){
+		outTree->LoadTree(n);
+		outTree->GetEntry(n);
+		for(unsigned int i=0;i<MG_N;i++){
+			for(int j=0;j<Nstrip_MG;j++){
+				for(int k=0;k<Nsample;k++){
+					StripAmpl_MG_ped[i][j][k] = StripAmpl_MG[i][j][k] - Pedestal_MG[i][j];
+				}
+			}
+		}
+		for(unsigned int i=0;i<CM_N;i++){
+			for(int j=0;j<Nstrip_CM;j++){
+				for(int k=0;k<Nsample;k++){
+					StripAmpl_CM_ped[i][j][k] = StripAmpl_CM[i][j][k] - Pedestal_CM[i][j];
+				}
+			}
+		}
+		newBranch_CM->Fill();
+		newBranch_MG->Fill();
+		if((n%100) == 0) cout << "\r" << "substracting pedestal (" << n << "/" << nentries << ")" << flush;
+	}
+	cout << "\r" << "substracting pedestal (" << nentries << "/" << nentries << ")" << endl;
+	Write();
+	ped_done = true;
+}
+void DataReader::do_common_noise_sub(){
+	if(cns_done){
+		cout << "common noise already substracted" << endl;
+		return;
+	}
+	if(!ped_done){
+		cout << "cannot substract common noise before the pedestal substraction" << endl;
+		return;
+	}
+	char leefStripAmpl_MG[100];
+	sprintf(leefStripAmpl_MG,"StripAmpl_MG_corr[%d][%d][%d]/F",MG_N,Nstrip_MG,Nsample);
+	TBranch *newBranch_MG = outTree->Branch("StripAmpl_MG_corr", StripAmpl_MG_corr,leefStripAmpl_MG);
+	char leefStripAmpl_CM[100];
+	sprintf(leefStripAmpl_CM,"StripAmpl_CM_corr[%d][%d][%d]/F",CM_N,Nstrip_CM,Nsample);
+	TBranch *newBranch_CM = outTree->Branch("StripAmpl_CM_corr", StripAmpl_CM_corr,leefStripAmpl_CM);
+	int detector_div_MG = 2;
+	int detector_div_CM = 2;
+	int nentries = outTree->GetEntries();
+	for(int n=0;n<nentries;n++){
+		outTree->LoadTree(n);
+		outTree->GetEntry(n);
+		for(unsigned int i=0;i<MG_N;i++){
+			for(int k=0;k<Nsample;k++){
+				for(int det_div=0;det_div<detector_div_MG;det_div++){
+					int strip_nb = Nstrip_MG/detector_div_MG;
+					int strip_offset = det_div*strip_nb;
+					vector<float> current_sample(strip_nb,0);
+					for(int j=0;j<strip_nb;j++){
+						current_sample[j] = StripAmpl_MG_ped[i][j+strip_offset][k];
+					}
+					sort(current_sample.begin(),current_sample.end());
+					float median = current_sample[strip_nb/2];
+					for(int j=0;j<strip_nb;j++){
+						StripAmpl_MG_corr[i][j+strip_offset][k] = StripAmpl_MG_ped[i][j+strip_offset][k] - median;
+					}
+				}
+			}
+		}
+		for(unsigned int i=0;i<CM_N;i++){
+			for(int k=0;k<Nsample;k++){
+				for(int det_div=0;det_div<detector_div_CM;det_div++){
+					int strip_nb = Nstrip_CM/detector_div_CM;
+					int strip_offset = det_div*strip_nb;
+					vector<float> current_sample(strip_nb,0);
+					for(int j=0;j<strip_nb;j++){
+						current_sample[j] = StripAmpl_CM_ped[i][j+strip_offset][k];
+					}
+					sort(current_sample.begin(),current_sample.end());
+					float median = current_sample[strip_nb/2];
+					for(int j=0;j<strip_nb;j++){
+						StripAmpl_CM_corr[i][j+strip_offset][k] = StripAmpl_CM_ped[i][j+strip_offset][k] - median;
+					}
+				}
+			}
+		}
+		newBranch_CM->Fill();
+		newBranch_MG->Fill();
+		if((n%100) == 0) cout << "\r" << "substracting common noise (" << n << "/" << nentries << ")" << flush;
+	}
+	cout << "\r" << "substracting common noise (" << nentries << "/" << nentries << ")" << endl;
+	Write();
+	cns_done = true;
+}
+void DataReader::compute_RMSPed(){
+	double Ymin=-500;
+	double Ymax=500;
+	int bin_n = 500;
+	Long64_t max_event = 500;
+	int nentries = Min(outTree->GetEntries(),max_event);
+	ofstream RMSPedFile(RMSPedFileName.c_str());
+	outTree->SetBranchStatus("*",0);
+	outTree->SetBranchStatus("StripAmpl_CM_corr",1);
+	for(unsigned int i=0;i<CM_N;i++){
+		for(int j=0;j<Nstrip_CM;j++){
+			cout << "\r" << "computing RMS Ped for CM_" << i << " and strip_" << j << flush;
+			TH1F * ampl_hist = new TH1F("ampl_hist","ampl_hist",bin_n,Ymin,Ymax);
+			for(int n=0;n<nentries;n++){
+				outTree->LoadTree(n);
+				outTree->GetEntry(n);
+				for(int k=0;k<Nsample;k++){
+					ampl_hist->Fill(StripAmpl_CM_corr[i][j][k]);
+				}
+			}
+			TFitResultPtr res = ampl_hist->Fit("gaus","SQN");
+			RMSPedFile << i << " " << j << " " << res->Parameter(2) << "\n";
+			delete ampl_hist;
+		}
+	}
+	if(CM_N>0) cout << "\r" << "RMS Ped for CMs computed !                             " << endl;
+	outTree->SetBranchStatus("*",0);
+	outTree->SetBranchStatus("StripAmpl_MG_corr",1);
+	for(unsigned int i=0;i<MG_N;i++){
+		for(int j=0;j<Nstrip_MG;j++){
+			cout << "\r" << "computing RMS Ped for MG_" << i << " and strip_" << j << flush;
+			TH1F * ampl_hist = new TH1F("ampl_hist","ampl_hist",bin_n,Ymin,Ymax);
+			for(int n=0;n<nentries;n++){
+				outTree->LoadTree(n);
+				outTree->GetEntry(n);
+				for(int k=0;k<Nsample;k++){
+					ampl_hist->Fill(StripAmpl_MG_corr[i][j][k]);
+				}
+			}
+			TFitResultPtr res = ampl_hist->Fit("gaus","SQN");
+			RMSPedFile << i << " " << j << " " << res->Parameter(2) << "\n";
+			delete ampl_hist;
+		}
+	}
+	if(MG_N>0) cout << "\r" << "RMS Ped for MGs computed !                             " << endl;
+	outTree->SetBranchStatus("*",1);
+	RMSPedFile.close();
+}
