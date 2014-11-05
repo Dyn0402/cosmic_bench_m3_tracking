@@ -114,7 +114,6 @@ DataReader::DataReader(string baseFileName, map<int,string> det_type_by_asic_, m
 		}
 	}
 	is_first = true;
-
 }
 DataReader::~DataReader(){
 	outFile->Close();
@@ -328,7 +327,7 @@ void DataReader::read_ped(){
 	}
 	for(unsigned int i=0;i<MG_N;i++){
 		for(int j=0;j<Nstrip_MG;j++){
-			pedFile >> i >> j >> Pedestal_CM[i][j];
+			pedFile >> i >> j >> Pedestal_MG[i][j];
 		}
 	}
 	pedFile.close();
@@ -446,7 +445,7 @@ void DataReader::compute_RMSPed(){
 	outTree->SetBranchStatus("StripAmpl_CM_corr",1);
 	for(unsigned int i=0;i<CM_N;i++){
 		for(int j=0;j<Nstrip_CM;j++){
-			cout << "\r" << "computing RMS Ped for CM_" << i << " and strip_" << j << flush;
+			cout << "\r" << "computing RMS Ped for CM_" << i << " and strip_" << setw(2) << setfill('0') << j << flush;
 			TH1F * ampl_hist = new TH1F("ampl_hist","ampl_hist",bin_n,Ymin,Ymax);
 			for(int n=0;n<nentries;n++){
 				outTree->LoadTree(n);
@@ -465,7 +464,7 @@ void DataReader::compute_RMSPed(){
 	outTree->SetBranchStatus("StripAmpl_MG_corr",1);
 	for(unsigned int i=0;i<MG_N;i++){
 		for(int j=0;j<Nstrip_MG;j++){
-			cout << "\r" << "computing RMS Ped for MG_" << i << " and strip_" << j << flush;
+			cout << "\r" << "computing RMS Ped for MG_" << i << " and strip_" << setw(2) << setfill('0') << j << flush;
 			TH1F * ampl_hist = new TH1F("ampl_hist","ampl_hist",bin_n,Ymin,Ymax);
 			for(int n=0;n<nentries;n++){
 				outTree->LoadTree(n);
