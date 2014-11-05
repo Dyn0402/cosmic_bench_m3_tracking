@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include <iomanip>
 #include <TBranch.h>
 #include <TH1F.h>
 #include <TFitResultPtr.h>
@@ -24,6 +25,8 @@ using std::map;
 using std::ifstream;
 using std::ofstream;
 using std::sort;
+using std::setw;
+using std::setfill;
 
 using TMath::Min;
 
