@@ -33,6 +33,7 @@ class Cluster{
 		double get_t() const;
 		double get_maxSample() const;
 		double get_maxStripAmpl() const;
+		int get_maxStrip() const;
 		void set_perp_pos_mm(double coord);
 		double get_perp_pos_mm() const;
 		int find_det(const vector<Detector*> det_array) const;
@@ -43,7 +44,7 @@ class Cluster{
 		Cluster(const Cluster& other);
 		Cluster& operator=(const Cluster& other);
 		Cluster(T * treeObject, int entry = -1);
-		Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_);
+		Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		int evn;
 		double evttime;
 		int number;
@@ -54,6 +55,7 @@ class Cluster{
 		double maxSample;
 		double TOT;
 		double t;
+		int maxStrip;
 		string type;
 		double z;
 		bool is_X;
@@ -71,7 +73,7 @@ class CM_Cluster: public Cluster{
 		CM_Cluster(const CM_Cluster& other);
 		CM_Cluster& operator=(const CM_Cluster& other);
 		CM_Cluster(T * treeObject,int number_,CM_Detector * det, int entry = -1);
-		CM_Cluster(CM_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_);
+		CM_Cluster(CM_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~CM_Cluster();
 		static bool is_suitable(T * treeObject,int number_,CM_Detector * detector, int entry = -1);
 		bool is_in_det(Detector * det) const;
@@ -80,7 +82,6 @@ class CM_Cluster: public Cluster{
 		virtual double correct_strip_nb(int strip_nb) const;
 		int get_n_in_tree() const;
 	protected:
-		int maxStrip;
 		string strip_type;
 		int cm_n_in_tree;
 };
@@ -103,7 +104,7 @@ class MG_Cluster: public Cluster{
 		MG_Cluster(const MG_Cluster& other);
 		MG_Cluster& operator=(const MG_Cluster& other);
 		MG_Cluster(T * treeObject,int number_,MG_Detector * det, int entry = -1);
-		MG_Cluster(MG_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_);
+		MG_Cluster(MG_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~MG_Cluster();
 		static bool is_suitable(T * treeObject,int number_,MG_Detector * detector, int entry = -1);
 		bool is_suitable(MG_Detector * detector);

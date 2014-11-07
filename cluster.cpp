@@ -22,6 +22,7 @@ Cluster::Cluster(){
 	pos = -1;
 	maxStripAmpl = -1;
 	maxSample = -1;
+	maxStrip = -1;
 	TOT = -1;
 	t = -1;
 	type = "";
@@ -44,6 +45,7 @@ Cluster::Cluster(const Cluster& other){
 	pos = other.pos;
 	maxStripAmpl = other.maxStripAmpl;
 	maxSample= other.maxSample;
+	maxStrip = other.maxStrip;
 	TOT = other.TOT;
 	t = other.t;
 	z = other.z;
@@ -65,6 +67,7 @@ Cluster& Cluster::operator=(const Cluster& other){
 	pos = other.pos;
 	maxStripAmpl = other.maxStripAmpl;
 	maxSample= other.maxSample;
+	maxStrip = other.maxStrip;
 	TOT = other.TOT;
 	t = other.t;
 	z = other.z;
@@ -91,6 +94,7 @@ Cluster::Cluster(T * treeObject, int entry){
 	pos = -1;
 	maxStripAmpl = -1;
 	maxSample = -1;
+	maxStrip = -1;
 	TOT = -1;
 	t = -1;
 	z = -1;
@@ -101,12 +105,13 @@ Cluster::Cluster(T * treeObject, int entry){
 	perp_pos_mm = -1;
 	angle = 0;
 }
-Cluster::Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_){
+Cluster::Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_){
 	pos = pos_;
 	size = size_;
 	ampl = ampl_;
 	maxSample = maxSample_;
 	maxStripAmpl = maxStripAmpl_;
+	maxStrip = maxStrip_;
 	TOT = TOT_;
 	t = t_;
 }
@@ -137,6 +142,9 @@ double Cluster::get_maxSample() const{
 double Cluster::get_maxStripAmpl() const{
 	return maxStripAmpl;
 }
+int Cluster::get_maxStrip() const{
+	return maxStrip;
+}
 bool Cluster::get_is_up() const{
 	return is_up;
 }
@@ -163,12 +171,10 @@ Cluster::~Cluster(){
 CM_Cluster::CM_Cluster(): Cluster(){
 	type.clear();
 	type = "CM";
-	maxStrip = -1;
 	strip_type = "";
 	cm_n_in_tree = -1;
 }
 CM_Cluster::CM_Cluster(const CM_Cluster& other): Cluster(other){
-	maxStrip = other.maxStrip;
 	type.clear();
 	type = "CM";
 	strip_type = other.strip_type;
@@ -176,7 +182,6 @@ CM_Cluster::CM_Cluster(const CM_Cluster& other): Cluster(other){
 }
 CM_Cluster& CM_Cluster::operator=(const CM_Cluster& other){
 	Cluster::operator=(other);
-	maxStrip = other.maxStrip;
 	type.clear();
 	type = "CM";
 	strip_type = other.strip_type;
@@ -208,7 +213,7 @@ CM_Cluster::CM_Cluster(T * treeObject,int number_,CM_Detector * det, int entry):
 	type = "CM";
 	(pos>31) ? strip_type = "Wide" : strip_type = "Thin";
 }
-CM_Cluster::CM_Cluster(CM_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_): Cluster(pos_,size_,ampl_,maxSample_, maxStripAmpl_,TOT_,t_){
+CM_Cluster::CM_Cluster(CM_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(pos_,size_,ampl_,maxSample_, maxStripAmpl_,TOT_,t_, maxStrip_){
 	number = number_;
 	cm_n_in_tree = det->get_cm_n_in_tree();
 	z = det->get_z();
@@ -421,7 +426,7 @@ MG_Cluster::MG_Cluster(T * treeObject,int number_,MG_Detector * det, int entry):
 	type.clear();
 	type = "MG";
 }
-MG_Cluster::MG_Cluster(MG_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_): Cluster(pos_,size_,ampl_,maxSample_, maxStripAmpl_,TOT_,t_){
+MG_Cluster::MG_Cluster(MG_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(pos_,size_,ampl_,maxSample_, maxStripAmpl_,TOT_,t_,maxStrip_){
 	number = number_;
 	mg_n_in_tree = det->get_mg_n_in_tree();
 	z = det->get_z();

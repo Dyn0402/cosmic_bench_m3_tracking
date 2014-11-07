@@ -410,6 +410,7 @@ void MG_Event::MultiCluster(){
 		double ClusAmpl = 0;
 		double ClusMaxStripAmpl = 0;
 		double ClusMaxSample = 0;
+		int ClusMaxStrip = -1;
 		double ClusT = 0;
 		double ClusTOT = 0;
 		for(int j = cluster_list[i].first;j<((cluster_list[i].second)+1);j++){
@@ -421,6 +422,7 @@ void MG_Event::MultiCluster(){
 				ClusMaxStripAmpl = effective_ampl;
 				ClusMaxSample = current_strip.MaxSample;
 				ClusT = current_strip.Time;
+				ClusMaxStrip = j;
 				//ClusTOT[i] = current_strip.TOT;
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
@@ -466,7 +468,7 @@ void MG_Event::MultiCluster(){
 			//ClusSize = SRFfit->GetParameter(1);
 		}
 		delete SRFfit; delete SRFgraph;
-		clusters.push_back(MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT));
+		clusters.push_back(MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 	}
 }
 void MG_Event::HoughCluster(){
@@ -531,6 +533,7 @@ void MG_Event::HoughCluster(){
 		double ClusAmpl = 0;
 		double ClusMaxStripAmpl = 0;
 		double ClusMaxSample = 0;
+		int ClusMaxStrip = -1;
 		double ClusT = 0;
 		double ClusTOT = 0;
 		for(int j = cluster_list[i].first;j<((cluster_list[i].second)+1);j++){
@@ -542,6 +545,7 @@ void MG_Event::HoughCluster(){
 				ClusMaxStripAmpl = effective_ampl;
 				ClusMaxSample = current_strip.MaxSample;
 				ClusT = current_strip.Time;
+				ClusMaxStrip = j;
 				//ClusTOT[i] = current_strip.TOT;
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
@@ -587,7 +591,7 @@ void MG_Event::HoughCluster(){
 			ClusSize = SRFfit->GetParameter(1);
 		}
 		delete SRFfit; delete SRFgraph;
-		clusters.push_back(MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT));
+		clusters.push_back(MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 	}
 }
 void MG_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
