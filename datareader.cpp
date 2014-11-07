@@ -530,45 +530,62 @@ void FeminosDataReader::read_file(string file_name,int evn_offset){
 	int itime = 0;
 	int channelN=0;
 	int detN=0;
+	bool inEvent = false;
+	bool inFrame = false;
 	DataLineFeminos current_data;
 	iFile.read((char*)&current_data,sizeof(current_data));
-	while(!(iFile.eof())){
-		reset_tree_leaf();
-		while(!(current_data.is_end_of_event())){
-			while(!(current_data.is_end_of_frame())){
-				if(current_data.is_event_start()){
-					iFile.ignore(4*sizeof(current_data));
-				}
-				else{
-					if(current_data.is_info()){
-						//card = current_data.get_card_ID();
-						chip = current_data.get_chip_ID();
-						detN = det_n_by_asic[chip];
-						channel = current_data.get_channel_ID();
-						channelN = mapping(det_type_by_asic[chip],channel);
-					}
-					if(current_data.is_time()){
-						itime= current_data.get_time();
-					}
-					if(current_data.is_data()){
-						if(det_type_by_asic[chip] == "MG"){
-							StripAmpl_MG[detN][channelN][itime] = current_data.get_data();
-						}
-						else if(det_type_by_asic[chip] == "CM"){
-							StripAmpl_CM[detN][channelN][itime] = current_data.get_data();
-						}
-						itime++;
-					}
-				}
-				iFile.read((char*)&current_data,sizeof(current_data));
+	while(iFile.good() /*&& evNinFile<6000*/){
+
+		if(inEvent && current_data.is_end_of_event()){
+			inEvent = false;
+			Nevent = evNinFile + evn_offset;
+			if((evNinFile%100) == 0) cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << Nevent << ")" << flush;
+			evNinFile++;
+			Fill();
+		}
+		else if(inFrame && current_data.is_end_of_frame()){
+			inFrame = false;
+		}
+		else if(inEvent){
+			if(current_data.is_info()){
+				//card = current_data.get_card_ID();
+				chip = current_data.get_chip_ID();
+				detN = det_n_by_asic[chip];
+				channel = current_data.get_channel_ID();
+				channelN = mapping(det_type_by_asic[chip],channel);
+				itime = 0;
 			}
-			while((!(current_data.is_frame_start())) && (!(current_data.is_end_of_event()))){
-				iFile.read((char*)&current_data,sizeof(current_data));
+			else if(current_data.is_time()){
+				itime= current_data.get_time();
+			}
+			else if(current_data.is_data()){
+				if(det_type_by_asic[chip] == "MG" && channelN>-1 && channelN<61){
+					StripAmpl_MG[detN][channelN][itime] = current_data.get_data();
+					itime++;
+				}
+				else if(det_type_by_asic[chip] == "CM" && channelN>-1 && channelN<64){
+					StripAmpl_CM[detN][channelN][itime] = current_data.get_data();
+					itime++;
+				}
 			}
 		}
-		Nevent = evNinFile + evn_offset;
-		evNinFile++;
-		Fill();
+		else if(inFrame){
+			if(current_data.is_event_start()){
+				inEvent = true;
+				reset_tree_leaf();
+				chip=0;
+				channel=0;
+				itime = 0;
+				channelN=0;
+				detN=0;
+				iFile.ignore(5*sizeof(current_data));
+			}
+		}
+		else if(current_data.is_frame_start()){
+			inFrame = true;
+			iFile.ignore(sizeof(current_data));
+		}
 		iFile.read((char*)&current_data,sizeof(current_data));
 	}
+	cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << Nevent+1 << ")" << endl;
 }
