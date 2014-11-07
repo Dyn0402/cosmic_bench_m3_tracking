@@ -78,7 +78,7 @@ Analyse::Analyse(string configFilePath){
 		CM_N++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle")));
+		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes")));
 		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -213,13 +213,14 @@ void Analyse::Residus_ref(){
 	map<string,double> efficacity;
 	int nbins = 200;
 	int lim = 500;
-	double marge = 2./5.;
-	int nbins_2D = 50*(1+2*marge);
+	double marge = 1./10.;
+	int nbins_2D = 100*(1+2*marge);
 	int eventReconstructed = 0;
 	double eventSuitable = 0;
-	map<string, unsigned int> det_in_nref_dir;
-	map<string, bool> nref_is_X;
-	unsigned int det_x_n = 0;
+	map<int,int> perp_pairs;
+	//map<string, unsigned int> det_in_nref_dir;
+	//map<string, bool> nref_is_X;
+	//unsigned int det_x_n = 0;
 	unsigned int nref_x_n = 0;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())){
@@ -251,15 +252,30 @@ void Analyse::Residus_ref(){
 				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,0,500,-5,5);
 				point_nb[name.str()] = 0;
 				efficacity[name.str()] = 0;
+				if((*it)->get_perp_n()>-1) perp_pairs[(dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree()] = (*it)->get_perp_n();
 			}
-			nref_is_X[name.str()] = (*it)->get_is_X();
+			//nref_is_X[name.str()] = (*it)->get_is_X();
 			if((*it)->get_is_X()) nref_x_n++;
 		}
-		if((*it)->get_is_X()) det_x_n++;
+		//if((*it)->get_is_X()) det_x_n++;
 	}
+	/*
 	for(map<string,bool>::iterator it = nref_is_X.begin();it!=nref_is_X.end();++it){
 		if(it->second) det_in_nref_dir[it->first] = det_x_n - nref_x_n;
 		else det_in_nref_dir[it->first] = (MG_N + CM_N - det_x_n) - (nref_is_X.size() - nref_x_n);
+	}
+	*/
+	for(map<int,int>::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
+		if(perp_pairs.count(map_it->second)==0){
+			cout << "2D detectors must be set to non ref in both direction" << endl;
+			return;
+		}
+	}
+	if(non_ref_n>2){
+		cout << "too many non ref det" << endl;
+	}
+	if(nref_x_n>1){
+		cout << "too many non ref det" << endl;
 	}
 	TCanvas * c0 = new TCanvas("stats","stats");
 	c0->Divide(2);
@@ -291,10 +307,12 @@ void Analyse::Residus_ref(){
 					name << "Cosmulti_" << (*it)->get_n_in_tree();
 					vector<CM_Demux_Cluster> current_clusters = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
 					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-						double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
-						unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
-						if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
-						if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
+						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
+						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
+						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
+						if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
 						double residu = numeric_limits<double>::max();
 						vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
 						for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
@@ -333,10 +351,12 @@ void Analyse::Residus_ref(){
 					name << "Multigen_" << (*it)->get_n_in_tree();
 					vector<MG_Cluster> current_clusters = (dynamic_cast<MG_Event*>(*it))->get_clusters();
 					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-						double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
-						unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
-						if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
-						if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
+						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
+						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
+						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
+						if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
 						double residu = numeric_limits<double>::max();
 						vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
 						for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
@@ -380,8 +400,8 @@ void Analyse::Residus_ref(){
 			for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
 				it->second->cd(1);
 				MM_residus[it->first]->Draw();
-				for(int i=1;i<=nbins;i++){
-					for(int j=1;j<=nbins;j++){
+				for(int i=1;i<=nbins_2D;i++){
+					for(int j=1;j<=nbins_2D;j++){
 						int binN = muon_total[it->first]->GetBin(i,j);
 						double binContent = 0;
 						if(muon_total[it->first]->GetBinContent(binN) > 0) binContent = (muon_seen[it->first]->GetBinContent(binN))/(muon_total[it->first]->GetBinContent(binN));
@@ -411,8 +431,8 @@ void Analyse::Residus_ref(){
 		MM_residus[it->first]->Draw();
 		double total_seen = 0;
 		double total_passed = 0;
-		for(int i=1;i<=nbins;i++){
-			for(int j=1;j<=nbins;j++){
+		for(int i=1;i<=nbins_2D;i++){
+			for(int j=1;j<=nbins_2D;j++){
 				int binN = muon_total[it->first]->GetBin(i,j);
 				double binContent = 0;
 				if(muon_total[it->first]->GetBinContent(binN) > 0) binContent = (muon_seen[it->first]->GetBinContent(binN))/(muon_total[it->first]->GetBinContent(binN));
@@ -465,14 +485,15 @@ void Analyse::Residus_ref_2D(){
 	double efficacity = 0;
 	int nbins = 200;
 	int lim = 500;
-	double marge = 2./5.;
-	int nbins_2D = 50*(1+2*marge);
+	double marge = 1./10.;
+	int nbins_2D = 200*(1+2*marge);
 	int eventReconstructed = 0;
 	double eventSuitable = 0;
 	unsigned int nref_x_n = 0;
 	unsigned int det_x_n = 0;
 	unsigned int det_n = CM_N + MG_N;
 	vector<double> det_z;
+	map<int,int> perp_pairs;
 	ostringstream name;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())){
@@ -483,6 +504,7 @@ void Analyse::Residus_ref_2D(){
 			else if((*it)->get_type() == "MG"){
 				if(name.str().size()>0) name << "_";
 				name << "Multigen_" << (dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree();
+				if((*it)->get_perp_n()>-1) perp_pairs[(dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree()] = (*it)->get_perp_n();
 			}
 			if((*it)->get_is_X()) nref_x_n++;
 			det_z.push_back((*it)->get_z());
@@ -496,6 +518,12 @@ void Analyse::Residus_ref_2D(){
 	if(det_z[0]!=det_z[1]){
 		cout << "you can only calculate 2D efficacity for 2D detector (which have same z)" << endl;
 		return;
+	}
+	for(map<int,int>::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
+		if(perp_pairs.count(map_it->second)==0){
+			cout << "you can only calculate 2D efficacity for 2D detector" << endl;
+			return;
+		}
 	}
 	if(nref_x_n!=1){
 		cout << "2D efficacity can only be done with one det in each direction" << endl;
@@ -630,8 +658,8 @@ void Analyse::Residus_ref_2D(){
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<int>(eventSuitable) << "|" << setw(20) << jentry << flush;
 		if(jentry%5000 == 0){
-			for(int i=1;i<=nbins;i++){
-				for(int j=1;j<=nbins;j++){
+			for(int i=1;i<=nbins_2D;i++){
+				for(int j=1;j<=nbins_2D;j++){
 					int binN = muon_total->GetBin(i,j);
 					double binContent = 0;
 					if(muon_total->GetBinContent(binN) > 0) binContent = (muon_seen->GetBinContent(binN))/(muon_total->GetBinContent(binN));
@@ -653,8 +681,8 @@ void Analyse::Residus_ref_2D(){
 	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<int>(eventSuitable) << "|" << setw(20) << nentries << endl;
 	double total_seen = 0;
 	double total_passed = 0;
-	for(int i=1;i<=nbins;i++){
-		for(int j=1;j<=nbins;j++){
+	for(int i=1;i<=nbins_2D;i++){
+		for(int j=1;j<=nbins_2D;j++){
 			int binN = muon_total->GetBin(i,j);
 			double binContent = 0;
 			if(muon_total->GetBinContent(binN) > 0) binContent = (muon_seen->GetBinContent(binN))/(muon_total->GetBinContent(binN));

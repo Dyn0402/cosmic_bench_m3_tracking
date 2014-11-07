@@ -351,6 +351,7 @@ void MG_Event::MultiCluster(){
 	//second loop : group the channels in clusters
 	vector<pair<int,int> > cluster_list;
 	vector<int> global_used_channel;
+	unsigned int max_hole_size = detector.get_clustering_holes();
 	while(global_used_channel.size()<channelOverThreshold.size()){
 		pair<int,int> biggest_current_cluster(0,-1);
 		vector<int> current_used_channel;
@@ -366,7 +367,7 @@ void MG_Event::MultiCluster(){
 							current_cluster.second = j;
 							used_channel.push_back(MG_Detector::StripToChannel(j));
 						}
-						else if(hole_channel.size()<1){
+						else if(hole_channel.size()<max_hole_size){
 							hole_channel.insert(pair<int,int>(MG_Detector::StripToChannel(j),j));
 						}
 						else break;

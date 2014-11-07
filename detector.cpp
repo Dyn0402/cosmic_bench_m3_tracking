@@ -52,6 +52,12 @@ bool Detector::get_direction() const{
 double Detector::get_angle() const{
 	return angle;
 }
+int Detector::get_perp_n() const{
+	return perp_n;
+}
+int Detector::get_clustering_holes() const{
+	return clustering_holes;
+}
 double Detector::get_RMS(int i) const{
 	return RMS[i];
 }
@@ -84,6 +90,8 @@ Detector::Detector(){
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;
 	angle = 0;
+	perp_n = -1;
+	clustering_holes = 0;
 }
 Detector::Detector(const Detector& other){
 	z = other.z;
@@ -97,6 +105,8 @@ Detector::Detector(const Detector& other){
 	ClusMaxSampleCut_Max = other.ClusMaxSampleCut_Max;
 	angle = other.angle;
 	RMS = other.RMS;
+	perp_n = other.perp_n;
+	clustering_holes = other.clustering_holes;
 }
 Detector& Detector::operator=(const Detector& other){
 	z = other.z;
@@ -110,9 +120,11 @@ Detector& Detector::operator=(const Detector& other){
 	ClusMaxSampleCut_Max = other.ClusMaxSampleCut_Max;
 	angle = other.angle;
 	RMS = other.RMS;
+	perp_n = other.perp_n;
+	clustering_holes = other.clustering_holes;
 	return *this;
 }
-Detector::Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_){
+Detector::Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_, int perp_n_, int clustering_holes_){
 	z = z_;
 	is_X = is_X_;
 	is_up = is_up_;
@@ -123,6 +135,8 @@ Detector::Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offs
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;
 	angle = angle_;
+	perp_n = perp_n_;
+	clustering_holes = clustering_holes_;
 }
 Detector::~Detector(){
 
@@ -148,7 +162,7 @@ CM_Detector& CM_Detector::operator=(const CM_Detector& other){
 	ClusSizeCut_Max_Wide = other.ClusSizeCut_Max_Wide;
 	return *this;
 }
-CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_) :Detector(z_,is_X_,is_up_, is_ref_, offset_, direction_, angle_){
+CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_) :Detector(z_,is_X_,is_up_, is_ref_, offset_, direction_, angle_,-1,0){
 	cm_n_in_tree = cm_n;
 	use_thin_strip = use_thin_strip_;
 	ClusMaxStripAmplCut_Min_Wide = -1;
@@ -201,7 +215,7 @@ MG_Detector& MG_Detector::operator=(const MG_Detector& other){
 	ClusSizeCut_Min = other.ClusSizeCut_Min;
 	return *this;
 }
-MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_): Detector(z_,is_X_,is_up_, is_ref_, offset_,direction_, angle_){
+MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_, int perp_n_, int clustering_holes_): Detector(z_,is_X_,is_up_, is_ref_, offset_,direction_, angle_, perp_n_, clustering_holes_){
 	mg_n_in_tree = mg_n;
 	ClusSizeCut_Min = -1;
 }

@@ -17,6 +17,8 @@ class Detector{
 		double get_offset() const;
 		bool get_direction() const;
 		double get_angle() const;
+		int get_perp_n() const;
+		int get_clustering_holes() const;
 		//seters
 		void set_ClusTOTCut_Min(double cut);
 		void set_ClusMaxSampleCut_Min(double cut);
@@ -30,7 +32,7 @@ class Detector{
 		Detector();	
 		Detector(const Detector& other);
 		Detector& operator=(const Detector& other);
-		Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_);	
+		Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_, int perp_n_, int clustering_holes_);	
 		double z; //altitude inside cosmic bench
 		bool is_X;//coordinate measured by the detector
 		bool is_up;//bloc (up|down) which the detector is part of
@@ -43,6 +45,8 @@ class Detector{
 		double ClusMaxSampleCut_Min;
 		double ClusMaxSampleCut_Max;
 		vector<double> RMS;
+		int perp_n;
+		int clustering_holes;
 
 };
 
@@ -78,7 +82,7 @@ class MG_Detector: public Detector{
 		MG_Detector();
 		MG_Detector(const MG_Detector& other);
 		MG_Detector& operator=(const MG_Detector& other);
-		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_);
+		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_, int perp_n_, int clustering_holes_);
 		~MG_Detector();
 		static unsigned int StripToChannel(unsigned int strip_nb);
 		static vector<unsigned int> ChannelToStrip(unsigned int channel_nb);
