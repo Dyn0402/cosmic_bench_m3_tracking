@@ -106,6 +106,7 @@ Cluster::Cluster(double pos_, double size_, double ampl_, double maxSample_, dou
 	size = size_;
 	ampl = ampl_;
 	maxSample = maxSample_;
+	maxStripAmpl = maxStripAmpl_;
 	TOT = TOT_;
 	t = t_;
 }
