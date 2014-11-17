@@ -1161,7 +1161,7 @@ void CosmicBenchEvent::EventDisplay(){
 	cDisplay->cd(1);
 	bg_X->Draw("AXIS");
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
-		map_it->second->Draw("SAME");
+		map_it->second->Draw("SAME ][");
 	}
 	for(vector<TLine*>::iterator line_it = clus_X.begin();line_it!=clus_X.end();++line_it){
 		(*line_it)->Draw();
@@ -1175,7 +1175,7 @@ void CosmicBenchEvent::EventDisplay(){
 	cDisplay->cd(2);
 	bg_Y->Draw("AXIS");
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_Y.begin();map_it!=ampl_hists_Y.end();++map_it){
-		map_it->second->Draw("SAME");
+		map_it->second->Draw("SAME ][");
 	}
 	for(vector<TLine*>::iterator line_it = clus_Y.begin();line_it!=clus_Y.end();++line_it){
 		(*line_it)->Draw();

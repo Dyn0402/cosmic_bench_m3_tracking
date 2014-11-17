@@ -26,8 +26,13 @@ int main(int argc, char ** argv){
 	Signal * blah = new Signal(config_file.str());
 	string multicluster = "multicluster";
 	string hough = "hough";
+	string SoB = "SoB";
 	if(argv[2] == multicluster){
 		blah->MultiCluster();
+	}
+	else if(argv[2] == SoB){
+		blah->SignalOverNoise();
+		theApp->Run(true);
 	}
 	else if(argv[2] == hough){
 		if(argc<4){
