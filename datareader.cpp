@@ -149,7 +149,7 @@ void DataReader::Write(){
 	outTree->Write();
 }
 void DataReader::reset_tree_leaf(){
-	Nevent = 0;
+	//Nevent = 0;
 	/*
 	for(int k=0;k<Nsample;k++){
 		TsampleNum[k] = k;
@@ -603,9 +603,11 @@ void FeminosDataReader::process(){
 		return;
 	}
 	global_offset = get_first_event_nb(file_names.front());
+	Nevent = global_offset;
 	for(vector<string>::iterator it=file_names.begin();it!=file_names.end();++it){
-		int current_offset = global_offset + outTree->GetEntries();
-		read_file(*it,current_offset);
+		//int current_offset = global_offset + outTree->GetEntries();
+		read_file(*it,Nevent);
+		Nevent++;
 	}
 	Write();
 	exists = true;
@@ -685,7 +687,7 @@ void FeminosDataReader::read_file(string file_name,int evn_offset){
 				}
 				inEvent = false;
 				Nevent = evNinFile + evn_offset;
-				if((evNinFile%100) == 0) cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << evNinFile + evn_offset - global_offset << ")" << flush;
+				if((evNinFile%100) == 0) cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << Nevent - global_offset << ")" << flush;
 				evNinFile++;
 				Fill();
 			}
