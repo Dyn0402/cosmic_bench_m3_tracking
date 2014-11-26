@@ -6,10 +6,12 @@
 #include <TTree.h>
 #include <TFile.h>
 #include <TBranch.h>
+#include <fstream>
 
 using std::string;
 using std::vector;
 using std::map;
+using std::ifstream;
 
 class DataReader{
 	public:
@@ -24,6 +26,7 @@ class DataReader{
 		static const int Nsample;
 		static const int Nstrip_MG;
 		static const int Nstrip_CM;
+		virtual map<string,vector<vector<vector<double> > > > read_event(ifstream file,int event_nb, bool fill_tree = true) = 0;
 	protected:
 		void read_ped(string ped_file = "");
 		void Fill();
@@ -66,6 +69,7 @@ class DreamDataReader: public DataReader{
 		DreamDataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
 		~DreamDataReader();
 		void process();
+		map<string,vector<vector<vector<double> > > > read_event(ifstream file,int event_nb, bool fill_tree = true);
 	protected:
 		void read_file(string file_name,int evn_offset);
 		int mapping(string det_type, int channel);
@@ -76,6 +80,7 @@ class FeminosDataReader: public DataReader{
 		FeminosDataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
 		~FeminosDataReader();
 		void process();
+		map<string,vector<vector<vector<double> > > > read_event(ifstream file,int event_nb, bool fill_tree = true);
 	protected:
 		void read_file(string file_name,int evn_offset);
 		int get_first_event_nb(string file_name);

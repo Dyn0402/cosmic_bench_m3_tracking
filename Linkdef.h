@@ -24,5 +24,6 @@
 #pragma link C++ class Analyse+;
 #pragma link C++ class Tanalyse+;
 #pragma link C++ class Tsignal+;
+#pragma link C++ class acceptanceFunction+;
 
 #endif

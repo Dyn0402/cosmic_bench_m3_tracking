@@ -578,6 +578,10 @@ void DreamDataReader::read_file(string file_name,int evn_offset){
 	cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << evNinFile + evn_offset - global_offset << ")" << endl;
 	iFile.close();
 }
+map<string,vector<vector<vector<double> > > > DreamDataReader::read_event(ifstream file,int event_nb, bool fill_tree){
+	map<string,vector<vector<vector<double> > > > event_ampl;
+	return event_ampl;
+}
 FeminosDataReader::FeminosDataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_): DataReader(baseFileName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_){
 	DAQType = "Feminos";
 }
@@ -711,6 +715,119 @@ void FeminosDataReader::read_file(string file_name,int evn_offset){
 	cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << evNinFile + evn_offset - global_offset << ")" << endl;
 	iFile.close();
 }
+
+map<string,vector<vector<vector<double> > > > FeminosDataReader::read_event(ifstream file,int event_nb, bool fill_tree){
+	int card=0;
+	int chip=0;
+	int channel=0;
+	int itime = 0;
+	int channelN=0;
+	int det = 0;
+	int detN=0;
+	bool inEvent = false;
+	bool inFrame = false;
+	int event_started = 0;
+	DataLineFeminos current_data;
+	iFile.read((char*)&current_data,sizeof(current_data));
+	bool event_complete = false;
+	while(iFile.good() && !(((evNinFile + evn_offset - global_offset)>max_event)*(max_event>0))){
+
+
+		if(inEvent){
+			if(inFrame){
+				if(current_data.is_event_start()){
+					event_started++;
+					iFile.ignore(3*sizeof(current_data)); //contain timestamp
+					int current_event;
+					iFile.read((char*)&current_event,sizeof(current_event));
+					if(current_event != event_nb){
+						cout << "warning : event numbers does not match" << endl;
+						cout << current_event << " " << event_nb << endl;
+						return;
+					}
+				}
+				else if(current_data.is_end_of_event()){
+					event_started--;
+					iFile.ignore(sizeof(current_data)); //contain eventsize
+				}
+				else if(current_data.is_end_of_frame()){
+					inFrame = false;
+				}
+				else if(current_data.is_info()){
+					card = current_data.get_card_ID();
+					chip = current_data.get_chip_ID();
+					det = chip + (4*card);
+					detN = det_n_by_asic[det];
+					channel = current_data.get_channel_ID();
+					channelN = mapping(det_type_by_asic[det],channel);
+					itime = 0;
+				}
+				else if(current_data.is_time()){
+					itime= current_data.get_time();
+				}
+				else if(current_data.is_data()){
+					if(det_type_by_asic[det] == "MG" && channelN>-1 && channelN<61){
+						StripAmpl_MG[detN][channelN][itime] = current_data.get_data();
+						itime++;
+					}
+					else if(det_type_by_asic[det] == "CM" && channelN>-1 && channelN<64){
+						StripAmpl_CM[detN][channelN][itime] = current_data.get_data();
+						itime++;
+					}
+				}
+
+			}
+			else if(current_data.is_end_of_built_event()){
+				if(event_started != 0){
+					cout << "problem in fem number" << endl;
+					return;
+				}
+				inEvent = false;
+				event_complete = true;
+				break;
+			}
+			else if(current_data.is_frame_start()){
+				inFrame = true;
+			}
+		}
+		else if(current_data.is_built_event_start()){
+			inEvent = true;
+			reset_tree_leaf();
+			chip=0;
+			channel=0;
+			itime = 0;
+			channelN=0;
+			det=0;
+			detN=0;
+			event_started = 0;
+		}
+		iFile.read((char*)&current_data,sizeof(current_data));
+	}
+	map<string,vector<vector<vector<double> > > > event_ampl;
+	if(!event_complete) return event_ampl;
+	Nevent = event_nb;
+	if(fill_tree && !exists) Fill();
+	vector<vector<vector<double> > > MG_Ampl(MG_N,vector<vector<double> >(Nstrip_MG,vector<double>(Nsample,0)));
+	vector<vector<vector<double> > > CM_Ampl(CM_N,vector<vector<double> >(Nstrip_CM,vector<double>(Nsample,0)));
+	for(int i=0;i<MG_N;i++){
+		for(int j=0;j<Nstrip_MG;j++){
+			for(int k=0;k<Nsample;k++){
+				MG_Ampl[i][j][k] = StripAmpl_MG[i][j][k];
+			}
+		}
+	}
+	for(int i=0;i<CM_N;i++){
+		for(int j=0;j<Nstrip_CM;j++){
+			for(int k=0;k<Nsample;k++){
+				CM_Ampl[i][j][k] = StripAmpl_CM[i][j][k];
+			}
+		}
+	}
+	event_ampl["MG"] = MG_Ampl;
+	event_ampl["CM"] = CM_Ampl;
+	return event_ampl;
+}
+
 int FeminosDataReader::get_first_event_nb(string file_name){
 	ifstream iFile(file_name.c_str(),ifstream::binary);
 	if(!iFile.is_open()){

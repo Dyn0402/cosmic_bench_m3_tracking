@@ -67,7 +67,7 @@ testCapaDict: testCapa.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o 
 libAnalyse.so: analyse.o T.o event.o ray.o cluster.o detector.o point.o Tanalyse.o Tsignal.o signal.o MyDict.o
 	$(CXX) $(SOFLAGS) $(LDFLAGS) -o $@ $^ 
 
-MyDict.cpp: analyse.h T.h event.h ray.h cluster.h detector.h point.h Tanalyse.h Tsignal.h signal.h Linkdef.h
+MyDict.cpp: analyse.h T.h event.h ray.h cluster.h detector.h point.h Tanalyse.h Tsignal.h signal.h acceptanceFunction.h Linkdef.h
 	rootcint -f $@ -c $(CXXFLAGS) -p $^
 
 clean:
