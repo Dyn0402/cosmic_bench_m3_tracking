@@ -28,9 +28,9 @@ SOFLAGS       = -shared -fPIC
 
 all: exec
 
-exec: tracking absorptionMap MultiCluster testCapa DataReader
+exec: tracking absorptionMap MultiCluster testCapa DataReader live
 
-execDict: trackingDict absorptionMapDict MultiClusterDict testCapaDict
+execDict: trackingDict absorptionMapDict MultiClusterDict testCapaDict liveDict
 
 lib: libAnalyse.so
 
@@ -52,6 +52,9 @@ MultiCluster: MultiCluster.o signal.o detector.o event.o cluster.o Tanalyse.o ra
 testCapa: testCapa.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
+live: live.o liveDisplay.o datareader.o header.o dataline.o detector.o event.o cluster.o ray.o point.o
+	$(LD) $^ -o $@ $(LDFLAGS)
+
 absorptionMapDict: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
@@ -64,6 +67,9 @@ MultiClusterDict: MultiCluster.o signal.o detector.o event.o cluster.o Tanalyse.
 testCapaDict: testCapa.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
+liveDict: live.o liveDisplay.o datareader.o header.o dataline.o detector.o event.o cluster.o ray.o point.o MyDict.o
+	$(LD) $^ -o $@ $(LDFLAGS)
+
 libAnalyse.so: analyse.o T.o event.o ray.o cluster.o detector.o point.o Tanalyse.o Tsignal.o signal.o MyDict.o
 	$(CXX) $(SOFLAGS) $(LDFLAGS) -o $@ $^ 
 
@@ -71,4 +77,4 @@ MyDict.cpp: analyse.h T.h event.h ray.h cluster.h detector.h point.h Tanalyse.h 
 	rootcint -f $@ -c $(CXXFLAGS) -p $^
 
 clean:
-	rm -f *.o *.so *Dict* *dict* Linkdef absorptionMap tracking MultiCluster acceptanceFunction DataReader
+	rm -f *.o *.so *Dict* *dict* Linkdef absorptionMap tracking MultiCluster acceptanceFunction DataReader live

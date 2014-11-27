@@ -4,8 +4,11 @@ absorptionMap
 tracking
 MultiCluster
 DataReader
+live
 Linkdef
 *.[oa]
+*.C
+*.cxx
 *.txt
 *.png
 *.root

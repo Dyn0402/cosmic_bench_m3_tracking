@@ -578,7 +578,7 @@ void DreamDataReader::read_file(string file_name,int evn_offset){
 	cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << evNinFile + evn_offset - global_offset << ")" << endl;
 	iFile.close();
 }
-map<string,vector<vector<vector<double> > > > DreamDataReader::read_event(ifstream file,int event_nb, bool fill_tree){
+map<string,vector<vector<vector<double> > > > DreamDataReader::read_event(ifstream * file,int event_nb, bool fill_tree){
 	map<string,vector<vector<vector<double> > > > event_ampl;
 	return event_ampl;
 }
@@ -717,7 +717,7 @@ void FeminosDataReader::read_file(string file_name,int evn_offset){
 	iFile.close();
 }
 
-map<string,vector<vector<vector<double> > > > FeminosDataReader::read_event(ifstream file,int event_nb, bool fill_tree){
+map<string,vector<vector<vector<double> > > > FeminosDataReader::read_event(ifstream * file,int event_nb, bool fill_tree){
 	int card=0;
 	int chip=0;
 	int channel=0;
@@ -729,27 +729,27 @@ map<string,vector<vector<vector<double> > > > FeminosDataReader::read_event(ifst
 	bool inFrame = false;
 	int event_started = 0;
 	DataLineFeminos current_data;
-	iFile.read((char*)&current_data,sizeof(current_data));
+	file->read((char*)&current_data,sizeof(current_data));
 	bool event_complete = false;
-	while(iFile.good() && !(((evNinFile + evn_offset - global_offset)>max_event)*(max_event>0))){
+	map<string,vector<vector<vector<double> > > > event_ampl;
+	while(file->good()){
 
 
 		if(inEvent){
 			if(inFrame){
 				if(current_data.is_event_start()){
 					event_started++;
-					iFile.ignore(3*sizeof(current_data)); //contain timestamp
+					file->ignore(3*sizeof(current_data)); //contain timestamp
 					int current_event;
-					iFile.read((char*)&current_event,sizeof(current_event));
+					file->read((char*)&current_event,sizeof(current_event));
 					if(current_event != event_nb){
 						cout << "warning : event numbers does not match" << endl;
 						cout << current_event << " " << event_nb << endl;
-						return;
 					}
 				}
 				else if(current_data.is_end_of_event()){
 					event_started--;
-					iFile.ignore(sizeof(current_data)); //contain eventsize
+					file->ignore(sizeof(current_data)); //contain eventsize
 				}
 				else if(current_data.is_end_of_frame()){
 					inFrame = false;
@@ -781,7 +781,7 @@ map<string,vector<vector<vector<double> > > > FeminosDataReader::read_event(ifst
 			else if(current_data.is_end_of_built_event()){
 				if(event_started != 0){
 					cout << "problem in fem number" << endl;
-					return;
+					return event_ampl;
 				}
 				inEvent = false;
 				event_complete = true;
@@ -802,22 +802,21 @@ map<string,vector<vector<vector<double> > > > FeminosDataReader::read_event(ifst
 			detN=0;
 			event_started = 0;
 		}
-		iFile.read((char*)&current_data,sizeof(current_data));
+		file->read((char*)&current_data,sizeof(current_data));
 	}
-	map<string,vector<vector<vector<double> > > > event_ampl;
 	if(!event_complete) return event_ampl;
 	Nevent = event_nb;
 	if(fill_tree && !exists) Fill();
 	vector<vector<vector<double> > > MG_Ampl(MG_N,vector<vector<double> >(Nstrip_MG,vector<double>(Nsample,0)));
 	vector<vector<vector<double> > > CM_Ampl(CM_N,vector<vector<double> >(Nstrip_CM,vector<double>(Nsample,0)));
-	for(int i=0;i<MG_N;i++){
+	for(unsigned int i=0;i<MG_N;i++){
 		for(int j=0;j<Nstrip_MG;j++){
 			for(int k=0;k<Nsample;k++){
 				MG_Ampl[i][j][k] = StripAmpl_MG[i][j][k];
 			}
 		}
 	}
-	for(int i=0;i<CM_N;i++){
+	for(unsigned int i=0;i<CM_N;i++){
 		for(int j=0;j<Nstrip_CM;j++){
 			for(int k=0;k<Nsample;k++){
 				CM_Ampl[i][j][k] = StripAmpl_CM[i][j][k];
