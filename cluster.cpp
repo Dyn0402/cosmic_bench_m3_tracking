@@ -246,6 +246,17 @@ bool CM_Cluster::is_suitable(T * treeObject,int number_,CM_Detector * detector, 
 	}
 	return true;
 }
+bool CM_Cluster::is_suitable(CM_Detector * detector){
+	if(!is_in_det(detector)) return false;
+	if(pos>1023 || pos<0) return false;
+	if(!(detector->test_ClusTOT(TOT))) return false;
+	if(!(detector->test_ClusMaxSample(maxSample))) return false;
+	if(pos>31){
+		if(!(detector->test_ClusMaxStripAmpl_Wide(maxStripAmpl))) return false;
+		if(!(detector->test_ClusSize_Wide(size))) return false;
+	}
+	return true;
+}
 bool CM_Cluster::is_in_det(Detector * det) const{
 	if(det->get_type() != "CM") return false;
 	return ((dynamic_cast<CM_Detector*>(det))->get_cm_n_in_tree() == cm_n_in_tree);

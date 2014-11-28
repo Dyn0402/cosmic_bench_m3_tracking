@@ -76,6 +76,7 @@ class CM_Cluster: public Cluster{
 		CM_Cluster(CM_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~CM_Cluster();
 		static bool is_suitable(T * treeObject,int number_,CM_Detector * detector, int entry = -1);
+		bool is_suitable(CM_Detector * detector);
 		bool is_in_det(Detector * det) const;
 		string get_strip_type() const;
 		virtual double get_pos_mm() const;
