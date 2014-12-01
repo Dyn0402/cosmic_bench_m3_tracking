@@ -280,9 +280,9 @@ map<int,TProfile*> Signal::SignalOverNoise(){
 				vector<MG_Cluster> current_cluster = current_event.get_clusters();
 				for(vector<MG_Cluster>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
 					double current_signal = jt->get_maxStripAmpl();
-					double current_noise = current_det->get_RMS(MG_Detector::StripToChannel(jt->get_maxStrip()));
+					double current_noise = current_det->get_RMS(MG_Detector::StripToChannel[jt->get_maxStrip()]);
 					global_signal[current_det->get_mg_n_in_tree()]->Fill(current_signal);
-					global_signal_over_noise[current_det->get_mg_n_in_tree()]->Fill(MG_Detector::StripToChannel(jt->get_maxStrip()),current_signal/current_noise);
+					global_signal_over_noise[current_det->get_mg_n_in_tree()]->Fill(MG_Detector::StripToChannel[jt->get_maxStrip()],current_signal/current_noise);
 				}
 			}
 		}

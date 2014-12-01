@@ -1403,13 +1403,13 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 							//double matching_position = matching_cluster->get_pos_mm();
 							/*
 							for(int strip_nb = matching_cluster->get_pos()-1;strip_nb<(matching_cluster->get_pos()+2);strip_nb++){
-								int channel = MG_Detector::StripToChannel(strip_nb);
+								int channel = MG_Detector::StripToChannel[strip_nb];
 								double current_max_ampl = *max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32);
 								if(current_max_ampl>normalization) normalization = current_max_ampl;
 							}
 							*/
 							for(int strip_nb=0;strip_nb<1024;strip_nb++){
-								int channel = MG_Detector::StripToChannel(strip_nb);
+								int channel = MG_Detector::StripToChannel[strip_nb];
 								if(Abs(residu)<50.){
 									SRH->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
 									if(bin_nb>0) SRH_coord[Min(Max(FloorNint(matching_position_perp*bin_nb/500.),0),bin_nb-1)]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
