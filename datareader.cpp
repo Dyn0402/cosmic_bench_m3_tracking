@@ -479,6 +479,9 @@ void DataReader::compute_RMSPed(){
 DreamDataReader::DreamDataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_): DataReader(baseFileName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_){
 	DAQType = "Dream";
 }
+DreamDataReader::DreamDataReader(string signalName, string pedName, string RMSName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_): DataReader(signalName,pedName,RMSName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_){
+	DAQType = "Dream";
+}
 DreamDataReader::~DreamDataReader(){
 
 }
@@ -605,6 +608,9 @@ map<string,vector<vector<vector<double> > > > DreamDataReader::read_event(ifstre
 	return event_ampl;
 }
 FeminosDataReader::FeminosDataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_): DataReader(baseFileName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_){
+	DAQType = "Feminos";
+}
+FeminosDataReader::FeminosDataReader(string signalName, string pedName, string RMSName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_): DataReader(signalName,pedName,RMSName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_){
 	DAQType = "Feminos";
 }
 FeminosDataReader::~FeminosDataReader(){

@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 #include <fstream>
+#include <iostream>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -15,6 +16,8 @@ using std::ostringstream;
 using std::setw;
 using std::setfill;
 using std::ifstream;
+using std::cout;
+using std::endl;
 
 using boost::property_tree::ptree;
 
@@ -55,20 +58,20 @@ int main(int argc, char ** argv){
 	int max_event = config_tree.get<int>("max_event");
 	ifstream file;
 	file.open(signalName.c_str(),ifstream::in);
-	bool exists = f.good();
+	bool exists = file.good();
 	file.close();
 	file.open(PedName.c_str(),ifstream::in);
-	bool ped_done = f.good();
+	bool ped_done = file.good();
 	file.close();
 	file.open(RMSName.c_str(),ifstream::in);
-	bool compute_rms = !(f.good());
+	bool compute_rms = !(file.good());
 	file.close();
 	DataReader * blah = NULL;
 	if(electronic_type == "dream"){
-		blah = new DreamDataReader(signalName,PedName,RMSName,exists,exists,exists,max_event);
+		blah = new DreamDataReader(signalName,PedName,RMSName,det_type_by_asic,det_n_by_asic,exists,exists,exists,max_event);
 	}
 	else if(electronic_type == "feminos"){
-		blah = new FeminosDataReader(signalName,PedName,RMSName,exists,exists,exists,max_event);
+		blah = new FeminosDataReader(signalName,PedName,RMSName,det_type_by_asic,det_n_by_asic,exists,exists,exists,max_event);
 	}
 	else{
 		cout << "electronic type : " << electronic_type << " unknown !" << endl;

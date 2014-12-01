@@ -70,6 +70,7 @@ class DataReader{
 class DreamDataReader: public DataReader{
 	public:
 		DreamDataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
+		DreamDataReader(string signalName, string pedName, string RMSName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
 		~DreamDataReader();
 		void process();
 		map<string,vector<vector<vector<double> > > > read_event(ifstream * file,int event_nb, bool fill_tree = true);
@@ -81,6 +82,7 @@ class DreamDataReader: public DataReader{
 class FeminosDataReader: public DataReader{
 	public:
 		FeminosDataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
+		FeminosDataReader(string signalName, string pedName, string RMSName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
 		~FeminosDataReader();
 		void process();
 		map<string,vector<vector<vector<double> > > > read_event(ifstream * file,int event_nb, bool fill_tree = true);
