@@ -16,6 +16,7 @@ using std::ifstream;
 class DataReader{
 	public:
 		DataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
+		DataReader(string signalName, string pedName, string RMSName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
 		virtual ~DataReader();
 		void add_file_to_process(string inFileName);
 		virtual void process() = 0;
@@ -61,6 +62,8 @@ class DataReader{
 		int max_event;
 		int global_offset;
 		TBranch * dumb_branch;
+	private:
+		void Init(string signalName, string pedName, string RMSName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_=false,bool ped_done_=false,bool cns_done_=false, int max_event_ = -1);
 
 };
 

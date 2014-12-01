@@ -37,6 +37,16 @@ using TMath::Min;
 //const int DataReader::Nstrip_CM = 64;
 
 DataReader::DataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_){
+	string signalName = baseFileName + "_signal.root";
+	string pedName = baseFileName + "_Ped.dat";
+	string RMSName = baseFileName + "_RMSPed.dat";
+	Init(signalName, pedName, RMSName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_);
+}
+DataReader::DataReader(string signalName, string pedName, string RMSName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_){
+	Init(signalName, pedName, RMSName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_);
+}
+
+void DataReader::Init(string signalName, string pedName, string RMSName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_){
 	exists = exists_;
 	ped_done = ped_done_;
 	cns_done = cns_done_;
@@ -72,9 +82,9 @@ DataReader::DataReader(string baseFileName, map<int,string> det_type_by_asic_, m
 		StripAmpl_CM_corr = new float[CM_N][Nstrip_CM][Nsample];
 		Pedestal_CM = new float[CM_N][Nstrip_CM];
 	}
-	outFileName = baseFileName + "_signal.root";
-	PedFileName = baseFileName + "_Ped.dat";
-	RMSPedFileName = baseFileName + "_RMSPed.dat";
+	outFileName = signalName;
+	PedFileName = pedName;
+	RMSPedFileName = RMSName;
 	string fileOption = (exists) ? "UPDATE" : "RECREATE";
 	outFile = new TFile(outFileName.c_str(),fileOption.c_str());
 	outTree->SetMaxTreeSize(100000000000LL);
