@@ -102,6 +102,7 @@ void Ray_2D::add_cluster(Cluster * clus){
 		else if(clus->get_type() == "MG") clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(clus)));
 	}
 }
+/*
 void Ray_2D::process(){
 	if(clusters.size()<2) return;
 	TGraph * pos = new TGraph();
@@ -128,8 +129,9 @@ void Ray_2D::process(){
 	//if(line->Eval(1398.)>600. || line->Eval(1398.)<-100. || line->Eval(27.)>600. || line->Eval(27.)<-100.) chiSquare = numeric_limits<double>::max();
 	delete pos; delete line;
 }
-/*
-void Ray_2D::process_2(){
+*/
+//This implementation is two order of magnitude faster than the one above
+void Ray_2D::process(){
 	if(clusters.size()<2) return;
 	double mean_x = 0;
 	double mean_xx = 0;
@@ -149,12 +151,12 @@ void Ray_2D::process_2(){
 	Z_intercept = mean_y - slope*mean_x;
 	double distance = 0;
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
-		distance += Abs(slope*((*it)->get_z()) - (*it)->get_pos_mm() + Z_intercept);
+		distance += (slope*((*it)->get_z()) - (*it)->get_pos_mm() + Z_intercept)*(slope*((*it)->get_z()) - (*it)->get_pos_mm() + Z_intercept);
 	}
-	distance /= Sqrt(1+slope*slope);
+	distance /= (1+slope*slope);
 	chiSquare = distance;
 }
-*/
+
 double Ray_2D::get_chiSquare() const{
 	return chiSquare;
 }
