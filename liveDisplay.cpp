@@ -215,7 +215,7 @@ unsigned int liveDisplay::read_inotify(){
 void liveDisplay::flux_map(double z){
 	gStyle->SetPalette(55,0);
 	TCanvas * cDisplay = new TCanvas();
-	int bin_n = 1000;
+	int bin_n = 100;
 	double margin = 200;
 	double x_min = 0;
 	double x_max = 500;
@@ -232,6 +232,7 @@ void liveDisplay::flux_map(double z){
 	int processed = 0;
 	clock_t last_time = clock();
 	TH2D * flux_map = new TH2D("flux_map","flux_map",bin_n,x_min-margin,x_max+margin,bin_n,y_min-margin,y_max+margin);
+	flux_map->SetStats(0);
 	DataReader * current_data_reader = NULL;
 	int event_nb = 0;
 	if(electronic_type == "feminos"){

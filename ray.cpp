@@ -108,23 +108,15 @@ void Ray_2D::process(){
 	double maxZ = numeric_limits<double>::min();
 	double minZ = numeric_limits<double>::max();
 	int i =0;
-	bool has_up = false;
-	bool has_down = false;
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
 		if((*it)->get_z()>maxZ) maxZ = (*it)->get_z();
 		if((*it)->get_z()<minZ) minZ = (*it)->get_z();
 		pos->SetPoint(i,(*it)->get_z(),(*it)->get_pos_mm());
 		i++;
-		if((*it)->get_is_up()) has_up = true;
-		else has_down = true;
-	}
-	if(!(has_up && has_down)){
-		delete pos;
-		return;
 	}
 	pos->Sort();
-	//TF1 * line = new TF1("line","pol1",minZ-10,maxZ+10);
-	TF1 * line = new TF1("line","[0] + [1]*x",minZ-10,maxZ+10);
+	TF1 * line = new TF1("line","pol1(0)",minZ-10,maxZ+10);
+	//TF1 * line = new TF1("line","[0] + [1]*x",minZ-10,maxZ+10);
 	double maxSlope = 500./(maxZ-minZ);
 	line->SetParameters(250,0);
 	line->SetParLimits(0,0,500);
@@ -133,9 +125,36 @@ void Ray_2D::process(){
 	chiSquare = line->GetChisquare();
 	Z_intercept = line->GetParameter(0);
 	slope = line->GetParameter(1);
-	if(line->Eval(1398.)>600. || line->Eval(1398.)<-100. || line->Eval(27.)>600. || line->Eval(27.)<-100.) chiSquare = numeric_limits<double>::max();
+	//if(line->Eval(1398.)>600. || line->Eval(1398.)<-100. || line->Eval(27.)>600. || line->Eval(27.)<-100.) chiSquare = numeric_limits<double>::max();
 	delete pos; delete line;
 }
+/*
+void Ray_2D::process_2(){
+	if(clusters.size()<2) return;
+	double mean_x = 0;
+	double mean_xx = 0;
+	double mean_y = 0;
+	double mean_xy = 0;
+	int i = clusters.size();
+	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
+		mean_x += (*it)->get_z();
+		mean_y +=  (*it)->get_pos_mm();
+		mean_xy += ((*it)->get_z())*((*it)->get_pos_mm());
+		mean_xx += ((*it)->get_z())*((*it)->get_z());
+	}
+	mean_x /= i;
+	mean_y /= i;
+	mean_xy /= i;
+	slope = (mean_xy - mean_x*mean_y)/(mean_xx - mean_x*mean_x);
+	Z_intercept = mean_y - slope*mean_x;
+	double distance = 0;
+	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
+		distance += Abs(slope*((*it)->get_z()) - (*it)->get_pos_mm() + Z_intercept);
+	}
+	distance /= Sqrt(1+slope*slope);
+	chiSquare = distance;
+}
+*/
 double Ray_2D::get_chiSquare() const{
 	return chiSquare;
 }
