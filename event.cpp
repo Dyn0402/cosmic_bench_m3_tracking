@@ -1037,7 +1037,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(){
 					if(sizes[it->first][kt->first]<1){
 						//b = false;
 						(it->second).erase((it->second).find(kt->first));
-						sizes[it->first].erase(sizes[it->first].find(kt->first))
+						sizes[it->first].erase(sizes[it->first].find(kt->first));
 					}
 				}
 			}
