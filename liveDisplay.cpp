@@ -154,6 +154,7 @@ liveDisplay::liveDisplay(string config_file, int max_event_){
 	}
 	pedFile.close();
 	max_file_size = config_tree.get<long>("max_file_size");
+	add_files(config_tree.get<int>("data_file_first"),config_tree.get<int>("data_file_last"));
 }
 
 void liveDisplay::add_file(string filename){
