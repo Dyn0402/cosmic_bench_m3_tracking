@@ -60,12 +60,12 @@ void DataReader::Init(string signalName, string pedName, string RMSName, map<int
 		cout << "problem in detector caracs" << endl;
 		return;
 	}
-	for(unsigned int i=0;i<det_n_by_asic.size();i++){
-		if(det_n_by_asic[i]>=0){
-			if(det_type_by_asic[i] == "MG") MG_N++;
-			else if(det_type_by_asic[i] == "CM") CM_N++;
+	for(map<int,string>::iterator it=det_type_by_asic.begin();it!=det_type_by_asic.end();++it){
+		if(det_n_by_asic[it->first]>=0){
+			if(it->second == "MG") MG_N++;
+			else if(it->second == "CM") CM_N++;
 			else{
-				cout << "detector type unknown : " << det_type_by_asic[i] << endl;
+				cout << "detector type unknown : " << it->second << endl;
 				return;
 			}
 		}
