@@ -609,7 +609,6 @@ void DreamDataReader::read_file_2(string file_name,int evn_offset){
 		cout << "file : " << file_name << " can't be opened" << endl;
 		return;
 	}
-	HeaderC current_header;
 	int evNinFile = 0;
 	// Loop on event
 	int isample=-1; int isample_prev=-2;
@@ -716,7 +715,7 @@ void DreamDataReader::read_file_2(string file_name,int evn_offset){
 				FeuN=0;
 				FeuHeaderLine=0;
 				zs_mode = false;
-				if(isample == Nsample){
+				if(isample == (Nsample-1)){
 					Nevent = evNinFile+evn_offset;
 					if((evNinFile%100) == 0) cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << evNinFile + evn_offset - global_offset << ")" << flush;
 					evNinFile++;
