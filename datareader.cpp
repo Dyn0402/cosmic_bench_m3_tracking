@@ -509,106 +509,6 @@ void DreamDataReader::read_file(string file_name,int evn_offset){
 		cout << "file : " << file_name << " can't be opened" << endl;
 		return;
 	}
-	HeaderC current_header;
-	int evNinFile = 0;
-	// Loop on event
-	int isample=-1; int isample_prev=-2;
-	int ichannel=0;
-	int asicN=0;
-	int detN=0;
-	int channelN=0;
-	DataLineDream current_data;
-	while(iFile.good() && evNinFile<26000 && !(((evNinFile + evn_offset - global_offset)>max_event)*(max_event>0))){
-		reset_tree_leaf();
-		isample=-1; isample_prev=-2;
-		while(isample<Nsample-1 && isample==isample_prev+1){
-			iFile.ignore(2);
-			if(iFile.read((char*)&current_header,sizeof(current_header)).good()){
-				current_header.ntohs_();
-				isample_prev = isample;
-				isample = current_header.get_sampleIndex();
-				if(isample!=isample_prev+1){
-					cout << "problem in sample index" << endl;
-					return;
-				}
-				if(!current_header.check_type()){
-					cout << "problem with header type" << endl;
-					return;
-				}
-				if(is_first){
-					cout << "INFO: pedestal mode is: " << current_header.get_ped_mode() << endl;
-					cout << "INFO: common noise mode is: " << current_header.get_cms_mode() << endl;
-					cout << "INFO: zero suppress mode is: " << current_header.get_zs_mode() << endl;
-					is_first = false;
-				}
-				ichannel=0;
-				asicN=0;
-				detN=0;
-				channelN=0;
-				current_data.data = 0;
-				iFile.read((char*)&current_data,sizeof(current_data));
-				current_data.ntohs_();
-				while(!(current_data.is_final_trailer())){
-					if(current_data.is_first_line()){
-						iFile.ignore(2*sizeof(current_data));
-						iFile.read((char*)&current_data,sizeof(current_data));
-						current_data.ntohs_();
-						asicN = current_data.get_dream_ID();
-						detN = det_n_by_asic[asicN];
-					}
-					if(current_data.is_channel_ID() && current_header.get_zs_mode()){
-						ichannel = current_data.get_channel_ID();
-						channelN = mapping(det_type_by_asic[asicN],ichannel);
-						iFile.read((char*)&current_data,sizeof(current_data));
-						current_data.ntohs_();
-
-						if(det_type_by_asic[asicN] == "MG"){
-							if(channelN>-1 && channelN<Nstrip_MG) StripAmpl_MG[detN][channelN][isample] = current_data.get_data();
-							TsampleNum[isample] = isample;
-						}
-						else if(det_type_by_asic[asicN] == "CM"){
-							if(channelN>-1 && channelN<Nstrip_CM) StripAmpl_CM[detN][channelN][isample] = current_data.get_data();
-							TsampleNum[isample] = isample;
-						}
-					}
-					if(current_data.is_data() && !(current_header.get_zs_mode())){
-						channelN = mapping(det_type_by_asic[asicN],ichannel);
-						if(det_type_by_asic[asicN] == "MG"){
-							if(channelN>-1 && channelN<Nstrip_MG) StripAmpl_MG[detN][channelN][isample] = current_data.get_data();
-							TsampleNum[isample] = isample;
-						}
-						else if(det_type_by_asic[asicN] == "CM"){
-							if(channelN>-1 && channelN<Nstrip_CM) StripAmpl_CM[detN][channelN][isample] = current_data.get_data();
-							TsampleNum[isample] = isample;
-						}
-						ichannel++;
-						ichannel = ichannel%64;
-					}
-					iFile.read((char*)&current_data,sizeof(current_data));
-					current_data.ntohs_();
-				}
-				iFile.read((char*)&current_data,sizeof(current_data));
-				current_data.ntohs_();
-			}
-			else{
-				iFile.close();
-				break;
-			}
-		}
-		Nevent = evNinFile+evn_offset;
-		if((evNinFile%100) == 0) cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << evNinFile + evn_offset - global_offset << ")" << flush;
-		evNinFile++;
-		Fill();
-	}
-	cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << evNinFile + evn_offset - global_offset << ")" << endl;
-	iFile.close();
-}
-void DreamDataReader::read_file_2(string file_name,int evn_offset){
-	ifstream iFile(file_name.c_str(),ifstream::binary);
-	if(!iFile.is_open()){
-		cout << "file : " << file_name << " can't be opened" << endl;
-		return;
-	}
 	int evNinFile = 0;
 	// Loop on event
 	int isample=-1; int isample_prev=-2;
@@ -723,6 +623,7 @@ void DreamDataReader::read_file_2(string file_name,int evn_offset){
 					isample=-1; isample_prev=-2;
 					reset_tree_leaf();
 				}
+				iFile.ignore(sizeof(current_data));
 			}
 		}
 		iFile.read((char*)&current_data,sizeof(current_data));
@@ -732,7 +633,144 @@ void DreamDataReader::read_file_2(string file_name,int evn_offset){
 	iFile.close();
 }
 map<string,vector<vector<vector<double> > > > DreamDataReader::read_event(ifstream * file,int event_nb, bool fill_tree){
+	int isample=-1; int isample_prev=-2;
+	int isample_nb=0;
+	int ichannel=0;
+	int asicN=0;
+	int det=0;
+	int detN=0;
+	int channelN=0;
+	int FeuN=0;
+	int FeuHeaderLine=0;
+	int DataHeaderLine=0;
+	bool zs_mode = false;
+	bool got_channel_id=false;
+	bool event_complete = false;
+	reset_tree_leaf();
+	DataLineDream current_data;
+	file->read((char*)&current_data,sizeof(current_data));
+	current_data.ntohs_();
+	while(file->good()){
+		if(FeuHeaderLine<4 && current_data.is_Feu_header()){
+			if(FeuHeaderLine==0){
+				zs_mode = current_data.get_zs_mode();
+				FeuN = current_data.get_Feu_ID();
+			}
+			else if(FeuHeaderLine==3){
+				isample_prev = isample;
+				isample = current_data.get_sample_ID();
+				if(isample!=isample_prev+1){
+					cout << "problem in sample index" << endl;
+					break;
+				}
+			}
+			FeuHeaderLine++;
+		}
+		else if(FeuHeaderLine>3 && current_data.is_Feu_header()){
+			cout << "problem in Feu header" << endl;
+			break;
+		}
+		else if(FeuHeaderLine>3){
+			if(DataHeaderLine<4 && current_data.is_data_header()){
+				asicN = current_data.get_dream_ID();
+				det = FeuN*8 + asicN;
+				detN = det_n_by_asic[det];
+				DataHeaderLine++;
+			}
+			else if(DataHeaderLine>3 && current_data.is_data_header()){
+				cout << "problem in data header" << endl;
+				break;
+			}
+			else if(DataHeaderLine>3){
+				if(current_data.is_data() && !zs_mode){
+					channelN = mapping(det_type_by_asic[det],ichannel);
+					if(det_type_by_asic[det] == "MG"){
+						if(channelN>-1 && channelN<Nstrip_MG) StripAmpl_MG[detN][channelN][isample] = current_data.get_data();
+					}
+					else if(det_type_by_asic[det] == "CM"){
+						if(channelN>-1 && channelN<Nstrip_CM) StripAmpl_CM[detN][channelN][isample] = current_data.get_data();
+					}
+					ichannel++;
+				}
+				else if(current_data.is_data_zs() && zs_mode){
+					if(!got_channel_id){
+						ichannel = current_data.get_channel_ID();
+						channelN = mapping(det_type_by_asic[asicN],ichannel);
+						got_channel_id = true;
+					}
+					else{
+						if(det_type_by_asic[det] == "MG"){
+							if(channelN>-1 && channelN<Nstrip_MG) StripAmpl_MG[detN][channelN][isample] = current_data.get_data();
+						}
+						else if(det_type_by_asic[det] == "CM"){
+							if(channelN>-1 && channelN<Nstrip_CM) StripAmpl_CM[detN][channelN][isample] = current_data.get_data();
+						}
+						got_channel_id = false;
+					}
+				}
+				else if(current_data.is_data_trailer()){
+					if(ichannel!=64 && !zs_mode){
+						cout << "problem in channel number" << endl;
+						break;
+					}
+					if(got_channel_id){
+						cout << "problem in ZS data" << endl;
+						break;
+					}
+					ichannel=0;
+					asicN=0;
+					det=0;
+					detN=0;
+					channelN=0;
+					DataHeaderLine=0;
+				}
+			}
+			else if(current_data.is_final_trailer()){
+				if(ichannel!=0){
+					cout << "problem in channel number" << endl;
+					break;
+				}
+				if(got_channel_id){
+					cout << "problem in ZS data" << endl;
+					break;
+				}
+				isample_nb++;
+				FeuN=0;
+				FeuHeaderLine=0;
+				zs_mode = false;
+				if(isample == (Nsample-1)){
+					isample=-1; isample_prev=-2;
+					event_complete = true;
+					break;
+				}
+				file->ignore(sizeof(current_data));
+			}
+		}
+		file->read((char*)&current_data,sizeof(current_data));
+		current_data.ntohs_();	
+	}
 	map<string,vector<vector<vector<double> > > > event_ampl;
+	if(!event_complete) return event_ampl;
+	Nevent = event_nb;
+	if(fill_tree && !exists) Fill();
+	vector<vector<vector<double> > > MG_Ampl(MG_N,vector<vector<double> >(Nstrip_MG,vector<double>(Nsample,0)));
+	vector<vector<vector<double> > > CM_Ampl(CM_N,vector<vector<double> >(Nstrip_CM,vector<double>(Nsample,0)));
+	for(unsigned int i=0;i<MG_N;i++){
+		for(int j=0;j<Nstrip_MG;j++){
+			for(int k=0;k<Nsample;k++){
+				MG_Ampl[i][j][k] = StripAmpl_MG[i][j][k];
+			}
+		}
+	}
+	for(unsigned int i=0;i<CM_N;i++){
+		for(int j=0;j<Nstrip_CM;j++){
+			for(int k=0;k<Nsample;k++){
+				CM_Ampl[i][j][k] = StripAmpl_CM[i][j][k];
+			}
+		}
+	}
+	event_ampl["MG"] = MG_Ampl;
+	event_ampl["CM"] = CM_Ampl;
 	return event_ampl;
 }
 FeminosDataReader::FeminosDataReader(string baseFileName, map<int,string> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, int max_event_): DataReader(baseFileName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_){
