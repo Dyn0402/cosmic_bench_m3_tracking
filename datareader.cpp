@@ -738,12 +738,12 @@ map<string,vector<vector<vector<double> > > > DreamDataReader::read_event(ifstre
 				FeuN=0;
 				FeuHeaderLine=0;
 				zs_mode = false;
+				file->ignore(sizeof(current_data));
 				if(isample == (Nsample-1)){
 					isample=-1; isample_prev=-2;
 					event_complete = true;
 					break;
 				}
-				file->ignore(sizeof(current_data));
 			}
 		}
 		file->read((char*)&current_data,sizeof(current_data));
