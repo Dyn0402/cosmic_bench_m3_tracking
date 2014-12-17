@@ -1728,3 +1728,31 @@ void Analyse::EventDisplay(int event_nb){
 	c_visu->Update();
 	*/
 }
+
+void Analyse::Correlation(){
+	TCanvas * cDisplay = new TCanvas();
+	cDisplay->Divide(2);
+	TH2D * correlation_X_ampl = new TH2D("correlation_X_ampl","correlation_X_ampl",1000,0,4000,1000,0,4000);
+	TH2D * correlation_X_t = new TH2D("correlation_X_t","correlation_X_t",1000,-1000,1000,1000,-1000,1000);
+	TH2D * correlation_Y_ampl = new TH2D("correlation_Y_ampl","correlation_Y_ampl",1000,0,4000,1000,0,4000);
+	TH2D * correlation_Y_t = new TH2D("correlation_Y_t","correlation_Y_t",1000,-1000,1000,1000,-1000,1000);
+	if (fChain == 0) return;
+	Long64_t nentries = fChain->GetEntriesFast();
+	for (Long64_t jentry=0; jentry<nentries;jentry++){
+		Long64_t ientry = LoadTree(jentry);
+		if (ientry < 0) break;
+		fChain->GetEntry(jentry);
+		CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,this,false,-1);
+		bool is_single_event = true;
+		for(vector<Detector*>::iterator it=detectors.begin();it!=detectors.end();++it){
+			if(CBEvent->get_clus_N_by_det(*it)>1) is_single_event = false;
+		}
+		if(is_single_event){
+			
+		}
+
+		delete CBEvent;
+
+
+	}
+}
