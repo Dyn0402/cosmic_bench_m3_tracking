@@ -1731,28 +1731,89 @@ void Analyse::EventDisplay(int event_nb){
 
 void Analyse::Correlation(){
 	TCanvas * cDisplay = new TCanvas();
-	cDisplay->Divide(2);
+	cDisplay->Divide(4);
 	TH2D * correlation_X_ampl = new TH2D("correlation_X_ampl","correlation_X_ampl",1000,0,4000,1000,0,4000);
 	TH2D * correlation_X_t = new TH2D("correlation_X_t","correlation_X_t",1000,-1000,1000,1000,-1000,1000);
 	TH2D * correlation_Y_ampl = new TH2D("correlation_Y_ampl","correlation_Y_ampl",1000,0,4000,1000,0,4000);
 	TH2D * correlation_Y_t = new TH2D("correlation_Y_t","correlation_Y_t",1000,-1000,1000,1000,-1000,1000);
 	if (fChain == 0) return;
 	Long64_t nentries = fChain->GetEntriesFast();
+	int eventSuitable = 0;
+	cout << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
 	for (Long64_t jentry=0; jentry<nentries;jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
 		CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,this,false,-1);
+		eventSuitable+=CBEvent->get_clus_N()/(CM_N+MG_N);
 		bool is_single_event = true;
 		for(vector<Detector*>::iterator it=detectors.begin();it!=detectors.end();++it){
 			if(CBEvent->get_clus_N_by_det(*it)>1) is_single_event = false;
 		}
 		if(is_single_event){
-			
+			for(vector<Event*>::iterator it=(CBEvent->events).begin();it!=(CBEvent->events).end();++it){
+				double ampl_1 = 0;
+				double t_1 = 0;
+				if((*it)->get_type() == "MG"){
+					MG_Cluster current_cluster = (dynamic_cast<MG_Event*>(*it)).get_clusters().front();
+					ampl_1 = current_cluster.get_ampl();
+					t_1 = current_cluster.get_t();
+				}
+				else if((*it)->get_type() == "CM_Demux"){
+					CM_Demux_Cluster current_cluster = (dynamic_cast<CM_Demux_Event*>(*it)).get_clusters().front();
+					ampl_1 = current_cluster.get_ampl();
+					t_1 = current_cluster.get_t();
+				}
+				bool is_X = (*it)->get_is_X();
+				for(vector<Event*>::iterator jt=(it+1);jt!=(CBEvent->events).end();++jt){
+					if(is_X != (*jt)->get_is_X()) continue;
+					double ampl_2 = 0;
+					double t_2 = 0;
+					if((*it)->get_type() == "MG"){
+						MG_Cluster current_cluster = (dynamic_cast<MG_Event*>(*it)).get_clusters().front();
+						ampl_2 = current_cluster.get_ampl();
+						t_2 = current_cluster.get_t();
+					}
+					else if((*it)->get_type() == "CM_Demux"){
+						CM_Demux_Cluster current_cluster = (dynamic_cast<CM_Demux_Event*>(*it)).get_clusters().front();
+						ampl_2 = current_cluster.get_ampl();
+						t_2 = current_cluster.get_t();
+					}
+					if(is_X){
+						correlation_X_ampl->Fill(ampl_1,ampl_2);
+						correlation_X_t->Fill(t_1,t_2);
+					}
+					else{
+						correlation_Y_ampl->Fill(ampl_1,ampl_2);
+						correlation_Y_t->Fill(t_1,t_2);
+					}
+				}
+			}
 		}
-
+		if(jentry%500 == 0) cout << "\r" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
+		if(jentry%5000 == 0){
+			cDisplay->cd(1);
+			correlation_X_ampl->Draw();
+			cDisplay->cd(2);
+			correlation_Y_ampl->Draw();
+			cDisplay->cd(3);
+			correlation_X_t->Draw();
+			cDisplay->cd(4);
+			correlation_Y_t->Draw();
+			cDisplay->Modified();
+			cDisplay->Update();
+		}
 		delete CBEvent;
-
-
 	}
+	cout << "\r" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
+	cDisplay->cd(1);
+	correlation_X_ampl->Draw();
+	cDisplay->cd(2);
+	correlation_Y_ampl->Draw();
+	cDisplay->cd(3);
+	correlation_X_t->Draw();
+	cDisplay->cd(4);
+	correlation_Y_t->Draw();
+	cDisplay->Modified();
+	cDisplay->Update();
 }
