@@ -3,10 +3,12 @@
 #include "event.h"
 #include "Tanalyse.h"
 #include "ray.h"
+#include "datareader.h"
 
 #include <fstream>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <map>
 #include <utility>
 #include <sstream>
@@ -35,6 +37,8 @@ using std::flush;
 using std::map;
 using std::pair;
 using std::ostringstream;
+using std::setw;
+using std::setfill;
 
 //boost
 using boost::property_tree::ptree;
@@ -42,16 +46,24 @@ using boost::property_tree::ptree;
 Signal::Signal(string configFilePath){
 	ptree config_tree;
 	read_json(configFilePath, config_tree);
-	cout << config_tree.get<string>("signal_file") << endl;
-	cout << config_tree.get<string>("RMSPed") << endl;
+	electronic_type = config_tree.get<string>("electronic_type");
+	data_file_basename = config_tree.get<string>("data_file_basename");
+	signalName = config_tree.get<string>("signal_file");
+	PedName = config_tree.get<string>("Ped");
+	RMSName = config_tree.get<string>("RMSPed");
+	max_event = config_tree.get<int>("max_event");
+	data_file_first = config_tree.get<int>("data_file_first");
+	data_file_last = config_tree.get<int>("data_file_last");
+	cout << signalName << endl;
+	cout << RMSName << endl;
 	CM_n = 0;
 	MG_n = 0;
-	TFile *fIn = new TFile((config_tree.get<string>("signal_file")).c_str(),"READ");
+	TFile *fIn = new TFile(signalName.c_str(),"READ");
 	TTree * treeIn = (TTree*)(fIn->Get("T"));
 	int total_CM_N = config_tree.get<int>("total_CM_N");
 	int total_MG_N = config_tree.get<int>("total_MG_N");
 	ifstream in;
-	in.open((config_tree.get<string>("RMSPed")).c_str());
+	in.open(RMSName.c_str());
 	int rms_strip, det;
 	//double RMS[Nstrip_MG*total_MG_N];
 	vector<vector<double> > RMS;
@@ -79,6 +91,8 @@ Signal::Signal(string configFilePath){
 		detectors.back()->set_RMS(RMS[child.second.get<int>("cm_n")]);
 		(dynamic_cast<CM_Detector*>(detectors.back()))->set_ClusMaxStripAmplCut_Min_Wide(child.second.get<double>("ClusMaxStripAmplCut_Min_Wide"));
 		(dynamic_cast<CM_Detector*>(detectors.back()))->set_ClusSizeCut_Max_Wide(child.second.get<double>("ClusSizeCut_Max_Wide"));
+		det_type_by_asic[child.second.get<int>("asic_n")] = "CM";
+		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("cm_n");
 		CM_n++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
@@ -89,6 +103,8 @@ Signal::Signal(string configFilePath){
 		detectors.back()->set_RMS(RMS[total_CM_N+child.second.get<int>("mg_n")]);
 		(dynamic_cast<MG_Detector*>(detectors.back()))->set_ClusSizeCut_Min(child.second.get<double>("ClusSizeCut_Min"));
 		(dynamic_cast<MG_Detector*>(detectors.back()))->set_SRF(child.second.get<double>("SRF.offset"),child.second.get<double>("SRF.gauss"),child.second.get<double>("SRF.lorentz"),child.second.get<double>("SRF.ratio"));
+		det_type_by_asic[child.second.get<int>("asic_n")] = "MG";
+		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("mg_n");
 		MG_n++;
 	}
 	if((total_CM_N!=CM_n) || (total_MG_N!=MG_n)){
@@ -135,6 +151,102 @@ void Signal::MultiCluster(){
 	analyseFile->Write();
 	analyseFile->CloseFile();
 	//delete analyseFile;
+}
+
+void Signal::ElecToAnalyse(){
+	cout << "Reading Pedestal : " << PedName << endl;
+	map<string,vector<vector<float> > > Pedestal;
+	Pedestal["CM"] = vector<vector<float> >(CM_N,vector<float>(DataReader::Nstrip_CM,0));
+	Pedestal["MG"] = vector<vector<float> >(MG_N,vector<float>(DataReader::Nstrip_MG,0));
+	ifstream pedFile(PedName.c_str());
+	for(int i=0;i<CM_N;i++){
+		for(int j=0;j<DataReader::Nstrip_CM;j++){
+			pedFile >> i >> j >> Pedestal["CM"][i][j];
+		}
+	}
+	for(int i=0;i<MG_N;i++){
+		for(int j=0;j<DataReader::Nstrip_MG;j++){
+			pedFile >> i >> j >> Pedestal["MG"][i][j];
+		}
+	}
+	pedFile.close();
+	cout << "destination file : " << analyseTree << endl;
+	Tanalyse * analyseFile = new Tanalyse(analyseTree,CM_n,MG_n);
+	Nevent = 0;
+	int event_nb = 0;
+	string extension = "";
+	DataReader * current_data_reader;
+	if(electronic_type == "feminos"){
+		extension = ".aqs";
+		current_data_reader = new FeminosDataReader("tmp",det_type_by_asic,det_n_by_asic);
+		ostringstream name;
+		name << data_file_basename << setfill('0') << setw(3) << data_file_first << extension;
+		Nevent = dynamic_cast<FeminosDataReader*>(current_data_reader)->get_first_event_nb(name.str());
+	}
+	else if(electronic_type == "dream"){
+		extension = "_01.fdf";
+		current_data_reader = new DreamDataReader("tmp",det_type_by_asic,det_n_by_asic);
+	}
+	else return;
+	map<string,int> detector_div;
+	detector_div["CM"] = 2;
+	detector_div["MG"] = 2;
+	map<string,int> Nstrip;
+	Nstrip["CM"] = DataReader::Nstrip_CM;
+	Nstrip["MG"] = DataReader::Nstrip_MG;
+	for(int i=data_file_first;i<=data_file_last;i++){
+		int event_nb_file = 0;
+		ostringstream name;
+		name << data_file_basename << setfill('0') << setw(3) << i << extension;
+		ifstream data_file(name.str().c_str(),ifstream::binary);
+		while(data_file.good()){
+			map<string,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,Nevent);
+			if(event_ampl.size()==0) break;
+			map<string,vector<vector<float> > >::iterator ped_it = Pedestal.begin();
+			for(map<string,vector<vector<vector<double> > > >::iterator it = event_ampl.begin();it!=event_ampl.end();++it){
+				vector<vector<float> >::iterator ped_jt = (ped_it->second).begin();
+				for(vector<vector<vector<double> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+					for(int k=0;k<DataReader::Nsample;k++){
+						for(int det_div=0;det_div<detector_div[it->first];det_div++){
+							int strip_nb = Nstrip[it->first]/detector_div[it->first] + Nstrip[it->first]%detector_div[it->first];
+							int strip_offset = det_div*strip_nb;
+							vector<float> current_sample(strip_nb,0);
+							for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+								current_sample[j] = (*jt)[j+strip_offset][k] - (*ped_jt)[j+strip_offset];
+							}
+							sort(current_sample.begin(),current_sample.end());
+							float median = current_sample[strip_nb/2];
+							for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+								(*jt)[j+strip_offset][k] -= median + (*ped_jt)[j+strip_offset];
+							}
+						}
+					}
+					++ped_jt;
+				}
+				++ped_it;
+			}
+			vector<MG_Event> mg_events;
+			vector<CM_Event> cm_events;
+			for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
+				if((*it)->get_type() == "MG"){
+					MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
+					mg_events.push_back(MG_Event(*current_det,event_ampl["MG"][current_det->get_mg_n_in_tree()],use_srf,event_nb));
+					mg_events.back().MultiCluster();
+				}
+				else if((*it)->get_type() == "CM"){
+					CM_Detector * current_det = dynamic_cast<CM_Detector*>(*it);
+					cm_events.push_back(CM_Event(*current_det,event_ampl["CM"][current_det->get_cm_n_in_tree()],use_srf,event_nb));
+					cm_events.back().MultiCluster();
+				}
+			}
+			analyseFile->fillTree(Nevent,0,mg_events,cm_events);
+			Nevent++;
+			event_nb++;
+			event_nb_file++;
+			if(event_nb_file%100 == 0) cout << "\r" << "processing " << name.str() << " : " << event_nb_file << "(total : " << event_nb << ")" << flush;
+		}
+		cout << "\r" << "processing " << name.str() << " : " << event_nb_file << "(total : " << event_nb << ")" << endl;
+	}
 }
 
 void Signal::HoughTracking(int event_nb){

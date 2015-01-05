@@ -46,10 +46,10 @@ absorptionMap: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o 
 tracking: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-MultiCluster: MultiCluster.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o
+MultiCluster: MultiCluster.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o datareader.o dataline.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-testCapa: testCapa.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o
+testCapa: testCapa.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o datareader.o dataline.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
 live: live.o liveDisplay.o datareader.o header.o dataline.o detector.o event.o cluster.o ray.o point.o
@@ -61,10 +61,10 @@ absorptionMapDict: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detecto
 trackingDict: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-MultiClusterDict: MultiCluster.o signal.o detector.o event.o cluster.o Tanalyse.o Tsignal.o ray.o point.o MyDict.o
+MultiClusterDict: MultiCluster.o signal.o detector.o event.o cluster.o Tanalyse.o Tsignal.o ray.o point.o datareader.o dataline.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-testCapaDict: testCapa.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o MyDict.o
+testCapaDict: testCapa.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o datareader.o dataline.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
 liveDict: live.o liveDisplay.o datareader.o header.o dataline.o detector.o event.o cluster.o ray.o point.o MyDict.o
