@@ -28,7 +28,8 @@ int main(int argc, char ** argv){
 	string hough = "hough";
 	string SoB = "SoB";
 	if(argv[2] == multicluster){
-		blah->MultiCluster();
+		//blah->MultiCluster();
+		blah->ElecToAnalyse();
 	}
 	else if(argv[2] == SoB){
 		blah->SignalOverNoise();
