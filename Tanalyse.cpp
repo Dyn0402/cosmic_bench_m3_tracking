@@ -13,6 +13,7 @@ Tanalyse::Tanalyse(string saveFileName, int CM_n, int MG_n)
 {
    saveFile = new TFile(saveFileName.c_str(),"RECREATE");
    T = new TTree("T","event");
+   T->SetMaxTreeSize(10000000000000LL);
    CMN = CM_n;
    MGN = MG_n;
    Init();
