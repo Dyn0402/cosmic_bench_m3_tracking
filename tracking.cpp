@@ -34,6 +34,7 @@ int main(int argc, char ** argv){
 	string srf = "srf";
 	string correlation = "correlation";
 	string eventdisplay = "eventdisplay";
+	string SoN = "SoN";
 	if(argv[2] == efficacity){
 		blah->Efficacity();
 	}
@@ -91,6 +92,9 @@ int main(int argc, char ** argv){
 	}
 	else if(argv[2] == correlation){
 		blah->Correlation();
+	}
+	else if(argv[2] == SoN){
+		blah->SignalOverNoise();
 	}
 	else{
 		cout << "function not found" << endl;
