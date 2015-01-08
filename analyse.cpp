@@ -2144,7 +2144,6 @@ void Analyse::SignalOverNoise(){
 			if((*it)->get_type() == "MG"){
 				MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
 				MG_Event current_event(this,current_det,false,evn);
-				current_event.MultiCluster();
 				vector<MG_Cluster> current_cluster = current_event.get_clusters();
 				for(vector<MG_Cluster>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
 					double current_signal = jt->get_maxStripAmpl();
