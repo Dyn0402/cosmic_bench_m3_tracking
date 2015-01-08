@@ -68,6 +68,30 @@ Analyse::Analyse(string configFilePath){
 	TTree * tree = (TTree*)(f->Get("T"));
 	CM_N = 0;
 	MG_N = 0;
+	int total_CM_N = config_tree.get<int>("total_CM_N");
+	int total_MG_N = config_tree.get<int>("total_MG_N");
+	string RMSName = config_tree.get<string>("RMSPed");
+	ifstream in;
+	in.open(RMSName.c_str());
+	int rms_strip, det;
+	//double RMS[Nstrip_MG*total_MG_N];
+	vector<vector<double> > RMS;
+	vector<double> empty_vector(61,0);
+	for(int i=0;i<(total_MG_N+total_CM_N);i++){
+		RMS.push_back(empty_vector);
+	}
+	int nlines=0;
+	while (1) { // read the text file
+		int det_n = nlines/61;
+		int strip_n = nlines%61;
+		if(det_n>(total_MG_N+total_CM_N-1)) break;
+		double current_rms;
+		in >> det >> rms_strip >> current_rms;
+		RMS[det_n][strip_n] = current_rms;
+		if (!in.good()) break;
+		nlines++;
+	}
+	in.close();
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
 		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle")));
 		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
@@ -75,6 +99,7 @@ Analyse::Analyse(string configFilePath){
 		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
 		(dynamic_cast<CM_Detector*>(detectors.back()))->set_ClusMaxStripAmplCut_Min_Wide(child.second.get<double>("ClusMaxStripAmplCut_Min_Wide"));
 		(dynamic_cast<CM_Detector*>(detectors.back()))->set_ClusSizeCut_Max_Wide(child.second.get<double>("ClusSizeCut_Max_Wide"));
+		detectors.back()->set_RMS(RMS[child.second.get<int>("cm_n")]);
 		CM_N++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
@@ -82,11 +107,10 @@ Analyse::Analyse(string configFilePath){
 		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
+		detectors.back()->set_RMS(RMS[total_CM_N+child.second.get<int>("mg_n")]);
 		(dynamic_cast<MG_Detector*>(detectors.back()))->set_ClusSizeCut_Min(child.second.get<double>("ClusSizeCut_Min"));
 		MG_N++;
 	}
-	int total_CM_N = config_tree.get<int>("total_CM_N");
-	int total_MG_N = config_tree.get<int>("total_MG_N");
 	if((total_CM_N!=CM_N) || (total_MG_N!=MG_N)){
 		cout << "problem in detectors number" << endl;
 		return;
