@@ -2156,6 +2156,16 @@ void Analyse::SignalOverNoise(){
 			}
 		}
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
+		if(i%5000 == 0){
+			for(map<int,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
+				it->second->cd(1);
+				global_signal[it->first]->Draw();
+				it->second->cd(2);
+				global_noise[it->first]->Draw();
+				it->second->cd(3);
+				global_signal_over_noise[it->first]->Draw();
+			}
+		}
 	}
 	cout << "\r" << nentries << "/" << nentries << endl;
 	
