@@ -40,6 +40,7 @@ public :
    Double_t        (*MG_ClusMaxSample)[300];
    Double_t        (*MG_ClusTOT)[300];
    Double_t        (*MG_ClusT)[300];
+   Int_t           (*MG_ClusMaxStrip)[300];
    Double_t        (*MG_StripMaxAmpl)[61];
 
    // List of branches
@@ -65,6 +66,7 @@ public :
    TBranch        *b_MG_ClusMaxSample;   //!
    TBranch        *b_MG_ClusTOT;   //!
    TBranch        *b_MG_ClusT;   //!
+   TBranch        *b_MG_ClusMaxStrip;   //!
    TBranch        *b_MG_StripMaxAmpl;   //!
 
    T();

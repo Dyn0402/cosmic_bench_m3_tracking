@@ -84,6 +84,10 @@ void Tanalyse::Init()
       char leefMG_StripMaxAmpl[100];
       sprintf(leefMG_StripMaxAmpl,"MG_StripMaxAmpl[%d][%d]/D",MGN,61);
       T->Branch("MG_StripMaxAmpl", MG_StripMaxAmpl, leefMG_StripMaxAmpl);
+
+      char leefMG_ClusMaxStrip[100];
+      sprintf(leefMG_ClusMaxStrip,"MG_ClusMaxStri[%d][%d]/I",MGN,MG_MaxNClus);
+      T->Branch("MG_ClusMaxStrip", MG_ClusMaxStrip, leefMG_ClusMaxStrip);
    }
 
    if(CMN>0){
@@ -177,6 +181,7 @@ void Tanalyse::fillTree(int evn_, double evttime_, vector<MG_Event> mg_events, v
          MG_ClusSize[i][j] = current_clusters[j].get_size();
          MG_ClusMaxSample[i][j] = current_clusters[j].get_maxSample();
          MG_ClusMaxStripAmpl[i][j] = current_clusters[j].get_maxStripAmpl();
+         MG_ClusMaxStrip[i][j] = current_clusters[j].get_maxStrip();
       }
       for(int j=MG_NClus[i];j<300;j++){
          MG_ClusAmpl[i][j] = 0;
@@ -186,6 +191,7 @@ void Tanalyse::fillTree(int evn_, double evttime_, vector<MG_Event> mg_events, v
          MG_ClusSize[i][j] = -1;
          MG_ClusMaxSample[i][j] = 0;
          MG_ClusMaxStripAmpl[i][j] = 0;
+         MG_ClusMaxStrip[i][j] = 0;
       }
    }
    if(cm_events.size()!=static_cast<unsigned int>(CMN)){

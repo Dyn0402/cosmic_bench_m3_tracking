@@ -119,6 +119,8 @@ void T::Init(TTree *tree, int CM_n, int MG_n)
       fChain->SetBranchAddress("MG_ClusTOT", MG_ClusTOT, &b_MG_ClusTOT);
       MG_ClusT = new Double_t[MG_n][300];
       fChain->SetBranchAddress("MG_ClusT", MG_ClusT, &b_MG_ClusT);
+      MG_ClusMaxStrip = new Int_t[MG_n][300];
+      fChain->SetBranchAddress("MG_ClusMaxStrip", MG_ClusMaxStrip, &b_MG_ClusMaxStrip);
       MG_StripMaxAmpl = new Double_t[MG_n][61];
       fChain->SetBranchAddress("MG_StripMaxAmpl", MG_StripMaxAmpl, &b_MG_StripMaxAmpl);
    }

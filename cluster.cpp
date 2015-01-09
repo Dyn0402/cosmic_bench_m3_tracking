@@ -434,6 +434,7 @@ MG_Cluster::MG_Cluster(T * treeObject,int number_,MG_Detector * det, int entry):
 	maxSample = treeObject->MG_ClusMaxSample[mg_n_in_tree][number];
 	TOT = treeObject->MG_ClusTOT[mg_n_in_tree][number];
 	t = treeObject->MG_ClusT[mg_n_in_tree][number];
+	maxStrip = treeObject->MG_ClusMaxStrip[mg_n_in_tree][number];
 	type.clear();
 	type = "MG";
 }

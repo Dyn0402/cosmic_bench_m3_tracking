@@ -45,6 +45,7 @@ class Tanalyse{
       Double_t        (*MG_ClusMaxSample)[300];
       Double_t        (*MG_ClusTOT)[300];
       Double_t        (*MG_ClusT)[300];
+      Int_t           (*MG_ClusMaxStrip)[300];
       Double_t        (*MG_StripMaxAmpl)[61];
 
       //Tanalyse(string saveFileName);
