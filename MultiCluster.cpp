@@ -27,8 +27,11 @@ int main(int argc, char ** argv){
 	string multicluster = "multicluster";
 	string hough = "hough";
 	string SoB = "SoB";
+	string EtA = "EtA";
 	if(argv[2] == multicluster){
-		//blah->MultiCluster();
+		blah->MultiCluster();
+	}
+	if(argv[2] == EtA){
 		blah->ElecToAnalyse();
 	}
 	else if(argv[2] == SoB){

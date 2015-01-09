@@ -38,6 +38,7 @@ void Tanalyse::Init()
       MG_ClusSize = new Double_t[MGN][300];
       MG_ClusPos = new Double_t[MGN][300];
       MG_ClusMaxStripAmpl = new Double_t[MGN][300];
+      MG_ClusMaxStrip = new Int_t[MGN][300];
       MG_ClusMaxSample = new Double_t[MGN][300];
       MG_ClusTOT = new Double_t[MGN][300];
       MG_ClusT = new Double_t[MGN][300];
