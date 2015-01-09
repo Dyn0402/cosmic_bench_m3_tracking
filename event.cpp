@@ -349,8 +349,9 @@ void MG_Event::MultiCluster(){
 				current_strip.MaxAmpl = strip_ampl[i][j];
 				current_strip.MaxSample = j;
 				if(j>0 && j<31){
-					double a = 0.5*strip_ampl[i][j+1] - 2*strip_ampl[i][j] + strip_ampl[i][j-1];
-					double b = strip_ampl[i][j] - strip_ampl[i][j-1] - a*((2*j)-1);
+					double a = (0.5*strip_ampl[i][j+1]) - strip_ampl[i][j] + (0.5*strip_ampl[i][j-1]);
+					//double b = strip_ampl[i][j] - strip_ampl[i][j-1] - a*((2*j)-1);
+					double b = (0.5*(strip_ampl[i][j+1] - strip_ampl[i][j-1])) - (2*a*j);
 					current_strip.Time = -0.5*b/a;
 				}
 				else current_strip.Time = 0;
