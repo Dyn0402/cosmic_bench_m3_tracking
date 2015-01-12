@@ -382,9 +382,11 @@ void DataReader::compute_RMSPed(){
 	double Ymin=-500;
 	double Ymax=500;
 	int bin_n = 500;
-	Long64_t max_event = 500;
-	int nentries = Min(outTree->GetEntries(),max_event);
 	ofstream RMSPedFile(RMSPedFileName.c_str());
+	int sample_min = 1;
+	int sample_max = Min(Nsample,4);
+	Long64_t max_event = 5500 + 500*(sample_max-4);
+	int nentries = Min(outTree->GetEntries(),max_event);
 	if(CM_N>0){
 		outTree->SetBranchStatus("*",0);
 		outTree->SetBranchStatus("StripAmpl_CM_corr",1);
@@ -400,7 +402,7 @@ void DataReader::compute_RMSPed(){
 				outTree->LoadTree(n);
 				outTree->GetEntry(n);
 				for(int j=0;j<Nstrip_CM;j++){
-					for(int k=0;k<Nsample;k++){
+					for(int k=sample_min;k<sample_max;k++){
 						ampl_hist[j]->Fill(StripAmpl_CM_corr[i][j][k]);
 					}
 				}
@@ -417,7 +419,7 @@ void DataReader::compute_RMSPed(){
 				for(int n=0;n<nentries;n++){
 					outTree->LoadTree(n);
 					outTree->GetEntry(n);
-					for(int k=0;k<Nsample;k++){
+					for(int k=sample_min;k<sample_max;k++){
 						ampl_hist->Fill(StripAmpl_CM_corr[i][j][k]);
 					}
 				}
@@ -444,7 +446,7 @@ void DataReader::compute_RMSPed(){
 				outTree->LoadTree(n);
 				outTree->GetEntry(n);
 				for(int j=0;j<Nstrip_MG;j++){
-					for(int k=0;k<Nsample;k++){
+					for(int k=sample_min;k<sample_max;k++){
 						ampl_hist[j]->Fill(StripAmpl_MG_corr[i][j][k]);
 					}
 				}
@@ -461,7 +463,7 @@ void DataReader::compute_RMSPed(){
 				for(int n=0;n<nentries;n++){
 					outTree->LoadTree(n);
 					outTree->GetEntry(n);
-					for(int k=0;k<Nsample;k++){
+					for(int k=sample_min;k<sample_max;k++){
 						ampl_hist->Fill(StripAmpl_MG_corr[i][j][k]);
 					}
 				}
