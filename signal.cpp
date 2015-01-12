@@ -20,9 +20,11 @@
 #include <TProfile.h>
 #include <TH1D.h>
 #include <TROOT.h>
+#include <TSystem.h>
 #include <TFitResult.h>
 #include <TFitResultPtr.h>
 #include <TLine.h>
+#include <TMath.h>
 
 //Boost
 #include <boost/property_tree/ptree.hpp>
@@ -39,6 +41,9 @@ using std::pair;
 using std::ostringstream;
 using std::setw;
 using std::setfill;
+
+using TMath::CeilNint;
+using TMath::Min;
 
 //boost
 using boost::property_tree::ptree;
@@ -489,5 +494,58 @@ void Signal::SignalOverNoiseDisplay(){
 		global_signal_over_noise[it->first]->Draw();
 		average_SoN->Draw();
 		mean_SoN->Draw();
+	}
+}
+
+void Signal::EventDisplay(int evn_min, int evn_max){
+	int column_nb = CeilNint((MG_N+CM_N)/2.);
+	TCanvas * cDisplay = new TCanvas("cDisplay","cDisplay",800,600);
+	cDisplay->Divide(column_nb,2);
+	vector<TGraph*> signal_shape;
+	for(int i=0;i<((CM_N*DataReader::Nstrip_CM)+(MG_N*DataReader::Nstrip_MG));i++){
+		signal_shape.push_back(new TGraph());
+	}
+	long nentries = Min(fChain->GetEntriesFast(),static_cast<Long64_t>(evn_max));
+	if(evn_min>nentries) return;
+	for(int i=evn_min;i<nentries;i++){
+		LoadTree(i);
+		GetEntry(i);
+		for(int j=0;j<CM_N;j++){
+			for(int k=0;k<DataReader::Nstrip_CM;k++){
+				int index = k+(j*DataReader::Nstrip_CM);
+				int point_nb = 0;
+				for(int l=0;l<DataReader::Nsample;l++){
+					signal_shape[index]->SetPoint(point_nb,l,StripAmpl_CM_corr[j][k][l]);
+					point_nb++;
+				}
+				cDisplay->cd(j+1);
+				if(k==0){
+					signal_shape[index]->GetHistogram()->SetMinimum(-100);
+					signal_shape[index]->GetHistogram()->SetMaximum(1200);
+					signal_shape[index]->Draw("AL");
+				}
+				else signal_shape[index]->Draw("L");
+			}
+		}
+		for(int j=0;j<MG_N;j++){
+			for(int k=0;k<DataReader::Nstrip_MG;k++){
+				int index = k + (j*DataReader::Nstrip_MG) + (CM_N*DataReader::Nstrip_CM);
+				int point_nb = 0;
+				for(int l=0;l<DataReader::Nsample;l++){
+					signal_shape[index]->SetPoint(point_nb,l,StripAmpl_MG_corr[j][k][l]);
+					point_nb++;
+				}
+				cDisplay->cd(CM_N+j+1);
+				if(k==0){
+					signal_shape[index]->GetHistogram()->SetMinimum(-100);
+					signal_shape[index]->GetHistogram()->SetMaximum(1200);
+					signal_shape[index]->Draw("AL");
+				}
+				else signal_shape[index]->Draw("L");
+			}
+		}
+		cDisplay->Modified();
+		cDisplay->Update();
+		gSystem->Sleep(1000);
 	}
 }

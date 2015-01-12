@@ -28,6 +28,7 @@ int main(int argc, char ** argv){
 	string hough = "hough";
 	string SoB = "SoB";
 	string EtA = "EtA";
+	string display = "display";
 	if(argv[2] == multicluster){
 		blah->MultiCluster();
 	}
@@ -45,6 +46,15 @@ int main(int argc, char ** argv){
 		}
 		int event_nb = atoi(argv[3]);
 		blah->HoughTracking(event_nb);
+		theApp->Run(true);
+	}
+	else if(argv[2] == display){
+		if(argc<4){
+			cout << "you must indicate an event number" << endl;
+			return 1;
+		}
+		int event_nb = atoi(argv[3]);
+		blah->EventDisplay(0,event_nb);
 		theApp->Run(true);
 	}
 	//delete blah; delete theApp;

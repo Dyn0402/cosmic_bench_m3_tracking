@@ -17,6 +17,7 @@ class Signal: public Tsignal, public CosmicBench{
 		~Signal();
 		void MultiCluster();
 		void ElecToAnalyse();
+		void EventDisplay(int evn_min = 0, int evn_max = 20);
 		void HoughTracking(int event_nb);
 		map<int,TProfile*> SignalOverNoise();
 		void SignalOverNoiseDisplay();
