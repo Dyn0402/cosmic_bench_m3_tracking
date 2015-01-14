@@ -2164,6 +2164,8 @@ void Analyse::SignalOverNoise(){
 				global_noise[it->first]->Draw();
 				it->second->cd(3);
 				global_signal_over_noise[it->first]->Draw();
+				it->second->Modified();
+				it->second->Update();
 			}
 		}
 	}
@@ -2186,8 +2188,12 @@ void Analyse::SignalOverNoise(){
 		global_signal_over_noise[it->first]->Draw();
 		average_SoN->Draw();
 		mean_SoN->Draw();
+		it->second->Modified();
+		it->second->Update();
 		cout << "MG" << it->first << endl;
-		cout << "    mean : " << global_signal_over_noise[it->first]->GetMean(2) << " ; " << (global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()) << endl;
-		cout << "    sigma : " << global_signal_over_noise[it->first]->GetRMS() << " ; " << global_signal_over_noise[it->first]->GetRMS(2) << endl;
+		cout << "    mean S/B : " << global_signal_over_noise[it->first]->GetMean(2) << end;
+		cout << "    mean S/mean B : " << (global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()) << endl;
+		cout << "    sigma S/B : " << global_signal_over_noise[it->first]->GetRMS(2) << endl;
+		cout << "    delta mean S/B : " << global_signal_over_noise[it->first]->GetMean(11) << endl;
 	}
 }
