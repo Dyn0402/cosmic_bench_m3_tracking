@@ -2134,7 +2134,7 @@ void Analyse::SignalOverNoise(){
 			for(int i=0;i<61;i++){
 				global_noise[current_det->get_mg_n_in_tree()]->Fill(current_det->get_RMS(i));
 			}
-			global_signal_over_noise[current_det->get_mg_n_in_tree()] = new TProfile((name.str() + "S/B").c_str(),(name.str() + "S/B").c_str(),61,0,61);
+			global_signal_over_noise[current_det->get_mg_n_in_tree()] = new TProfile((name.str() + "SoB").c_str(),(name.str() + "SoB").c_str(),61,0,61);
 		}
 	}
 	long nentries = fChain->GetEntriesFast();
