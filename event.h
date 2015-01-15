@@ -60,6 +60,7 @@ class Event{
 			int MaxSample;
 			int TOT;
 			double Time;
+			bool signal_sample[32];
 		};
 };
 

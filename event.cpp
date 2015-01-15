@@ -344,6 +344,12 @@ void MG_Event::MultiCluster(){
 		current_strip.MaxSample = 0;
 		current_strip.TOT = 0;
 		current_strip.Time = 0;
+		for(int j=0;j<SampleMin;j++){
+			current_strip.signal_sample[j] = false;
+		}
+		for(int j=SampleMax;j<32;j++){
+			current_strip.signal_sample[j] = false;
+		}
 		for(int j=SampleMin;j<SampleMax;j++){
 			if(strip_ampl[i][j]>current_strip.MaxAmpl){
 				current_strip.MaxAmpl = strip_ampl[i][j];
@@ -360,7 +366,11 @@ void MG_Event::MultiCluster(){
 				*/
 				// --
 			}
-			if(strip_ampl[i][j]>(sigma*(detector.get_RMS(i)))) current_strip.TOT++;
+			if(strip_ampl[i][j]>(sigma*(detector.get_RMS(i)))){
+				current_strip.TOT++;
+				current_strip.signal_sample[j] = true;
+			}
+			else current_strip.signal_sample[j] = false;
 		}
 		// time calculation with rising edge
 		if(current_strip.TOT>2){
@@ -445,11 +455,25 @@ void MG_Event::MultiCluster(){
 		int ClusMaxStrip = -1;
 		double ClusT = 0;
 		double ClusTOT = 0;
+		double tot_ampl = 0;
+		double pos_TPC = 0;
 		for(int j = cluster_list[i].first;j<((cluster_list[i].second)+1);j++){
 			StripInfo current_strip = allChannels[MG_Detector::StripToChannel[j]];
 			double effective_ampl = current_strip.MaxAmpl/count(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel[j]);
 			ClusPos = (ClusPos*ClusAmpl + j*effective_ampl)/(ClusAmpl + effective_ampl);
 			ClusAmpl += effective_ampl;
+
+			//Micro TPC
+			/*
+			for(int k=0;k<32;k++){
+				if(!(current_strip.signal_sample[k])) continue;
+				double current_tot_ampl = strip_ampl[MG_Detector::StripToChannel[j]][k]/count(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel[j]);
+				pos_TPC = (pos_TPC*tot_ampl + j*current_tot_ampl)/(tot_ampl + current_tot_ampl);
+				tot_ampl += current_tot_ampl;
+			}
+			*/
+			// --
+
 			if(effective_ampl>ClusMaxStripAmpl){
 				ClusMaxStripAmpl = effective_ampl;
 				ClusMaxSample = current_strip.MaxSample;
