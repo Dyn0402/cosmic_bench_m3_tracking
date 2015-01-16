@@ -32,6 +32,7 @@ class Ray_2D{
 		double get_t_mean() const;
 		double get_t_sigma() const;
 		unsigned int get_clus_n() const;
+		void clear();
 	protected:
 		vector<Cluster*> clusters;
 		double chiSquare;
@@ -68,6 +69,7 @@ class Ray{
 		unsigned int get_clus_x_n() const;
 		unsigned int get_clus_y_n() const;
 		vector<Cluster*> get_clus() const;
+		void clear();
 	protected:
 		vector<Cluster*> clusters;
 		double chiSquare_X;

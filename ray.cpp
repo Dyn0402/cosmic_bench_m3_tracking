@@ -54,7 +54,7 @@ Ray_2D& Ray_2D::operator=(const Ray_2D& other){
 	chiSquare = other.chiSquare;
 	slope = other.slope;
 	Z_intercept = other.Z_intercept;
-	clusters.clear();
+	clear();
 	for(vector<Cluster*>::const_iterator it = other.clusters.begin();it!=other.clusters.end();++it){
 		if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
 		else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
@@ -82,10 +82,14 @@ Ray_2D::Ray_2D(const Ray& other, char coord_){
 		}
 	}
 }
-Ray_2D::~Ray_2D(){
+void Ray_2D::clear(){
 	for(unsigned int i=0;i<clusters.size();i++){
 		delete clusters[i];
 	}
+	clusters.clear();
+}
+Ray_2D::~Ray_2D(){
+	clear();
 	clusters.clear();
 }
 void Ray_2D::add_cluster(Cluster * clus){
@@ -285,7 +289,7 @@ Ray& Ray::operator=(const Ray& other){
 	slope_Y = other.slope_Y;
 	Z_intercept_X = other.Z_intercept_X;
 	Z_intercept_Y = other.Z_intercept_Y;
-	clusters.clear();
+	clear();
 	for(vector<Cluster*>::const_iterator it = other.clusters.begin(); it!=other.clusters.end();++it){
 		if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
 		else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
@@ -313,10 +317,14 @@ Ray::Ray(const Ray_2D& ray1, const Ray_2D& ray2){
     }
 	delete rayX; delete rayY;
 }
-Ray::~Ray(){
+void Ray::clear(){
 	for(unsigned int i=0;i<clusters.size();i++){
 		delete clusters[i];
 	}
+	clusters.clear();
+}
+Ray::~Ray(){
+	clear();
 	clusters.clear();
 }
 void Ray::add_cluster(Cluster * clus){
@@ -338,6 +346,7 @@ void Ray::process(){
 	Ray_2D * rayY = new Ray_2D(*this,'Y');
 	rayX->process();
 	rayY->process();
+	clear();
 	*this = Ray(*rayX,*rayY);
 	delete rayX; delete rayY;
 }
