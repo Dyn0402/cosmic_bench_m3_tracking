@@ -16,8 +16,8 @@ ROOTGLIBS     = $(shell root-config --glibs)
 
 # Linux with egcs
 CXX           = g++
-#CXXFLAGS      = -O2 -Wall -Wno-deprecated -fexceptions -fPIC  $(ROOTCFLAGS) -I$(MYINCLUDE) 
-CXXFLAGS      = -g -O -Wall -Wno-deprecated -fexceptions -fPIC  $(ROOTCFLAGS) -I$(MYINCLUDE)
+CXXFLAGS      = -O2 -Wall -Wno-deprecated -fexceptions -fPIC  $(ROOTCFLAGS) -I$(MYINCLUDE) 
+#CXXFLAGS      = -g -O -Wall -Wno-deprecated -fexceptions -fPIC  $(ROOTCFLAGS) -I$(MYINCLUDE)
 LD            = g++
 LIBS          = $(ROOTLIBS) -lNetx -lm -ldl -rdynamic 
 GLIBS         = $(ROOTGLIBS) -L/usr/X11R6/lib -L$(MYLIB) -lXpm -lX11 -lm -ldl -rdynamic -lpthread -lMinuit

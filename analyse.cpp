@@ -922,21 +922,43 @@ void Analyse::Efficacity(){
 	c_test->Modified();
 	c_test->Update();
 }
-TH2D * Analyse::AbsorptionFluxMap(double z, int nbins, TCanvas * c1){
+TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1){
 	int eventReconstructed = 0;
 	int eventSuitable = 0;
 	double chisquare_threshold = 100;
 
-	//gStyle->SetPalette(1);
+	gStyle->SetPalette(55,0);
 	//double z_Pb = 1553;
 	if(c1 == 0){
 		c1 = new TCanvas("fluxMap","fluxMap");
 	}
-	TH2D * fluxMapZ = new TH2D("fluxMapZ","fluxMapZ",nbins,-100,600,nbins,-100,600);
+	double z_max = numeric_limits<double>::min();
+	double z_min = numeric_limits<double>::max();
+	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+		double current_z = (*det_it)->get_z();
+		if(current_z>z_max) z_max = current_z;
+		if(current_z<z_min) z_min = current_z;
+	}
+	double x_min = 0;
+	double x_max = 500;
+	if(z>z_max){
+		x_min = -500.*(z - z_max)/(z_max - z_min);
+		x_max = 500. - x_min;
+	}
+	else if(z<z_min){
+		x_min = -500.*(z_min - z)/(z_max - z_min);
+		x_max = 500. - x_min;
+	}
+	double width = x_max - x_min;
+	x_min -= 0.05*width;
+	x_max += 0.05*width;
+
+	//if (fChain == 0) return fluxMapZ;
+	Long64_t nentries = fChain->GetEntriesFast();
+
+	TH2D * fluxMapZ = new TH2D("fluxMapZ","fluxMapZ",Sqrt(0.02*nentries),x_min,x_max,Sqrt(0.02*nentries),x_min,x_max);
 	fluxMapZ->SetStats(0);
 
-	if (fChain == 0) return fluxMapZ;
-	Long64_t nentries = fChain->GetEntriesFast();
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
 	for (Long64_t jentry=0; jentry<nentries;jentry++){
 		Long64_t ientry = LoadTree(jentry);

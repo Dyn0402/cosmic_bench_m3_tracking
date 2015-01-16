@@ -23,7 +23,7 @@ int main(int argc, char ** argv){
 	double z_Pb = 1553;
 	int nbins = 50;
 	TCanvas * cNoPb = new TCanvas("fluxMap_noPb","fluxMap_noPb");
-	TH2D * fluxMapNoPb = analyseNoPb->AbsorptionFluxMap(z_Pb, nbins, cNoPb);
+	TH2D * fluxMapNoPb = analyseNoPb->AbsorptionFluxMap(z_Pb, cNoPb);
 	fluxMapNoPb->SetTitle("fluxMapBg");
 	fluxMapNoPb->SetName("fluxMapBg");
 	cNoPb->cd();
