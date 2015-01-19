@@ -80,22 +80,28 @@ Analyse::Analyse(string configFilePath){
 	ifstream in;
 	in.open(RMSName.c_str());
 	int rms_strip, det;
-	//double RMS[Nstrip_MG*total_MG_N];
 	vector<vector<double> > RMS;
-	vector<double> empty_vector(61,0);
-	for(int i=0;i<(total_MG_N+total_CM_N);i++){
-		RMS.push_back(empty_vector);
+	for(int i=0;i<total_CM_N;i++){
+		RMS.push_back(vector<double>(CM_Detector::Nstrip,0));
 	}
-	int nlines=0;
-	while (1) { // read the text file
-		int det_n = nlines/61;
-		int strip_n = nlines%61;
-		if(det_n>(total_MG_N+total_CM_N-1)) break;
+	for(int i=0;i<total_MG_N;i++){
+		RMS.push_back(vector<double>(MG_Detector::Nstrip,0));
+	}
+	int n_lines = 0;
+	while(in.good() && n_lines<((total_CM_N*CM_Detector::Nstrip)+(total_MG_N*MG_Detector::Nstrip))){
 		double current_rms;
 		in >> det >> rms_strip >> current_rms;
-		RMS[det_n][strip_n] = current_rms;
-		if (!in.good()) break;
-		nlines++;
+		if(det<0 || det>(total_MG_N+total_CM_N-1)){
+			cout << "problem reading RMS file" << endl;
+		}
+		else if(det<total_CM_N && rms_strip>63){
+			cout << "problem reading RMS file" << endl;
+		}
+		else if(rms_strip>60){
+			cout << "problem reading RMS file" << endl;
+		}
+		RMS[det][rms_strip] = current_rms;
+		n_lines++;
 	}
 	in.close();
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
@@ -232,6 +238,7 @@ void Analyse::Residus_ref(){
 		if(!((*it)->get_is_ref())) non_ref_n++;
 	}
 	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
 	map<string,TCanvas*> c_MM;
 	map<string,TH1D*> MM_residus;
 	map<string,TH2D*> muon_seen;
@@ -928,6 +935,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1){
 	double chisquare_threshold = 100;
 
 	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
 	//double z_Pb = 1553;
 	if(c1 == 0){
 		c1 = new TCanvas("fluxMap","fluxMap");
@@ -997,6 +1005,7 @@ void Analyse::AbsorptionFluxMapNorm(double z,TH2D * background, int nbins, TCanv
 	int eventSuitable = 0;
 
 	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
 	//gStyle->SetPalette(1);
 	//double z_Pb = 1553;
 	if(c1==0) c1 = new TCanvas("fluxMap","fluxMap");
@@ -1305,6 +1314,7 @@ void Analyse::bugtest(){
 void Analyse::CalcStripResponseFunction(int bin_nb){
 
 	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
 	gStyle->SetOptFit(0111);
 
 	int det_N = CM_N + MG_N;
@@ -1335,8 +1345,8 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 		return;
 	}
 
-	float StripAmpl_MG_corr[MG_N][61][32];
-	float StripAmpl_CM_corr[CM_N][64][32];
+	float StripAmpl_MG_corr[MG_N][MG_Detector::Nstrip][Tomography::Nsample];
+	float StripAmpl_CM_corr[CM_N][CM_Detector::Nstrip][Tomography::Nsample];
 	int signal_evn;
 	signal_tree->SetBranchAddress("Nevent",&signal_evn);
 	if(CM_N>0) signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
@@ -1465,19 +1475,19 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 							/*
 							for(int strip_nb = matching_cluster->get_pos()-1;strip_nb<(matching_cluster->get_pos()+2);strip_nb++){
 								int channel = MG_Detector::StripToChannel[strip_nb];
-								double current_max_ampl = *max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32);
+								double current_max_ampl = *max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample);
 								if(current_max_ampl>normalization) normalization = current_max_ampl;
 							}
 							*/
 							for(int strip_nb=0;strip_nb<1024;strip_nb++){
 								int channel = MG_Detector::StripToChannel[strip_nb];
 								if(Abs(residu)<50.){
-									SRH->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
-									if(bin_nb>0) SRH_coord[Min(Max(FloorNint(matching_position_perp*bin_nb/500.),0),bin_nb-1)]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+									SRH->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
+									if(bin_nb>0) SRH_coord[Min(Max(FloorNint(matching_position_perp*bin_nb/500.),0),bin_nb-1)]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
 								}
-								//SRH2D[i]->SetPoint(graph_point_nb, matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+								//SRH2D[i]->SetPoint(graph_point_nb, matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
 								//graph_point_nb++;
-								SRH2D->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+32))/normalization);
+								SRH2D->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
 							}
 							current_clusters.erase(matching_cluster);
 						}
@@ -1628,8 +1638,8 @@ void Analyse::EventDisplay(int event_nb){
 		return;
 	}
 
-	float StripAmpl_MG_corr[MG_N][61][32];
-	float StripAmpl_CM_corr[CM_N][64][32];
+	float StripAmpl_MG_corr[MG_N][MG_Detector::Nstrip][Tomography::Nsample];
+	float StripAmpl_CM_corr[CM_N][CM_Detector::Nstrip][Tomography::Nsample];
 	int signal_evn;
 	signal_tree->SetBranchAddress("Nevent",&signal_evn);
 	if(CM_N>0) signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
@@ -1716,7 +1726,7 @@ void Analyse::EventDisplay(int event_nb){
 					double current_strip_pos = clus_it->correct_strip_nb(i_strip);
 					if(current_strip_pos>current_clus_pos+(1.*current_clus_size)) continue;
 					if(current_strip_pos<current_clus_pos-(1.*current_clus_size)) continue;
-					double current_ampl = *max_element(StripAmpl_MG_corr[det_n_in_tree][channel],StripAmpl_MG_corr[det_n_in_tree][channel]+32);
+					double current_ampl = *max_element(StripAmpl_MG_corr[det_n_in_tree][channel],StripAmpl_MG_corr[det_n_in_tree][channel]+Tomography::Nsample);
 					if(current_ampl>max_ampl) max_ampl = current_ampl;
 					if(current_ampl<min_ampl) min_ampl = current_ampl;
 					if(clus_it->get_is_X()){
@@ -1787,16 +1797,17 @@ void Analyse::EventDisplay(int event_nb){
 
 void Analyse::Correlation(){
 	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
 	TCanvas * cDisplay = new TCanvas();
 	cDisplay->Divide(4,3);
 	TH2D * correlation_X_ampl = new TH2D("correlation_X_ampl","correlation_X_ampl",1000,0,5000,1000,0,5000);
-	TH2D * correlation_X_t = new TH2D("correlation_X_t","correlation_X_t",100,0,32,100,0,32);
+	TH2D * correlation_X_t = new TH2D("correlation_X_t","correlation_X_t",100,0,Tomography::Nsample,100,0,Tomography::Nsample);
 	TH2D * correlation_Y_ampl = new TH2D("correlation_Y_ampl","correlation_Y_ampl",1000,0,50000,1000,0,50000);
-	TH2D * correlation_Y_t = new TH2D("correlation_Y_t","correlation_Y_t",100,0,32,100,0,32);
+	TH2D * correlation_Y_t = new TH2D("correlation_Y_t","correlation_Y_t",100,0,Tomography::Nsample,100,0,Tomography::Nsample);
 	TH1D * sigma_X_ampl = new TH1D("sigma_X_ampl","sigma_X_ampl",100,0,5000);
-	TH1D * sigma_X_t = new TH1D("sigma_X_t","sigma_X_t",100,0,32);
+	TH1D * sigma_X_t = new TH1D("sigma_X_t","sigma_X_t",100,0,Tomography::Nsample);
 	TH1D * sigma_Y_ampl = new TH1D("sigma_Y_ampl","sigma_Y_ampl",100,0,50000);
-	TH1D * sigma_Y_t = new TH1D("sigma_Y_t","sigma_Y_t",100,0,32);
+	TH1D * sigma_Y_t = new TH1D("sigma_Y_t","sigma_Y_t",100,0,Tomography::Nsample);
 	TH1D * corr_X_ampl = new TH1D("corr_X_ampl","corr_X_ampl",100,-1,1);
 	TH1D * corr_X_t = new TH1D("corr_X_t","corr_X_t",100,-1,1);
 	TH1D * corr_Y_ampl = new TH1D("corr_Y_ampl","corr_Y_ampl",100,-1,1);
@@ -1804,7 +1815,7 @@ void Analyse::Correlation(){
 	TCanvas * cCorrXY = new TCanvas();
 	cCorrXY->Divide(2,2);
 	TH2D * correlation_XY_ampl = new TH2D("correlation_XY_ampl","correlation_XY_ampl",1000,0,50000,1000,0,5000);
-	TH2D * correlation_XY_t = new TH2D("correlation_XY_t","correlation_XY_t",100,0,32,100,0,32);
+	TH2D * correlation_XY_t = new TH2D("correlation_XY_t","correlation_XY_t",100,0,Tomography::Nsample,100,0,Tomography::Nsample);
 	TH1D * corr_XY_ampl = new TH1D("corr_XY_ampl","corr_XY_ampl",100,-1,1);
 	TH1D * corr_XY_t = new TH1D("corr_XY_t","corr_XY_t",100,-1,1);
 	if (fChain == 0) return;
@@ -2154,10 +2165,10 @@ void Analyse::SignalOverNoise(){
 			name << "_";
 			global_signal[current_det->get_mg_n_in_tree()] = new TH1D((name.str() + "signal").c_str(),(name.str() + "signal").c_str(),500,0,4000);
 			global_noise[current_det->get_mg_n_in_tree()] = new TH1D((name.str() + "noise").c_str(),(name.str() + "noise").c_str(),100,0,100);
-			for(int i=0;i<61;i++){
+			for(int i=0;i<MG_Detector::Nstrip;i++){
 				global_noise[current_det->get_mg_n_in_tree()]->Fill(current_det->get_RMS(i));
 			}
-			global_signal_over_noise[current_det->get_mg_n_in_tree()] = new TProfile((name.str() + "SoB").c_str(),(name.str() + "SoB").c_str(),61,0,61);
+			global_signal_over_noise[current_det->get_mg_n_in_tree()] = new TProfile((name.str() + "SoB").c_str(),(name.str() + "SoB").c_str(),MG_Detector::Nstrip,0,MG_Detector::Nstrip);
 		}
 	}
 	long nentries = fChain->GetEntriesFast();
@@ -2202,10 +2213,10 @@ void Analyse::SignalOverNoise(){
 		TFitResultPtr res_noise = global_noise[it->first]->Fit("gaus","SQ");
 		global_noise[it->first]->Draw();
 		it->second->cd(3);
-		TLine * average_SoN = new TLine(0,(res_signal->Parameter(1))/(res_noise->Parameter(1)),61,(res_signal->Parameter(1))/(res_noise->Parameter(1)));
+		TLine * average_SoN = new TLine(0,(res_signal->Parameter(1))/(res_noise->Parameter(1)),MG_Detector::Nstrip,(res_signal->Parameter(1))/(res_noise->Parameter(1)));
 		average_SoN->SetLineStyle(2);
 		average_SoN->SetLineColor(2);
-		TLine * mean_SoN = new TLine(0,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()),61,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()));
+		TLine * mean_SoN = new TLine(0,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()),MG_Detector::Nstrip,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()));
 		mean_SoN->SetLineStyle(2);
 		mean_SoN->SetLineColor(4);
 		global_signal_over_noise[it->first]->Draw();

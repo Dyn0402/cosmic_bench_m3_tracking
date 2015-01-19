@@ -345,7 +345,7 @@ void MG_Event::MultiCluster(){
 		for(int j=0;j<SampleMin;j++){
 			current_strip.signal_sample[j] = false;
 		}
-		for(int j=SampleMax;j<32;j++){
+		for(int j=SampleMax;j<Tomography::Nsample;j++){
 			current_strip.signal_sample[j] = false;
 		}
 		for(int j=SampleMin;j<SampleMax;j++){
@@ -463,7 +463,7 @@ void MG_Event::MultiCluster(){
 
 			//Micro TPC
 			/*
-			for(int k=0;k<32;k++){
+			for(int k=0;k<Tomography::Nsample;k++){
 				if(!(current_strip.signal_sample[k])) continue;
 				double current_tot_ampl = strip_ampl[MG_Detector::StripToChannel[j]][k]/count(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel[j]);
 				pos_TPC = (pos_TPC*tot_ampl + j*current_tot_ampl)/(tot_ampl + current_tot_ampl);
@@ -523,6 +523,7 @@ void MG_Event::MultiCluster(){
 		}
 		delete SRFfit; delete SRFgraph;
 		clusters.push_back(MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
+		//clusters.push_back(MG_Cluster(&detector,i,pos_TPC,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 	}
 }
 void MG_Event::HoughCluster(){

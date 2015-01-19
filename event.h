@@ -61,7 +61,7 @@ class Event{
 			int MaxSample;
 			int TOT;
 			double Time;
-			bool signal_sample[32];
+			bool signal_sample[Tomography::Nsample];
 		};
 };
 

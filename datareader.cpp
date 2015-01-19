@@ -478,7 +478,7 @@ void DataReader::compute_RMSPed(){
 			}
 			for(int j=0;j<Nstrip_MG;j++){
 				TFitResultPtr res = ampl_hist[j]->Fit("gaus","SQN");
-				RMSPedFile << i << " " << j << " " << res->Parameter(2) << "\n";
+				RMSPedFile << i+CM_N << " " << j << " " << res->Parameter(2) << "\n";
 				delete ampl_hist[j];
 			}
 			/*

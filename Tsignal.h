@@ -12,6 +12,7 @@
 #include <TChain.h>
 #include <TFile.h>
 #include <vector>
+#include "tomography.h"
 
 using std::vector;
 
@@ -26,15 +27,15 @@ public :
 
    // Declaration of leaf types
    Int_t           Nevent;
-   Int_t           TsampleNum[32];
+   Int_t           TsampleNum[Tomography::Nsample];
    int CM_n;
    int MG_n;
-   Float_t         (*StripAmpl_MG)[61][32];
-   Float_t         (*StripAmpl_MG_ped)[61][32];
-   Float_t         (*StripAmpl_MG_corr)[61][32];
-   Float_t         (*StripAmpl_CM)[64][32];
-   Float_t         (*StripAmpl_CM_ped)[64][32];
-   Float_t         (*StripAmpl_CM_corr)[64][32];
+   Float_t         (*StripAmpl_MG)[61][Tomography::Nsample];
+   Float_t         (*StripAmpl_MG_ped)[61][Tomography::Nsample];
+   Float_t         (*StripAmpl_MG_corr)[61][Tomography::Nsample];
+   Float_t         (*StripAmpl_CM)[64][Tomography::Nsample];
+   Float_t         (*StripAmpl_CM_ped)[64][Tomography::Nsample];
+   Float_t         (*StripAmpl_CM_corr)[64][Tomography::Nsample];
 
    // List of branches
    TBranch        *b_Nevent;   //!

@@ -58,14 +58,14 @@ void Tsignal::Init(TTree *tree, int CMN, int MGN)
    // (once per file to be processed).
 
    if(MGN>0){
-      StripAmpl_MG = new Float_t[MGN][61][32];
-      StripAmpl_MG_ped = new Float_t[MGN][61][32];
-      StripAmpl_MG_corr = new Float_t[MGN][61][32];
+      StripAmpl_MG = new Float_t[MGN][61][Tomography::Nsample];
+      StripAmpl_MG_ped = new Float_t[MGN][61][Tomography::Nsample];
+      StripAmpl_MG_corr = new Float_t[MGN][61][Tomography::Nsample];
    }
    if(CMN>0){
-      StripAmpl_CM = new Float_t[CMN][64][32];
-      StripAmpl_CM_ped = new Float_t[CMN][64][32];
-      StripAmpl_CM_corr = new Float_t[CMN][64][32];
+      StripAmpl_CM = new Float_t[CMN][64][Tomography::Nsample];
+      StripAmpl_CM_ped = new Float_t[CMN][64][Tomography::Nsample];
+      StripAmpl_CM_corr = new Float_t[CMN][64][Tomography::Nsample];
    }
 
    // Set branch addresses and branch pointers
@@ -116,18 +116,18 @@ Int_t Tsignal::Cut(Long64_t entry)
 }
 
 vector<vector<double> > Tsignal::get_mg_ampl(int mg_n){
-	vector<vector<double> > return_array(61,vector<double>(32,0));
+	vector<vector<double> > return_array(61,vector<double>(Tomography::Nsample,0));
 	for(int i=0;i<61;i++){
-		for(int j=0;j<32;j++){
+		for(int j=0;j<Tomography::Nsample;j++){
 			return_array[i][j] = StripAmpl_MG_corr[mg_n][i][j];
 		}
 	}
 	return return_array;
 }
 vector<vector<double> > Tsignal::get_cm_ampl(int cm_n){
-	vector<vector<double> > return_array(64,vector<double>(32,0));
+	vector<vector<double> > return_array(64,vector<double>(Tomography::Nsample,0));
 	for(int i=0;i<64;i++){
-		for(int j=0;j<32;j++){
+		for(int j=0;j<Tomography::Nsample;j++){
 			return_array[i][j] = StripAmpl_MG_corr[cm_n][i][j];
 		}
 	}

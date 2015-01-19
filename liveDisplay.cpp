@@ -74,22 +74,28 @@ liveDisplay::liveDisplay(string config_file, int max_event_){
 	ifstream in;
 	in.open((config_tree.get<string>("RMSPed")).c_str());
 	int rms_strip, det;
-	//double RMS[Nstrip_MG*total_MG_N];
 	vector<vector<double> > RMS;
-	vector<double> empty_vector(61,0);
-	for(int i=0;i<(total_MG_N+total_CM_N);i++){
-		RMS.push_back(empty_vector);
+	for(int i=0;i<total_CM_N;i++){
+		RMS.push_back(vector<double>(64,0));
 	}
-	int nlines=0;
-	while (1) { // read the text file
-		int det_n = nlines/61;
-		int strip_n = nlines%61;
-		if(det_n>(total_MG_N+total_CM_N-1)) break;
+	for(int i=0;i<total_MG_N;i++){
+		RMS.push_back(vector<double>(61,0));
+	}
+	int n_lines = 0;
+	while(in.good() && n_lines<((total_CM_N*64)+(total_MG_N*61))){
 		double current_rms;
 		in >> det >> rms_strip >> current_rms;
-		RMS[det_n][strip_n] = current_rms;
-		if (!in.good()) break;
-		nlines++;
+		if(det<0 || det>(total_MG_N+total_CM_N-1)){
+			cout << "problem reading RMS file" << endl;
+		}
+		else if(det<total_CM_N && rms_strip>63){
+			cout << "problem reading RMS file" << endl;
+		}
+		else if(rms_strip>60){
+			cout << "problem reading RMS file" << endl;
+		}
+		RMS[det][rms_strip] = current_rms;
+		n_lines++;
 	}
 	in.close();
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
@@ -215,6 +221,7 @@ unsigned int liveDisplay::read_inotify(){
 
 void liveDisplay::flux_map(double z){
 	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
 	TCanvas * cMap = new TCanvas("flux_map");
 	TCanvas * cDisplay = new TCanvas("event_display");
 	TCanvas * cStats = new TCanvas("stats");
