@@ -1001,7 +1001,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1){
 	c1->Update();
 	return fluxMapZ;
 }
-void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TCanvas * c3){
+void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TCanvas * c3, TCanvas * c4){
 	int eventReconstructed = 0;
 	int eventSuitable = 0;
 
@@ -1042,6 +1042,11 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 	if(c3 == 0) c3 = new TCanvas("fluxMap_Sigma","fluxMap_Sigma");
 	acceptanceFunction acceptanceEstimation(0,500,0,500,z_max,z_min,0);
 	TH2D * background = new TH2D(acceptanceEstimation.plot_XY(nbins,x_min,x_max,nbins,x_min,x_max,z));
+	if(c4 == 0) c4 = new TCanvas("fluxMap_background","fluxMap_background");
+	c4->cd();
+	background->Draw("COLZ");
+	c4->Modified();
+	c4->Update();
 
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
 	for (Long64_t jentry=0; jentry<nentries;jentry++){
