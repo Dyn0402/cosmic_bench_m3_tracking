@@ -40,10 +40,10 @@ lib: libAnalyse.so
 DataReader: NewDataReader.o datareader.o header.o dataline.o tomography.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-absorptionMap: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o tomography.o
+absorptionMap: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o tomography.o acceptanceFunction.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-tracking: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o tomography.o
+tracking: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o tomography.o acceptanceFunction.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
 MultiCluster: MultiCluster.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o point.o Tsignal.o datareader.o dataline.o tomography.o
@@ -55,10 +55,10 @@ testCapa: testCapa.o signal.o detector.o event.o cluster.o Tanalyse.o ray.o poin
 live: live.o liveDisplay.o datareader.o header.o dataline.o detector.o event.o cluster.o ray.o point.o tomography.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-absorptionMapDict: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o tomography.o MyDict.o
+absorptionMapDict: absorptionMap.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o tomography.o acceptanceFunction.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
-trackingDict: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o tomography.o MyDict.o
+trackingDict: tracking.o analyse.o T.o event.o ray.o cluster.o detector.o point.o Tsignal.o tomography.o acceptanceFunction.o MyDict.o
 	$(LD) $^ -o $@ $(LDFLAGS)
 
 MultiClusterDict: MultiCluster.o signal.o detector.o event.o cluster.o Tanalyse.o Tsignal.o ray.o point.o datareader.o dataline.o tomography.o MyDict.o
@@ -77,4 +77,4 @@ MyDict.cpp: analyse.h T.h event.h ray.h cluster.h detector.h point.h Tanalyse.h 
 	rootcint -f $@ -c $(CXXFLAGS) -p $^
 
 clean:
-	rm -f *.o *.so *Dict* *dict* Linkdef absorptionMap tracking MultiCluster acceptanceFunction DataReader live
+	rm -f *.o *.so *Dict* *dict* Linkdef absorptionMap tracking MultiCluster DataReader live

@@ -7,6 +7,7 @@
 #include "event.h"
 #include "Tsignal.h"
 #include "tomography.h"
+#include "acceptanceFunction.h"
 //ROOT
 #include <TTree.h>
 #include <TFile.h>
@@ -999,6 +1000,122 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1){
 	c1->Modified();
 	c1->Update();
 	return fluxMapZ;
+}
+void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TCanvas * c3){
+	int eventReconstructed = 0;
+	int eventSuitable = 0;
+
+	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
+	//gStyle->SetPalette(1);
+	//double z_Pb = 1553;
+	double z_max = numeric_limits<double>::min();
+	double z_min = numeric_limits<double>::max();
+	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+		double current_z = (*det_it)->get_z();
+		if(current_z>z_max) z_max = current_z;
+		if(current_z<z_min) z_min = current_z;
+	}
+	double x_min = 0;
+	double x_max = 500;
+	if(z>z_max){
+		x_min = -500.*(z - z_max)/(z_max - z_min);
+		x_max = 500. - x_min;
+	}
+	else if(z<z_min){
+		x_min = -500.*(z_min - z)/(z_max - z_min);
+		x_max = 500. - x_min;
+	}
+	double width = x_max - x_min;
+	x_min -= 0.05*width;
+	x_max += 0.05*width;
+
+	if (fChain == 0) return;
+	Long64_t nentries = fChain->GetEntriesFast();
+	int nbins = Sqrt(0.02*nentries);
+	if(c1==0) c1 = new TCanvas("fluxMap","fluxMap");
+	TH2D * fluxMapZ = new TH2D("fluxMapSignal","fluxMapSignal",nbins,x_min,x_max,nbins,x_min,x_max);
+	fluxMapZ->SetStats(0);
+	if(c2 == 0) c2 = new TCanvas("fluxMapNorm","fluxMapNorm");
+	TH2D * fluxMapSigma = new TH2D("fluxMapSigma","fluxMapSigma",nbins,x_min,x_max,nbins,x_min,x_max);
+	fluxMapSigma->SetStats(0);
+	if(c3 == 0) c3 = new TCanvas("fluxMap_Sigma","fluxMap_Sigma");
+	acceptanceFunction acceptanceEstimation(0,500,0,500,z_max,z_min,0);
+	TH2D * background = new TH2D(acceptanceEstimation.plot_XY(nbins,x_min,x_max,nbins,x_min,x_max,z));
+
+	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
+	for (Long64_t jentry=0; jentry<nentries;jentry++){
+		Long64_t ientry = LoadTree(jentry);
+		if (ientry < 0) break;
+		fChain->GetEntry(jentry);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		vector<Ray> currentRays = currentCBEvent->get_absorption_rays();
+		eventReconstructed+=currentRays.size();
+		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		delete currentCBEvent;
+		for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
+			if(it->get_chiSquare_X()>-1 && it->get_chiSquare_Y()>-1){
+				fluxMapZ->Fill(it->eval_X(z),it->eval_Y(z));
+			}
+		}
+		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
+		if(jentry%10000 == 0){
+			TH2D * copy = new TH2D(*fluxMapZ);
+			copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
+			copy->SetStats(0);
+			copy->Scale(1./copy->Integral());
+			copy->Add(background,-1./background->Integral());
+			copy->Scale(-1.);
+			c2->cd();
+			copy->Draw("COLZ");
+			c2->Modified();
+			c2->Update();
+			delete copy;
+			c1->cd();
+			fluxMapZ->Draw("COLZ");
+			c1->Modified();
+			c1->Update();
+			double ratio = background->Integral()/fluxMapZ->Integral();
+			for(int i=1;i<=nbins;i++){
+				for(int j=1;j<=nbins;j++){
+					int binN = fluxMapSigma->GetBin(i,j);
+					double binContent = (fluxMapZ->GetBinContent(binN)*ratio - background->GetBinContent(binN))/Sqrt(background->GetBinContent(binN) + fluxMapZ->GetBinContent(binN)*ratio);
+					fluxMapSigma->SetBinContent(binN,-binContent);
+				}
+			}
+			c3->cd();
+			fluxMapSigma->Draw("COLZ");
+			c3->Modified();
+			c3->Update();
+		}
+	}
+	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
+	TH2D * copy = new TH2D(*fluxMapZ);
+	copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
+	copy->SetStats(0);
+	copy->Scale(1./copy->Integral());
+	copy->Add(background,-1./background->Integral());
+	copy->Scale(-1.);
+	c2->cd();
+	copy->Draw("COLZ");
+	c2->Modified();
+	c2->Update();
+	c1->cd();
+	fluxMapZ->Draw("COLZ");
+	c1->Modified();
+	c1->Update();
+	double ratio = background->Integral()/fluxMapZ->Integral();
+	for(int i=1;i<=nbins;i++){
+		for(int j=1;j<=nbins;j++){
+			int binN = fluxMapSigma->GetBin(i,j);
+			double binContent = (fluxMapZ->GetBinContent(binN)*ratio - background->GetBinContent(binN))/Sqrt(background->GetBinContent(binN) + fluxMapZ->GetBinContent(binN)*ratio);
+			fluxMapSigma->SetBinContent(binN,-binContent);
+		}
+	}
+	c3->cd();
+	fluxMapSigma->Draw("COLZ");
+	c3->Modified();
+	c3->Update();
 }
 void Analyse::AbsorptionFluxMapNorm(double z,TH2D * background, int nbins, TCanvas * c1, TCanvas * c2, TCanvas * c3){
 	int eventReconstructed = 0;

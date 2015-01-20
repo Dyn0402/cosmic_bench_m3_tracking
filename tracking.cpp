@@ -29,6 +29,7 @@ int main(int argc, char ** argv){
 	string eff2D = "eff2D";
 	string residus = "residus";
 	string fluxMap = "fluxmap";
+	string tomoAbs = "tomoAbs";
 	string raypairs = "raypairs";
 	string bugtest = "bugtest";
 	string srf = "srf";
@@ -54,6 +55,17 @@ int main(int argc, char ** argv){
 		else{
 			float z = atof(argv[3]);
 			blah->AbsorptionFluxMap(z);
+		}
+	}
+	else if(argv[2] == tomoAbs){
+		if(argc<4){
+			cout << "you must indicate the altitude of the flux map" << endl;
+			delete blah; delete theApp;
+			return 1;
+		}
+		else{
+			float z = atof(argv[3]);
+			blah->AbsorptionFluxMapNormTheo(z);
 		}
 	}
 	else if(argv[2] == raypairs){

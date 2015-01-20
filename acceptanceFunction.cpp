@@ -1,5 +1,7 @@
 #define acceptanceFunction_cpp
 
+#include "acceptanceFunction.h"
+
 #include <TH2D.h>
 #include <TCanvas.h>
 #include <TMath.h>
@@ -103,7 +105,7 @@ void acceptanceFunction::plot_3D(){
 			double y = y_min_ + j*(y_max_-y_min_)/step_y;
 			for(int k=0;k<step_z;k++){
 				double z = z_Down_ + k*(z_Up_-z_Down_)/step_z;
-				double proba = this(x,y,z);
+				double proba = (*this)(x,y,z);
 				proba_XY->Fill(x,y,proba);
 				proba_XZ->Fill(x,z,proba);
 				proba_YZ->Fill(y,z,proba);
@@ -139,26 +141,18 @@ void acceptanceFunction::plot_3D(){
 
 }
 
-void acceptanceFunction::plot_XY(double z){
-	int step_x = 2000;
-	int step_y = 2000;
-	double x_min_ = -200;
-	double x_max_ = 700;
-	double y_min_ = -200;
-	double y_max_ = 700;
-	TCanvas * cDisplay = new TCanvas();
-	TH2D * proba_XY = new TH2D("proba_XY","proba_XY",step_x,x_min_,x_max_,step_y,y_min_,y_max_);
-	proba_XY->SetStats(false);
+TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,double y1,double y2, double z){
+	int step_x = 10*nbin_x;
+	int step_y = 10*nbin_y;
+	TH2D proba_XY("proba_XY","proba_XY",nbin_x,x1,x2,nbin_y,y1,y2);
+	proba_XY.SetStats(false);
 	for(int i=0;i<step_x;i++){
-		double x = x_min_ + i*(x_max_-x_min_)/step_x;
+		double x = x1 + i*(x2-x1)/step_x;
 		for(int j=0;j<step_y;j++){
-			double y = y_min_ + j*(y_max_-y_min_)/step_y;
-			double proba = *this(x,y,z);
-			proba_XY->Fill(x,y,proba);
+			double y = y1 + j*(y2-y1)/step_y;
+			double proba = (*this)(x,y,z);
+			proba_XY.Fill(x,y,proba);
 		}
 	}
-	cDisplay->cd();
-	proba_XY->Draw("colz");
-	cDisplay->Modified();
-	cDisplay->Update();
+	return proba_XY;
 }

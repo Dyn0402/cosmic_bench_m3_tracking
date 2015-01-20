@@ -19,6 +19,7 @@ class Analyse: public T, public CosmicBench{
 		void Residus_ref_2D();
 		TH2D * AbsorptionFluxMap(double z, TCanvas * c1 = 0);
 		void AbsorptionFluxMapNorm(double z,TH2D * background, int nbins = 100, TCanvas * c1 = 0, TCanvas * c2 = 0, TCanvas * c3 = 0);
+		void AbsorptionFluxMapNormTheo(double z, TCanvas * c1 = 0, TCanvas * c2 = 0, TCanvas * c3 = 0);
 		void StoreRayPairs(string outFileName);
 		void CalcStripResponseFunction(int bin_nb = 0);
 		void Correlation();
