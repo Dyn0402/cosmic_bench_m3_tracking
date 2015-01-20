@@ -12,6 +12,8 @@ using std::endl;
 using std::string;
 using TMath::Min;
 using TMath::Tan;
+using TMath::Cos;
+using TMath::Sin;
 
 Cluster::Cluster(){
 	evn = -1;
@@ -260,7 +262,8 @@ double CM_Cluster::get_pos_mm() const{
 			pos_mm = (maxStrip*500./32.);
 		}
 		if(perp_pos_mm>-1){
-			pos_mm += (perp_pos_mm - 250)*Tan(angle);
+			//pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
 		}
 		pos_mm += offset;
 		return pos_mm;
@@ -277,7 +280,8 @@ double CM_Cluster::correct_strip_nb(int strip_nb) const{
 			pos_mm = (strip_nb*500./32.);
 		}
 		if(perp_pos_mm>-1){
-			pos_mm += (perp_pos_mm - 250)*Tan(angle);
+			//pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
 		}
 		pos_mm += offset;
 		return pos_mm;
@@ -355,7 +359,8 @@ double CM_Demux_Cluster::get_pos_mm() const{
 		pos_mm = (1024-pos)*500./1024.;
 	}
 	if(perp_pos_mm>-1){
-		pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
 	}
 	pos_mm += offset;
 	return pos_mm;
@@ -369,7 +374,8 @@ double CM_Demux_Cluster::correct_strip_nb(int strip_nb) const{
 		pos_mm = (1024-strip_nb)*500./1024.;
 	}
 	if(perp_pos_mm>-1){
-		pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
 	}
 	pos_mm += offset;
 	return pos_mm;
@@ -463,7 +469,8 @@ double MG_Cluster::get_pos_mm() const{
 		pos_mm = (1024-pos)*500./1024.;
 	}
 	if(perp_pos_mm>-1){
-		pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
 	}
 	pos_mm += offset;
 	return pos_mm;
@@ -477,7 +484,8 @@ double MG_Cluster::correct_strip_nb(int strip_nb) const{
 		pos_mm = (1024-strip_nb)*500./1024.;
 	}
 	if(perp_pos_mm>-1){
-		pos_mm += (perp_pos_mm - 250)*Tan(angle);
+		//pos_mm += (perp_pos_mm - 250)*Tan(angle); // <-- this is a small angle approx eg. Cos(angle)=1
+		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
 	}
 	pos_mm += offset;
 	return pos_mm;
