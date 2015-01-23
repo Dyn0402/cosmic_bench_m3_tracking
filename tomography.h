@@ -9,6 +9,8 @@ using std::ostream;
 using std::map;
 using std::string;
 
+ostream& operator<<(ostream& os, const map<double,int>& map_);
+
 namespace Tomography{
 
 	enum det_type{

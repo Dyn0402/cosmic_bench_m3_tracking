@@ -6,9 +6,12 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <TH2D.h>
+#include <TSystem.h>
+#include "acceptanceFunction.h"
 
 using std::cout;
 using std::endl;
+using std::flush;
 using std::ostringstream;
 
 int main(int argc, char ** argv){
@@ -36,6 +39,7 @@ int main(int argc, char ** argv){
 	string correlation = "correlation";
 	string eventdisplay = "eventdisplay";
 	string SoN = "SoN";
+	string acceptance = "acceptance";
 	if(argv[2] == efficacity){
 		blah->Efficacity();
 	}
@@ -107,6 +111,10 @@ int main(int argc, char ** argv){
 	}
 	else if(argv[2] == SoN){
 		blah->SignalOverNoise();
+	}
+	else if(argv[2] == acceptance){
+		acceptanceFunction chombier(0,500,0,500,1270,0,0);
+		chombier.plot_3D();
 	}
 	else{
 		cout << "function not found" << endl;

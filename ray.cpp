@@ -125,7 +125,7 @@ void Ray_2D::process(){
 	//TF1 * line = new TF1("line","[0] + [1]*x",minZ-10,maxZ+10);
 	double maxSlope = 500./(maxZ-minZ);
 	line->SetParameters(250,0);
-	line->SetParLimits(0,0,500);
+	line->SetParLimits(0,-maxSlope*minZ,500+maxSlope*minZ);
 	line->SetParLimits(1,-maxSlope,maxSlope);
 	pos->Fit(line,"QN");
 	chiSquare = line->GetChisquare();
@@ -258,6 +258,10 @@ double Ray_2D::get_t_sigma() const{
 }
 unsigned int Ray_2D::get_clus_n() const{
 	return clusters.size();
+}
+ostream& operator<<(ostream& os, const Ray_2D& ray){
+	os << "RAY_" << ray.coord << "(slope : " << ray.slope << " ; intercept : " << ray.Z_intercept << " ; ChiSquare : " << ray.chiSquare << " ; NClus : " << ray.clusters.size() << ")";
+	return os;
 }
 
 Ray::Ray(){
@@ -478,6 +482,10 @@ vector<Cluster*> Ray::get_clus() const{
 		else if((*it)->get_type() == Tomography::CM_Demux) return_vector.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
 	}
 	return return_vector;
+}
+ostream& operator<<(ostream& os, const Ray& ray){
+	os << "[" << Ray_2D(ray,'X') << " ; " << Ray_2D(ray,'Y') << "]";
+	return os;
 }
 
 RayPair::RayPair(){

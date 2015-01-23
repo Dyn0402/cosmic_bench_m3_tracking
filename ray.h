@@ -1,19 +1,25 @@
 #ifndef ray_h
 #define ray_h
 #include <vector>
+#include <ostream>
 #include "cluster.h"
 #include "detector.h"
 #include "point.h"
 
 using std::vector;
+using std::ostream;
 
 class Ray;
 class Ray_2D;
 class Cluster;
 class Detector;
 
+ostream& operator<<(ostream& os, const Ray_2D& ray);
+ostream& operator<<(ostream& os, const Ray& ray);
+
 class Ray_2D{
 	friend class Ray;
+	friend ostream& operator<<(ostream& os, const Ray_2D& ray);
 	public:
 		Ray_2D();
 		Ray_2D(char coord_);
@@ -44,6 +50,7 @@ class Ray_2D{
 class Ray{
 	friend class Ray_2D;
 	friend class RayPair;
+	friend ostream& operator<<(ostream& os, const Ray& ray);
 	public:
 		Ray();
 		Ray(const Ray& other);

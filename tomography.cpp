@@ -1,4 +1,7 @@
 #include "tomography.h"
+#include <map>
+
+using std::map;
 
 ostream& Tomography::operator<<(ostream& os, const det_type& det){
 	switch(det){
@@ -25,6 +28,20 @@ ostream& Tomography::operator<<(ostream& os, const elec_type& elec){
 		default : os << "unknown electronic type";
 	}
 	return os;
+}
+ostream& operator<<(ostream& os, const map<double,int>& map_){
+	if(map_.size()<1) return os;
+	os << "[ ";
+	map<double,int>::const_iterator it=map_.begin();
+	map<double,int>::const_iterator jt = map_.end();
+	jt--;
+	while(it!=jt){
+		os << it->first << " -> " << it->second << " ; ";
+		++it;
+	}
+	os << it->first << " -> " << it->second << " ]";
+	return os;
+
 }
 Tomography::elec_type Tomography::str_to_elec(string str){
 	elec_type return_value = unknown_elec;

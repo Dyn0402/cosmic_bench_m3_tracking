@@ -44,13 +44,14 @@ vector<map<double,int> > CosmicBenchEvent::combinaisons(map<double,int> sizes){
 	map<double,int> partial_product;
 	int current_product = 1;
 	for(map<double,int>::iterator it = sizes.begin();it!=sizes.end();++it){
+		if(it->second == 0) continue;
 		partial_product[it->first] = current_product;
 		current_product*=it->second;
 	}
 	vector<map<double,int> > result(current_product,map<double,int>());
 	for(int i=0;i<current_product;i++){
-		for(map<double,int>::iterator it = sizes.begin();it!=sizes.end();++it){
-			result[i][it->first] = (i/partial_product[it->first]) % it->second;
+		for(map<double,int>::iterator it = partial_product.begin();it!=partial_product.end();++it){
+			result[i][it->first] = (i/(it->second)) % sizes[it->first];
 		}
 	}
 	return result;
@@ -831,6 +832,7 @@ void CosmicBenchEvent::createPairs(){
 					if(z>max_z) max_z = z;
 					if(z<min_z) min_z = z;
 					currentClusters[is_up][is_X][z].push_back(new CM_Demux_Cluster(*jt));
+					sizes[is_up][is_X][z]++;
 				}
 			}
 			else if(det_type == Tomography::MG){
@@ -843,6 +845,7 @@ void CosmicBenchEvent::createPairs(){
 					if(z>max_z) max_z = z;
 					if(z<min_z) min_z = z;
 					currentClusters[is_up][is_X][z].push_back(new MG_Cluster(*jt));
+					sizes[is_up][is_X][z]++;
 				}
 			}
 			else{
@@ -856,11 +859,13 @@ void CosmicBenchEvent::createPairs(){
 		//compute for both coordinates
 		for(map<bool, map<double,vector<Cluster*> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			bool b = true;
+			/*
 			//get size
 			for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
 				if((kt->second).size()==0) b = false;
 				sizes[it->first][jt->first][kt->first] = (kt->second).size();
 			}
+			*/
 			//find the biggest number of good clusters combinaisons
 			while(b){
 				b = false;
@@ -1016,6 +1021,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(){
 				vector<CM_Demux_Cluster> currentCluster = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
 				for(vector<CM_Demux_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
 					currentClusters[jt->get_is_X()][jt->get_z()].push_back(new CM_Demux_Cluster(*jt));
+					sizes[jt->get_is_X()][jt->get_z()]++;
 				}
 			}
 			else if(det_type == Tomography::MG){
@@ -1023,20 +1029,25 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(){
 				vector<MG_Cluster> currentCluster = (dynamic_cast<MG_Event*>(*it))->get_clusters();
 				for(vector<MG_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
 					currentClusters[jt->get_is_X()][jt->get_z()].push_back(new MG_Cluster(*jt));
+					sizes[jt->get_is_X()][jt->get_z()]++;
 				}
 			}
 			else continue;
 		}
 	}
 	map<bool, vector<Ray_2D> > suitableRays;
+	vector<Ray> returnRays;
+	if(sizes[true].size()<3 || sizes[false].size()<3) return returnRays;
 	//compute for both acoordinates
 	for(map<bool, map<double,vector<Cluster*> > >::iterator it = currentClusters.begin();it!=currentClusters.end();++it){
 		bool b = true;
+		/*
 		//get size
 		for(map<double,vector<Cluster*> >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			if((jt->second).size()==0) b = false;
 			sizes[it->first][jt->first] = (jt->second).size();
 		}
+		*/
 		//find the biggest number of good clusters combinaisons
 		// you can adjust the size to require more or less hit
 		while(b && (it->second).size()>2){
@@ -1090,7 +1101,6 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(){
 	for(map<bool, vector<Ray_2D> >::iterator it=suitableRays.begin();it!=suitableRays.end();++it){
 		if((it->second).size()<min_size) min_size = (it->second).size();
 	}
-	vector<Ray> returnRays;
 	for(unsigned int i = 0;i<min_size;i++){
 		returnRays.push_back(Ray(suitableRays[true][i],suitableRays[false][i]));
 		returnRays.back().angle_correction();
