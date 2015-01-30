@@ -36,6 +36,7 @@ namespace Tomography{
 	const double sigma = 4.;
 	const int TOTCut = 3;
 	const double chisquare_threshold = 100;
+	const bool live_graphic_display = true; // toggle updating of canvas during calculation
 	elec_type str_to_elec(string str);
 	ostream& operator<<(ostream& os, const det_type& det);
 	ostream& operator<<(ostream& os, const strip_type& strip);

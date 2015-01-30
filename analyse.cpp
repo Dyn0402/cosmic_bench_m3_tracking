@@ -195,7 +195,7 @@ void Analyse::Residus(){
 			}
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0){
+		if(jentry%5000 == 0 && Tomography::live_graphic_display){
 			for(int i=0;i<CM_N;i++){
 				c_CM[i]->cd();
 				CM_residus[i]->Draw();
@@ -434,7 +434,7 @@ void Analyse::Residus_ref(){
 		}
 		delete currentCBEvent;
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<int>(eventSuitable) << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0){
+		if(jentry%5000 == 0 && Tomography::live_graphic_display){
 			for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
 				it->second->cd(1);
 				MM_residus[it->first]->Draw();
@@ -696,7 +696,7 @@ void Analyse::Residus_ref_2D(){
 			}
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<int>(eventSuitable) << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0){
+		if(jentry%5000 == 0 && Tomography::live_graphic_display){
 			for(int i=1;i<=nbins_2D;i++){
 				for(int j=1;j<=nbins_2D;j++){
 					int binN = muon_total->GetBin(i,j);
@@ -857,7 +857,7 @@ void Analyse::Efficacity(){
 		}
 		delete currentCBEvent;
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0){
+		if(jentry%5000 == 0 && Tomography::live_graphic_display){
 			for(int i=0;i<CM_N;i++){
 				c_CM[i]->cd();
 				CM_residus[i]->Draw();
@@ -987,7 +987,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1){
 			fluxMapZ->Fill(it->eval_X(z),it->eval_Y(z));
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0){
+		if(jentry%5000 == 0 && Tomography::live_graphic_display){
 			c1->cd();
 			fluxMapZ->Draw("COLZ");
 			c1->Modified();
@@ -1068,7 +1068,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 			fluxMapZ->Fill(it->eval_X(z),it->eval_Y(z));
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%10000 == 0){
+		if(jentry%10000 == 0 && Tomography::live_graphic_display){
 			TH2D * copy = new TH2D(*fluxMapZ);
 			copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
 			copy->SetStats(0);
@@ -1160,7 +1160,7 @@ void Analyse::AbsorptionFluxMapNorm(double z,TH2D * background, int nbins, TCanv
 			}
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%10000 == 0){
+		if(jentry%10000 == 0 && Tomography::live_graphic_display){
 			TH2D * copy = new TH2D(*fluxMapZ);
 			copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
 			copy->SetStats(0);
@@ -1307,7 +1307,7 @@ void Analyse::StoreRayPairs(string outFileName){
 		}
 		delete currentCBEvent;
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0){
+		if(jentry%5000 == 0 && Tomography::live_graphic_display){
 			c1->cd();
 			thetaXUp->Draw();
 			thetaYUp->Draw("SAME");
@@ -1377,7 +1377,7 @@ void Analyse::StoreRayPairs(string outFileName){
 		}
 		delete currentCBEvent;
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0){
+		if(jentry%5000 == 0 && Tomography::live_graphic_display){
 			c1->cd();
 			mgPos->Draw();
 			c1->Modified();
@@ -1624,7 +1624,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 			delete currentCBEvent;
 
 			if(jentry%500 == 0) cout << "\r" << setw(20) << i << "|" << setw(20) << jentry << flush;
-			if(jentry%10000 == 0){
+			if(jentry%10000 == 0 && Tomography::live_graphic_display){
 				c->cd();
 				SRH->Draw();
 				c->Modified();
@@ -2184,7 +2184,7 @@ void Analyse::Correlation(){
 		}
 
 		if(jentry%500 == 0) cout << "\r" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0){
+		if(jentry%5000 == 0 && Tomography::live_graphic_display){
 			cDisplay->cd(1);
 			correlation_X_ampl->Draw("colz");
 			cDisplay->cd(2);
@@ -2319,7 +2319,7 @@ void Analyse::SignalOverNoise(){
 			}
 		}
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
-		if(i%5000 == 0){
+		if(i%5000 == 0 && Tomography::live_graphic_display){
 			for(map<int,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
 				it->second->cd(1);
 				global_signal[it->first]->Draw();

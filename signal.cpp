@@ -472,7 +472,7 @@ void Signal::SignalOverNoiseDisplay(){
 			}
 		}
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
-		if(i%5000 == 0){
+		if(i%5000 == 0 && Tomography::live_graphic_display){
 			for(map<int,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
 				it->second->cd(1);
 				global_signal[it->first]->Draw();
