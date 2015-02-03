@@ -40,6 +40,7 @@ class DataReader{
 		TFile * outFile;
 		TTree * outTree;
 		int Nevent;
+		double evttime;
 		int TsampleNum[Tomography::Nsample];
 		float (*StripAmpl_MG)[61][Tomography::Nsample];
 		float (*StripAmpl_CM)[64][Tomography::Nsample];

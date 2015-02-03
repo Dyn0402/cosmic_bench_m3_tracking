@@ -31,6 +31,7 @@ using std::setfill;
 using std::ostringstream;
 
 using TMath::Min;
+using TMath::Ldexp;
 
 //const int DataReader::Nsample = 32;
 //const int DataReader::Nstrip_MG = 61;
@@ -92,6 +93,7 @@ void DataReader::Init(string signalName, string pedName, string RMSName, map<int
 	if(!exists){
 		outTree = new TTree("T","event");
 		outTree->Branch("Nevent", &Nevent, "Nevent/I"); // event number
+		outTree->Branch("evttime", &evttime, "evttime/D"); // event time stamp
 		char leefTsampleNum[100];
 		sprintf(leefTsampleNum,"TsampleNum[%d]/I",Nsample);
 		outTree->Branch("TsampleNum", TsampleNum, leefTsampleNum); // time sample number
@@ -111,6 +113,7 @@ void DataReader::Init(string signalName, string pedName, string RMSName, map<int
 	else{
 		outTree = (TTree*)(outFile->Get("T"));
 		outTree->SetBranchAddress("Nevent",&Nevent);
+		outTree->SetBranchAddress("evttime",&evttime);
 		outTree->SetBranchAddress("TsampleNum",TsampleNum);
 		if(CM_N>0) outTree->SetBranchAddress("StripAmpl_CM",StripAmpl_CM);
 		if(MG_N>0) outTree->SetBranchAddress("StripAmpl_MG",StripAmpl_MG);
@@ -216,6 +219,7 @@ void DataReader::reset_tree_leaf(){
 			}
 		}
 	}
+	evttime = 0;
 }
 void DataReader::compute_ped(){
 	for(unsigned int i=0;i<MG_N;i++){
@@ -550,15 +554,22 @@ void DreamDataReader::read_file(string file_name,int evn_offset){
 	int DataHeaderLine=0;
 	bool zs_mode = false;
 	bool got_channel_id=false;
+	int current_event = -1;
 	reset_tree_leaf();
 	DataLineDream current_data;
 	iFile.read((char*)&current_data,sizeof(current_data));
 	current_data.ntohs_();
 	while(iFile.good() && evNinFile<26000 && !(((evNinFile + evn_offset - global_offset)>max_event)*(max_event>0))){
-		if(FeuHeaderLine<4 && current_data.is_Feu_header()){
+		if(FeuHeaderLine<8 && current_data.is_Feu_header()){
 			if(FeuHeaderLine==0){
 				zs_mode = current_data.get_zs_mode();
 				FeuN = current_data.get_Feu_ID();
+			}
+			else if(FeuHeaderLine==1){
+				current_event = current_data.get_data();
+			}
+			else if(FeuHeaderLine==2){
+				evttime = current_data.get_data();
 			}
 			else if(FeuHeaderLine==3){
 				isample_prev = isample;
@@ -568,9 +579,15 @@ void DreamDataReader::read_file(string file_name,int evn_offset){
 					break;
 				}
 			}
+			else if(FeuHeaderLine==4){
+				current_event += static_cast<int>(current_data.get_data()) << 12;
+			}
+			else{
+				evttime += Ldexp(static_cast<double>(current_data.get_data()),12*(FeuHeaderLine-4)); // data*2^(12*(FeuHeaderLine-4))
+			}
 			FeuHeaderLine++;
 		}
-		else if(FeuHeaderLine>3 && current_data.is_Feu_header()){
+		else if(FeuHeaderLine>7 && current_data.is_Feu_header()){
 			cout << "problem in Feu header" << endl;
 			break;
 		}
@@ -585,7 +602,7 @@ void DreamDataReader::read_file(string file_name,int evn_offset){
 				cout << "problem in data header" << endl;
 				break;
 			}
-			else if(DataHeaderLine>3){
+			else if(DataHeaderLine>0){
 				if(current_data.is_data() && !zs_mode){
 					channelN = mapping(det_type_by_asic[det],ichannel);
 					if(det_type_by_asic[det] == Tomography::MG){
@@ -621,6 +638,10 @@ void DreamDataReader::read_file(string file_name,int evn_offset){
 						cout << "problem in ZS data" << endl;
 						break;
 					}
+					if(DataHeaderLine!=4 && DataHeaderLine!=1){
+						cout << "problem in data header" << endl;
+						break;
+					}
 					ichannel=0;
 					asicN=0;
 					det=0;
@@ -634,9 +655,11 @@ void DreamDataReader::read_file(string file_name,int evn_offset){
 					cout << "problem in channel number" << endl;
 					break;
 				}
-				if(got_channel_id){
-					cout << "problem in ZS data" << endl;
-					break;
+				if(FeuHeaderLine!=4 && FeuHeaderLine!=8){
+					cout << "problem in Feu Header" << endl;
+				}
+				if(FeuHeaderLine>4 && current_event != (evNinFile+evn_offset)){
+					cout << "problem in event id : " << current_event << " != " << evNinFile+evn_offset << endl;
 				}
 				isample_nb++;
 				FeuN=0;
@@ -673,27 +696,40 @@ map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::rea
 	bool zs_mode = false;
 	bool got_channel_id=false;
 	bool event_complete = false;
+	int current_event = -1;
 	reset_tree_leaf();
 	DataLineDream current_data;
 	file->read((char*)&current_data,sizeof(current_data));
 	current_data.ntohs_();
 	while(file->good()){
-		if(FeuHeaderLine<4 && current_data.is_Feu_header()){
+		if(FeuHeaderLine<8 && current_data.is_Feu_header()){
 			if(FeuHeaderLine==0){
 				zs_mode = current_data.get_zs_mode();
 				FeuN = current_data.get_Feu_ID();
+			}
+			else if(FeuHeaderLine==1){
+				current_event = current_data.get_data();
+			}
+			else if(FeuHeaderLine==2){
+				evttime = current_data.get_data();
 			}
 			else if(FeuHeaderLine==3){
 				isample_prev = isample;
 				isample = current_data.get_sample_ID();
 				if(isample!=isample_prev+1){
-					cout << "problem in sample index" << endl;
+					cout << "problem in sample index : " << isample << "; " << isample_prev << endl;
 					break;
 				}
 			}
+			else if(FeuHeaderLine==4){
+				current_event += static_cast<int>(current_data.get_data()) << 12;
+			}
+			else{
+				evttime += Ldexp(static_cast<double>(current_data.get_data()),12*(FeuHeaderLine-4)); // data*2^(12*(FeuHeaderLine-4))
+			}
 			FeuHeaderLine++;
 		}
-		else if(FeuHeaderLine>3 && current_data.is_Feu_header()){
+		else if(FeuHeaderLine>7 && current_data.is_Feu_header()){
 			cout << "problem in Feu header" << endl;
 			break;
 		}
@@ -744,6 +780,10 @@ map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::rea
 						cout << "problem in ZS data" << endl;
 						break;
 					}
+					if(DataHeaderLine!=4 && DataHeaderLine!=1){
+						cout << "problem in data header" << endl;
+						break;
+					}
 					ichannel=0;
 					asicN=0;
 					det=0;
@@ -760,6 +800,12 @@ map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::rea
 				if(got_channel_id){
 					cout << "problem in ZS data" << endl;
 					break;
+				}
+				if(FeuHeaderLine!=4 && FeuHeaderLine!=8){
+					cout << "problem in Feu Header" << endl;
+				}
+				if(FeuHeaderLine>4 && current_event != event_nb){
+					cout << "problem in event id : " << current_event << " != " << event_nb << endl;
 				}
 				isample_nb++;
 				FeuN=0;

@@ -19,7 +19,7 @@ class DataLineDream{
 		int get_sample_ID() const;
 		int get_channel_ID() const;
 		int get_dream_ID() const;
-		float get_data() const;
+		short get_data() const;
 		unsigned short int data;
 };
 
@@ -34,7 +34,7 @@ class DataLineFeminos{
 		bool is_time() const;
 		int get_time() const;
 		bool is_data() const;
-		float get_data() const;
+		short get_data() const;
 		bool is_end_of_frame() const;
 		bool is_end_of_event() const;
 		bool is_event_start() const;

@@ -50,7 +50,7 @@ int DataLineDream::get_dream_ID() const{
 int DataLineDream::get_channel_ID() const{
 	return (((data) & 0x3F));
 }
-float DataLineDream::get_data() const{
+short DataLineDream::get_data() const{
 	return (((data) & 0xFFF));
 }
 
@@ -81,7 +81,7 @@ int DataLineFeminos::get_time() const{
 bool DataLineFeminos::is_data() const{
 	return ((data & 0x3000)>>12)==3;
 }
-float DataLineFeminos::get_data() const{
+short DataLineFeminos::get_data() const{
 	return (data & 0xFFF);
 }
 bool DataLineFeminos::is_end_of_frame() const{
