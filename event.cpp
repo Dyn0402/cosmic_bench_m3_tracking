@@ -389,6 +389,9 @@ void MG_Event::MultiCluster(){
 				k--;
 			}
 			TF1 * rising_fit = new TF1("rising_fit","pol1(0)",k-1,current_strip.MaxSample +1);
+			rising_fit->SetParameters(k,(current_strip.MaxAmpl - strip_ampl[i][k])/(current_strip.MaxSample - k));
+			rising_fit->SetParLimits(0,0,32);
+			rising_fit->SetParLimits(1,0,100000);
 			rising_edge->Fit(rising_fit,"QN");
 			current_strip.Time = rising_fit->GetParameter(0);
 			delete rising_edge; delete rising_fit;
