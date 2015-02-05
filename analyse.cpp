@@ -247,6 +247,18 @@ void Analyse::Residus_ref(){
 	map<string,TH2D*> efficacity_2D;
 	map<string,TGraph*> correlation;
 	map<string,TProfile*> angle_alignment;
+	map<string,TProfile*> resVSpos;
+	map<string,TProfile*> resVSampl;
+	map<string,TProfile*> resVStime;
+	map<string,TProfile*> resVSangle;
+	map<string,TProfile*> resVSanglePerp;
+	map<string,TProfile*> resVStot;
+	map<string,TProfile*> resVSsize;
+	map<string,TProfile*> absResVStot;
+	map<string,TProfile*> absResVSsize;
+	map<string,TProfile*> absResVSampl;
+	map<string,TProfile*> absResVStime;
+	map<string,TProfile*> absResVSabsAngle;
 	map<string,int> point_nb;
 	map<string,double> efficacity;
 	int nbins = 200;
@@ -266,28 +278,52 @@ void Analyse::Residus_ref(){
 			if((*it)->get_type() == Tomography::CM){
 				name << "Cosmulti_" << (dynamic_cast<CM_Detector*>(*it))->get_cm_n_in_tree();
 				c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
-				c_MM[name.str()]->Divide(2,2);
+				c_MM[name.str()]->Divide(4,4);
 				MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
 				muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
 				muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
 				efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
 				efficacity_2D[name.str()]->SetStats(false);
 				correlation[name.str()] = new TGraph();
-				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,0,500,-5,5);
+				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-50,550,-5,5);
+				resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-50,550,-5,5);
+				resVSampl[name.str()] = new TProfile((name.str()+"_resVSampl").c_str(),(name.str()+"_resVSampl").c_str(),500,-100,10000,-5,5);
+				resVStime[name.str()] = new TProfile((name.str()+"_resVStime").c_str(),(name.str()+"_resVStime").c_str(),38,-2,34,-5,5);
+				resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
+				resVSanglePerp[name.str()] = new TProfile((name.str()+"_resVSanglePerp").c_str(),(name.str()+"_resVSanglePerp").c_str(),50,-0.6,0.6,-5,5);
+				resVStot[name.str()] = new TProfile((name.str()+"_resVStot").c_str(),(name.str()+"_resVStot").c_str(),26,0,25,-5,5);
+				resVSsize[name.str()] = new TProfile((name.str()+"_resVSsize").c_str(),(name.str()+"_resVSsize").c_str(),50,0,50,-5,5);
+				absResVSampl[name.str()] = new TProfile((name.str()+"_absResVSampl").c_str(),(name.str()+"_absResVSampl").c_str(),500,-100,10000,0,5);
+				absResVStime[name.str()] = new TProfile((name.str()+"_absResVStime").c_str(),(name.str()+"_absResVStime").c_str(),38,-2,34,0,5);
+				absResVSabsAngle[name.str()] = new TProfile((name.str()+"_absResVSangle").c_str(),(name.str()+"_absResVSabsAngle").c_str(),50,0,0.6,0,5);
+				absResVStot[name.str()] = new TProfile((name.str()+"_absResVStot").c_str(),(name.str()+"_absResVStot").c_str(),26,0,25,0,5);
+				absResVSsize[name.str()] = new TProfile((name.str()+"_absResVSsize").c_str(),(name.str()+"_absResVSsize").c_str(),50,0,50,0,5);
 				point_nb[name.str()] = 0;
 				efficacity[name.str()] = 0;
 			}
 			else if((*it)->get_type() == Tomography::MG){
 				name << "Multigen_" << (dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree();
 				c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
-				c_MM[name.str()]->Divide(2,2);
+				c_MM[name.str()]->Divide(4,4);
 				MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
 				muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
 				muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
 				efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
 				efficacity_2D[name.str()]->SetStats(false);
 				correlation[name.str()] = new TGraph();
-				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,0,500,-5,5);
+				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-50,550,-5,5);
+				resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-50,550,-5,5);
+				resVSampl[name.str()] = new TProfile((name.str()+"_resVSampl").c_str(),(name.str()+"_resVSampl").c_str(),500,-100,10000,-5,5);
+				resVStime[name.str()] = new TProfile((name.str()+"_resVStime").c_str(),(name.str()+"_resVStime").c_str(),38,-2,34,-5,5);
+				resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
+				resVSanglePerp[name.str()] = new TProfile((name.str()+"_resVSanglePerp").c_str(),(name.str()+"_resVSanglePerp").c_str(),50,-0.6,0.6,-5,5);
+				resVStot[name.str()] = new TProfile((name.str()+"_resVStot").c_str(),(name.str()+"_resVStot").c_str(),26,0,25,-5,5);
+				resVSsize[name.str()] = new TProfile((name.str()+"_resVSsize").c_str(),(name.str()+"_resVSsize").c_str(),50,0,50,-5,5);
+				absResVSampl[name.str()] = new TProfile((name.str()+"_absResVSampl").c_str(),(name.str()+"_absResVSampl").c_str(),500,-100,10000,0,5);
+				absResVStime[name.str()] = new TProfile((name.str()+"_absResVStime").c_str(),(name.str()+"_absResVStime").c_str(),38,-2,34,0,5);
+				absResVSabsAngle[name.str()] = new TProfile((name.str()+"_absResVSangle").c_str(),(name.str()+"_absResVSabsAngle").c_str(),50,0,0.6,0,5);
+				absResVStot[name.str()] = new TProfile((name.str()+"_absResVStot").c_str(),(name.str()+"_absResVStot").c_str(),26,0,25,0,5);
+				absResVSsize[name.str()] = new TProfile((name.str()+"_absResVSsize").c_str(),(name.str()+"_absResVSsize").c_str(),50,0,50,0,5);
 				point_nb[name.str()] = 0;
 				efficacity[name.str()] = 0;
 				if((*it)->get_perp_n()>-1) perp_pairs[(dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree()] = (*it)->get_perp_n();
@@ -329,11 +365,14 @@ void Analyse::Residus_ref(){
 		fChain->GetEntry(jentry);
 		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
-		for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-			if((jt->get_chiSquare_X()+jt->get_chiSquare_Y()) < chisquare_threshold){
-				chisquares->Fill(jt->get_chiSquare_X()+jt->get_chiSquare_Y());
-				ray_clus_n->Fill(jt->get_clus_n());
+		vector<Ray>::iterator ray_it = currentRays.begin();
+		while(ray_it!= currentRays.end()){
+			if(ray_it->get_chiSquare_X()>-1 && ray_it->get_chiSquare_Y()>-1 && ((ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y())/ray_it->get_clus_n())<chisquare_threshold){
+				chisquares->Fill(ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y());
+				ray_clus_n->Fill(ray_it->get_clus_n());
+				++ray_it;
 			}
+			else ray_it = currentRays.erase(ray_it);
 		}
 		eventReconstructed+=currentRays.size();
 		eventSuitable+=currentCBEvent->get_clus_N()*1./(CM_N+MG_N);
@@ -369,16 +408,33 @@ void Analyse::Residus_ref(){
 						if(jt->eval_X((*it)->get_z())<500 && jt->eval_X((*it)->get_z())>0 && jt->eval_Y((*it)->get_z())<500 && jt->eval_Y((*it)->get_z())>0) muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 						if(matching_cluster == current_clusters.end()) continue;
 						if((*matching_cluster).get_is_X()){
+							(*matching_cluster).set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster).get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+							resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
+							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_X()),Abs(residu));
+							resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
 						}
 						else{
+							(*matching_cluster).set_perp_pos_mm(jt->eval_X((*it)->get_z()));
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster).get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+							resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
+							resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
 						}
 						point_nb[name.str()]++;
 						current_clusters.erase(matching_cluster);
 						MM_residus[name.str()]->Fill(residu);
+						resVStime[name.str()]->Fill(matching_cluster->get_t(),residu);
+						resVSampl[name.str()]->Fill(matching_cluster->get_ampl(),residu);
+						resVStot[name.str()]->Fill(matching_cluster->get_TOT(),residu);
+						resVSsize[name.str()]->Fill(matching_cluster->get_size(),residu);
+						absResVStime[name.str()]->Fill(matching_cluster->get_t(),Abs(residu));
+						absResVSampl[name.str()]->Fill(matching_cluster->get_ampl(),Abs(residu));
+						absResVStot[name.str()]->Fill(matching_cluster->get_TOT(),Abs(residu));
+						absResVSsize[name.str()]->Fill(matching_cluster->get_size(),Abs(residu));
 						if(residu<chisquare_threshold){
 							muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 						}
@@ -416,15 +472,30 @@ void Analyse::Residus_ref(){
 							(*matching_cluster).set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster).get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+							resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
+							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_X()),Abs(residu));
+							resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
 						}
 						else{
 							(*matching_cluster).set_perp_pos_mm(jt->eval_X((*it)->get_z()));
 							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster).get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+							resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
+							resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
 						}
 						point_nb[name.str()]++;
 						current_clusters.erase(matching_cluster);
 						MM_residus[name.str()]->Fill(residu);
+						resVStime[name.str()]->Fill(matching_cluster->get_t(),residu);
+						resVSampl[name.str()]->Fill(matching_cluster->get_ampl(),residu);
+						resVStot[name.str()]->Fill(matching_cluster->get_TOT(),residu);
+						resVSsize[name.str()]->Fill(matching_cluster->get_size(),residu);
+						absResVStime[name.str()]->Fill(matching_cluster->get_t(),Abs(residu));
+						absResVSampl[name.str()]->Fill(matching_cluster->get_ampl(),Abs(residu));
+						absResVStot[name.str()]->Fill(matching_cluster->get_TOT(),Abs(residu));
+						absResVSsize[name.str()]->Fill(matching_cluster->get_size(),Abs(residu));
 						if(residu<chisquare_threshold){
 							muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 						}
@@ -452,6 +523,30 @@ void Analyse::Residus_ref(){
 				if(point_nb[it->first]>0) correlation[it->first]->Draw("AP");
 				it->second->cd(4);
 				angle_alignment[it->first]->Draw();
+				it->second->cd(5);
+				resVSpos[it->first]->Draw();
+				it->second->cd(6);
+				resVSangle[it->first]->Draw();
+				it->second->cd(7);
+				resVSanglePerp[it->first]->Draw();
+				it->second->cd(8);
+				resVStime[it->first]->Draw();
+				it->second->cd(9);
+				resVSampl[it->first]->Draw();
+				it->second->cd(10);
+				resVStot[it->first]->Draw();
+				it->second->cd(11);
+				resVSsize[it->first]->Draw();
+				it->second->cd(12);
+				absResVSsize[it->first]->Draw();
+				it->second->cd(13);
+				absResVStime[it->first]->Draw();
+				it->second->cd(14);
+				absResVSampl[it->first]->Draw();
+				it->second->cd(15);
+				absResVStot[it->first]->Draw();
+				it->second->cd(16);
+				absResVSabsAngle[it->first]->Draw();
 				it->second->Modified();
 				it->second->Update();
 			}
@@ -490,6 +585,30 @@ void Analyse::Residus_ref(){
 		if(point_nb[it->first]>0) correlation[it->first]->Draw("AP");
 		it->second->cd(4);
 		angle_alignment[it->first]->Draw();
+		it->second->cd(5);
+		resVSpos[it->first]->Draw();
+		it->second->cd(6);
+		resVSangle[it->first]->Draw();
+		it->second->cd(7);
+		resVSanglePerp[it->first]->Draw();
+		it->second->cd(8);
+		resVStime[it->first]->Draw();
+		it->second->cd(9);
+		resVSampl[it->first]->Draw();
+		it->second->cd(10);
+		resVStot[it->first]->Draw();
+		it->second->cd(11);
+		resVSsize[it->first]->Draw();
+		it->second->cd(12);
+		absResVSsize[it->first]->Draw();
+		it->second->cd(13);
+		absResVStime[it->first]->Draw();
+		it->second->cd(14);
+		absResVSampl[it->first]->Draw();
+		it->second->cd(15);
+		absResVStot[it->first]->Draw();
+		it->second->cd(16);
+		absResVSabsAngle[it->first]->Draw();
 		it->second->Modified();
 		it->second->Update();
 		cout << it->first << " efficacity : " << 100.*efficacity[it->first] << "%" << endl;
