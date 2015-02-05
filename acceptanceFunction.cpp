@@ -6,6 +6,9 @@
 #include <TCanvas.h>
 #include <TMath.h>
 #include <TRint.h>
+#include <TF2.h>
+#include <Math/WrappedMultiTF1.h>
+#include <Math/AdaptiveIntegratorMultiDim.h>
 #include <iostream>
 
 using std::cout;
@@ -77,7 +80,17 @@ double acceptanceFunction::operator()(double x,double y, double z){
 	theta_x_max = ATan(theta_x_max);
 	theta_y_min = ATan(theta_y_min);
 	theta_y_max = ATan(theta_y_max);
-	return ((Sin(theta_x_max-theta_x_min)*Cos(theta_x_max+theta_x_min)) + theta_x_max - theta_x_min)*((Sin(theta_y_max-theta_y_min)*Cos(theta_y_max+theta_y_min)) + theta_y_max - theta_y_min)/(Pi()*Pi());
+
+	TF2 dist("dist","cos(sqrt(x*x+y*y))*cos(sqrt(x*x+y*y))",-Pi()/2.,Pi()/2.,-Pi()/2.,Pi()/2.);
+	ROOT::Math::WrappedMultiTF1 wf1(dist);
+	ROOT::Math::AdaptiveIntegratorMultiDim ig;
+	ig.SetFunction(wf1);
+	ig.SetRelTolerance(0.001);
+	double thetaMin[] = {theta_x_min,theta_y_min};
+	double thetaMax[] = {theta_x_max,theta_y_max};
+	return ig.Integral(thetaMin,thetaMax);
+
+	//return ((Sin(theta_x_max-theta_x_min)*Cos(theta_x_max+theta_x_min)) + theta_x_max - theta_x_min)*((Sin(theta_y_max-theta_y_min)*Cos(theta_y_max+theta_y_min)) + theta_y_max - theta_y_min)/(Pi()*Pi());
 }
 
 void acceptanceFunction::plot_3D(){
