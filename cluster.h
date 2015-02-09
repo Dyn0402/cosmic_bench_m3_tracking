@@ -26,7 +26,7 @@ class Cluster{
 		virtual double correct_strip_nb(int strip_nb) const = 0;
 		bool get_is_X() const;
 		bool get_is_up() const;
-		double get_z() const;
+		virtual double get_z() const = 0;
 		double get_ampl() const;
 		double get_size() const;
 		double get_pos() const;
@@ -63,7 +63,9 @@ class Cluster{
 		bool is_up;
 		double offset;
 		bool direction;
-		double angle;
+		double angle_x;
+		double angle_y;
+		double angle_z;
 		double perp_pos_mm;
 };
 
@@ -82,6 +84,7 @@ class CM_Cluster: public Cluster{
 		Tomography::strip_type get_strip_type() const;
 		virtual double get_pos_mm() const;
 		virtual double correct_strip_nb(int strip_nb) const;
+		virtual double get_z() const;
 		int get_n_in_tree() const;
 	protected:
 		Tomography::strip_type strip_type;
@@ -98,6 +101,7 @@ class CM_Demux_Cluster: public CM_Cluster{
 		~CM_Demux_Cluster();
 		double get_pos_mm() const;
 		double correct_strip_nb(int strip_nb) const;
+		double get_z() const;
 };
 
 class MG_Cluster: public Cluster{
@@ -113,6 +117,7 @@ class MG_Cluster: public Cluster{
 		bool is_in_det(Detector * det) const;
 		double get_pos_mm() const;
 		double correct_strip_nb(int strip_nb) const;
+		double get_z() const;
 		int get_n_in_tree() const;
 	protected:
 		int mg_n_in_tree;

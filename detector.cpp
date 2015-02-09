@@ -58,8 +58,14 @@ double Detector::get_offset() const{
 bool Detector::get_direction() const{
 	return direction;
 }
-double Detector::get_angle() const{
-	return angle;
+double Detector::get_angle_x() const{
+	return angle_x;
+}
+double Detector::get_angle_y() const{
+	return angle_y;
+}
+double Detector::get_angle_z() const{
+	return angle_z;
 }
 int Detector::get_perp_n() const{
 	return perp_n;
@@ -98,7 +104,9 @@ Detector::Detector(){
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;
-	angle = 0;
+	angle_x = 0;
+	angle_y = 0;
+	angle_z = 0;
 	perp_n = -1;
 	clustering_holes = 0;
 }
@@ -112,7 +120,9 @@ Detector::Detector(const Detector& other){
 	ClusTOTCut_Min = other.ClusTOTCut_Min;
 	ClusMaxSampleCut_Min = other.ClusMaxSampleCut_Min;
 	ClusMaxSampleCut_Max = other.ClusMaxSampleCut_Max;
-	angle = other.angle;
+	angle_x = other.angle_x;
+	angle_y = other.angle_y;
+	angle_z = other.angle_z;
 	RMS = other.RMS;
 	perp_n = other.perp_n;
 	clustering_holes = other.clustering_holes;
@@ -127,13 +137,15 @@ Detector& Detector::operator=(const Detector& other){
 	ClusTOTCut_Min = other.ClusTOTCut_Min;
 	ClusMaxSampleCut_Min = other.ClusMaxSampleCut_Min;
 	ClusMaxSampleCut_Max = other.ClusMaxSampleCut_Max;
-	angle = other.angle;
+	angle_x = other.angle_x;
+	angle_y = other.angle_y;
+	angle_z = other.angle_z;
 	RMS = other.RMS;
 	perp_n = other.perp_n;
 	clustering_holes = other.clustering_holes;
 	return *this;
 }
-Detector::Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_, int perp_n_, int clustering_holes_){
+Detector::Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_){
 	z = z_;
 	is_X = is_X_;
 	is_up = is_up_;
@@ -143,7 +155,9 @@ Detector::Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offs
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;
-	angle = angle_;
+	angle_x = angle_x_;
+	angle_y = angle_y_;
+	angle_z = angle_z_;
 	perp_n = perp_n_;
 	clustering_holes = clustering_holes_;
 }
@@ -171,7 +185,7 @@ CM_Detector& CM_Detector::operator=(const CM_Detector& other){
 	ClusSizeCut_Max_Wide = other.ClusSizeCut_Max_Wide;
 	return *this;
 }
-CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_) :Detector(z_,is_X_,is_up_, is_ref_, offset_, direction_, angle_,-1,0){
+CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_) :Detector(z_,is_X_,is_up_, is_ref_, offset_, direction_, angle_x_, angle_y_, angle_z_,-1,0){
 	cm_n_in_tree = cm_n;
 	use_thin_strip = use_thin_strip_;
 	ClusMaxStripAmplCut_Min_Wide = -1;
@@ -222,7 +236,7 @@ MG_Detector& MG_Detector::operator=(const MG_Detector& other){
 	ClusSizeCut_Min = other.ClusSizeCut_Min;
 	return *this;
 }
-MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_, int perp_n_, int clustering_holes_): Detector(z_,is_X_,is_up_, is_ref_, offset_,direction_, angle_, perp_n_, clustering_holes_){
+MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_): Detector(z_,is_X_,is_up_, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_){
 	mg_n_in_tree = mg_n;
 	ClusSizeCut_Min = -1;
 }
@@ -355,7 +369,7 @@ void CosmicBench::Init(ptree config_tree){
 	}
 	in.close();
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
-		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle")));
+		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z")));
 		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -365,7 +379,7 @@ void CosmicBench::Init(ptree config_tree){
 		CM_N++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes")));
+		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes")));
 		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));

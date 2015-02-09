@@ -32,7 +32,9 @@ Cluster::Cluster(){
 	offset = 0;
 	direction = false;
 	perp_pos_mm = -1;
-	angle = 0;
+	angle_x = 0;
+	angle_y = 0;
+	angle_z = 0;
 }
 Cluster::Cluster(const Cluster& other){
 	type = other.type;
@@ -52,7 +54,9 @@ Cluster::Cluster(const Cluster& other){
 	offset = other.offset;
 	direction = other.direction;
 	perp_pos_mm = other.perp_pos_mm;
-	angle = other.angle;
+	angle_x = other.angle_x;
+	angle_y = other.angle_y;
+	angle_z = other.angle_z;
 }
 Cluster& Cluster::operator=(const Cluster& other){
 	type = other.type;
@@ -72,7 +76,9 @@ Cluster& Cluster::operator=(const Cluster& other){
 	offset = other.offset;
 	direction = other.direction;
 	perp_pos_mm = other.perp_pos_mm;
-	angle = other.angle;
+	angle_x = other.angle_x;
+	angle_y = other.angle_y;
+	angle_z = other.angle_z;
 	return *this;
 }
 Cluster::Cluster(T * treeObject, long entry){
@@ -97,9 +103,30 @@ Cluster::Cluster(T * treeObject, long entry){
 	offset = 0;
 	direction = false;
 	perp_pos_mm = -1;
-	angle = 0;
+	angle_x = 0;
+	angle_y = 0;
+	angle_z = 0;
 }
 Cluster::Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_){
+	evn = -1;
+	number = -1;
+	ampl = -1;
+	size = -1;
+	pos = -1;
+	maxStripAmpl = -1;
+	maxSample = -1;
+	maxStrip = -1;
+	TOT = -1;
+	t = -1;
+	z = -1;
+	is_X = -1;
+	is_up = -1;
+	offset = 0;
+	direction = false;
+	perp_pos_mm = -1;
+	angle_x = 0;
+	angle_y = 0;
+	angle_z = 0;
 	pos = pos_;
 	size = size_;
 	ampl = ampl_;
@@ -141,9 +168,6 @@ int Cluster::get_maxStrip() const{
 }
 bool Cluster::get_is_up() const{
 	return is_up;
-}
-double Cluster::get_z() const{
-	return z;
 }
 void Cluster::set_perp_pos_mm(double coord){
 	perp_pos_mm = coord;
@@ -190,7 +214,9 @@ CM_Cluster::CM_Cluster(T * treeObject,int number_,CM_Detector * det, long entry)
 	is_up = det->get_is_up();
 	offset = det->get_offset();
 	direction = det->get_direction();
-	angle = det->get_angle();
+	angle_x = det->get_angle_x();
+	angle_y = det->get_angle_y();
+	angle_z = det->get_angle_z();
 	ampl = treeObject->CM_ClusAmpl[cm_n_in_tree][number];
 	size = treeObject->CM_ClusSize[cm_n_in_tree][number];
 	pos = treeObject->CM_ClusPos[cm_n_in_tree][number];
@@ -210,7 +236,9 @@ CM_Cluster::CM_Cluster(CM_Detector * det, int number_, double pos_, double size_
 	is_up = det->get_is_up();
 	offset = det->get_offset();
 	direction = det->get_direction();
-	angle = det->get_angle();
+	angle_x = det->get_angle_x();
+	angle_y = det->get_angle_y();
+	angle_z = det->get_angle_z();
 	type = Tomography::CM;
 	(pos>31) ? strip_type = Tomography::Wide : strip_type = Tomography::Thin;
 }
@@ -263,7 +291,8 @@ double CM_Cluster::get_pos_mm() const{
 		}
 		if(perp_pos_mm>-1){
 			//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
+		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
+		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
 		}
 		pos_mm += offset;
 		return pos_mm;
@@ -281,12 +310,29 @@ double CM_Cluster::correct_strip_nb(int strip_nb) const{
 		}
 		if(perp_pos_mm>-1){
 			//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
+		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
+		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
 		}
 		pos_mm += offset;
 		return pos_mm;
 	}
 	else return -1;
+}
+double CM_Cluster::get_z() const{
+	if(strip_type == Tomography::Wide){
+		double real_z = 0;
+		double pos_mm = 0;
+		if(direction){
+			pos_mm = ((63.-maxStrip)*500./32.);
+		}
+		else{
+			pos_mm = (maxStrip*500./32.);
+		}
+		if(is_X) real_z = z + (pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (perp_pos_mm-250.)*Sin(angle_x);
+		else real_z = z + (perp_pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (pos_mm-250.)*Sin(angle_x);
+		return real_z;
+	}
+	else return z;
 }
 int CM_Cluster::get_n_in_tree() const{
 	return cm_n_in_tree;
@@ -318,7 +364,9 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& thinStrip_clus, const CM_Cl
 	number = thinStrip_clus.number;
 	offset = thinStrip_clus.offset;
 	direction = thinStrip_clus.direction;
-	angle = thinStrip_clus.angle;
+	angle_x = thinStrip_clus.angle_x;
+	angle_y = thinStrip_clus.angle_y;
+	angle_z = thinStrip_clus.angle_z;
 	ampl = thinStrip_clus.ampl + wideStrip_clus.ampl;
 	size = thinStrip_clus.size*wideStrip_clus.size;
 	pos = (31.-thinStrip_clus.pos)+32.*(63.-wideStrip_clus.maxStrip);
@@ -340,7 +388,9 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& wideStrip_clus){
 	number = wideStrip_clus.number;
 	offset = wideStrip_clus.offset;
 	direction = wideStrip_clus.direction;
-	angle = wideStrip_clus.angle;
+	angle_x = wideStrip_clus.angle_x;
+	angle_y = wideStrip_clus.angle_y;
+	angle_z = wideStrip_clus.angle_z;
 	ampl = wideStrip_clus.ampl;
 	size = 32*wideStrip_clus.size;
 	pos = 15.5+32.*(63.-wideStrip_clus.maxStrip);
@@ -360,7 +410,8 @@ double CM_Demux_Cluster::get_pos_mm() const{
 	}
 	if(perp_pos_mm>-1){
 		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
+		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
+		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
 	}
 	pos_mm += offset;
 	return pos_mm;
@@ -375,10 +426,24 @@ double CM_Demux_Cluster::correct_strip_nb(int strip_nb) const{
 	}
 	if(perp_pos_mm>-1){
 		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
+		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
+		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
 	}
 	pos_mm += offset;
 	return pos_mm;
+}
+double CM_Demux_Cluster::get_z() const{
+	double real_z = 0;
+	double pos_mm = 0;
+	if(direction){
+		pos_mm = pos*500./1024.;
+	}
+	else{
+		pos_mm = (1024-pos)*500./1024.;
+	}
+	if(is_X) real_z = z + (pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (perp_pos_mm-250.)*Sin(angle_x);
+	else real_z = z + (perp_pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (pos_mm-250.)*Sin(angle_x);
+	return real_z;
 }
 CM_Demux_Cluster::~CM_Demux_Cluster(){
 	
@@ -410,7 +475,9 @@ MG_Cluster::MG_Cluster(T * treeObject,int number_,MG_Detector * det, long entry)
 	is_up = det->get_is_up();
 	offset = det->get_offset();
 	direction = det->get_direction();
-	angle = det->get_angle();
+	angle_x = det->get_angle_x();
+	angle_y = det->get_angle_y();
+	angle_z = det->get_angle_z();
 	ampl = treeObject->MG_ClusAmpl[mg_n_in_tree][number];
 	size = treeObject->MG_ClusSize[mg_n_in_tree][number];
 	pos = treeObject->MG_ClusPos[mg_n_in_tree][number];
@@ -429,7 +496,9 @@ MG_Cluster::MG_Cluster(MG_Detector * det, int number_, double pos_, double size_
 	is_up = det->get_is_up();
 	offset = det->get_offset();
 	direction = det->get_direction();
-	angle = det->get_angle();
+	angle_x = det->get_angle_x();
+	angle_y = det->get_angle_y();
+	angle_z = det->get_angle_z();
 	type = Tomography::MG;
 }
 
@@ -470,7 +539,8 @@ double MG_Cluster::get_pos_mm() const{
 	}
 	if(perp_pos_mm>-1){
 		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
+		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
+		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
 	}
 	pos_mm += offset;
 	return pos_mm;
@@ -485,10 +555,24 @@ double MG_Cluster::correct_strip_nb(int strip_nb) const{
 	}
 	if(perp_pos_mm>-1){
 		//pos_mm += (perp_pos_mm - 250)*Tan(angle); // <-- this is a small angle approx eg. Cos(angle)=1
-		pos_mm = 250. + (Cos(angle)*(pos_mm - 250.)) + (Sin(angle)*(perp_pos_mm - 250.));
+		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
+		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
 	}
 	pos_mm += offset;
 	return pos_mm;
+}
+double MG_Cluster::get_z() const{
+	double real_z = 0;
+	double pos_mm = 0;
+	if(direction){
+		pos_mm = pos*500./1024.;
+	}
+	else{
+		pos_mm = (1024-pos)*500./1024.;
+	}
+	if(is_X) real_z = z + (pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (perp_pos_mm-250.)*Sin(angle_x);
+	else real_z = z + (perp_pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (pos_mm-250.)*Sin(angle_x);
+	return real_z;
 }
 int MG_Cluster::get_n_in_tree() const{
 	return mg_n_in_tree;

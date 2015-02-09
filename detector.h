@@ -22,7 +22,9 @@ class Detector{
 		virtual Tomography::det_type get_type() const = 0;
 		double get_offset() const;
 		bool get_direction() const;
-		double get_angle() const;
+		double get_angle_x() const;
+		double get_angle_y() const;
+		double get_angle_z() const;
 		int get_perp_n() const;
 		int get_clustering_holes() const;
 		//seters
@@ -38,14 +40,17 @@ class Detector{
 		Detector();	
 		Detector(const Detector& other);
 		Detector& operator=(const Detector& other);
-		Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_, int perp_n_, int clustering_holes_);	
+		Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_);	
 		double z; //altitude inside cosmic bench
 		bool is_X;//coordinate measured by the detector
 		bool is_up;//bloc (up|down) which the detector is part of
 		bool is_ref; //used to test detectors
 		double offset; //used for alignement
 		bool direction; // direction of the axis
-		double angle; //used for alignement
+		//used for alignement
+		double angle_x;
+		double angle_y;
+		double angle_z;
 		//Detector dependent Cuts
 		double ClusTOTCut_Min;
 		double ClusMaxSampleCut_Min;
@@ -61,7 +66,7 @@ class CM_Detector: public Detector{
 		CM_Detector();
 		CM_Detector(const CM_Detector& other);
 		CM_Detector& operator=(const CM_Detector& other);
-		CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_);
+		CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_);
 		~CM_Detector();
 		//CosMulti general charac
 		static const double thinStripPitch = 500./1024.; // distance between the middle of 2 adjacent thin strips
@@ -89,7 +94,7 @@ class MG_Detector: public Detector{
 		MG_Detector();
 		MG_Detector(const MG_Detector& other);
 		MG_Detector& operator=(const MG_Detector& other);
-		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_, int perp_n_, int clustering_holes_);
+		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_);
 		~MG_Detector();
 		static unsigned int StripToChannel_f(unsigned int strip_nb);
 		static const vector<unsigned int> StripToChannel;
