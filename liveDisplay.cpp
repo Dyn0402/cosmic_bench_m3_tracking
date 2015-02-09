@@ -67,66 +67,16 @@ liveDisplay::liveDisplay(string config_file){
 	file_descriptor = -1;
 	inotify_started = false;
 	current_file = "";
-	MG_N = 0;
-	CM_N = 0;
-	int total_CM_N = config_tree.get<int>("total_CM_N");
-	int total_MG_N = config_tree.get<int>("total_MG_N");
-	ifstream in;
-	in.open((config_tree.get<string>("RMSPed")).c_str());
-	int rms_strip, det;
-	vector<vector<double> > RMS;
-	for(int i=0;i<total_CM_N;i++){
-		RMS.push_back(vector<double>(64,0));
-	}
-	for(int i=0;i<total_MG_N;i++){
-		RMS.push_back(vector<double>(61,0));
-	}
-	int n_lines = 0;
-	while(in.good() && n_lines<((total_CM_N*64)+(total_MG_N*61))){
-		double current_rms;
-		in >> det >> rms_strip >> current_rms;
-		if(det<0 || det>(total_MG_N+total_CM_N-1)){
-			cout << "problem reading RMS file" << endl;
-		}
-		else if(det<total_CM_N && rms_strip>63){
-			cout << "problem reading RMS file" << endl;
-		}
-		else if(rms_strip>60){
-			cout << "problem reading RMS file" << endl;
-		}
-		RMS[det][rms_strip] = current_rms;
-		n_lines++;
-	}
-	in.close();
+	CosmicBench::Init(config_tree);
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
-		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle")));
-		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
-		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
-		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
-		detectors.back()->set_RMS(RMS[child.second.get<int>("cm_n")]);
-		(dynamic_cast<CM_Detector*>(detectors.back()))->set_ClusMaxStripAmplCut_Min_Wide(child.second.get<double>("ClusMaxStripAmplCut_Min_Wide"));
-		(dynamic_cast<CM_Detector*>(detectors.back()))->set_ClusSizeCut_Max_Wide(child.second.get<double>("ClusSizeCut_Max_Wide"));
 		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::CM;
 		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("cm_n");
-		CM_N++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle"),child.second.get<double>("2D_perp_n"),child.second.get<int>("clustering_holes")));
-		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
-		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
-		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
-		detectors.back()->set_RMS(RMS[total_CM_N+child.second.get<int>("mg_n")]);
-		(dynamic_cast<MG_Detector*>(detectors.back()))->set_ClusSizeCut_Min(child.second.get<double>("ClusSizeCut_Min"));
-		(dynamic_cast<MG_Detector*>(detectors.back()))->set_SRF(child.second.get<double>("SRF.offset"),child.second.get<double>("SRF.gauss"),child.second.get<double>("SRF.lorentz"),child.second.get<double>("SRF.ratio"));
 		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::MG;
 		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("mg_n");
-		MG_N++;
 	}
-	if((total_CM_N!=CM_N) || (total_MG_N!=MG_N)){
-		cout << "problem in detectors number" << endl;
-		return;
-	}
-	if(total_CM_N!=0) cout << "warning, CosMultis are not fully supported !" << endl;
+	if(CM_N!=0) cout << "warning, CosMultis are not fully supported !" << endl;
 	use_srf = config_tree.get<bool>("use_SRF");
 	electronic_type = Tomography::str_to_elec(config_tree.get<string>("electronic_type"));
 	data_file_basename = config_tree.get<string>("data_file_basename");

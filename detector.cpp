@@ -3,12 +3,21 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 #include <iostream>
+
+//Boost
+#include <boost/property_tree/ptree.hpp>
+#include <boost/foreach.hpp>
 
 #include <TMath.h>
 
 using std::cout;
 using std::endl;
+using std::ifstream;
+
+//boost
+using boost::property_tree::ptree;
 
 using TMath::Exp;
 using TMath::Log;
@@ -311,6 +320,63 @@ CosmicBench::~CosmicBench(){
 	detectors.clear();
 	CM_N = 0;
 	MG_N = 0;
+}
+void CosmicBench::Init(ptree config_tree){
+	CM_N = 0;
+	MG_N = 0;
+	int total_CM_N = config_tree.get<int>("total_CM_N");
+	int total_MG_N = config_tree.get<int>("total_MG_N");
+	string RMSName = config_tree.get<string>("RMSPed");
+	ifstream in;
+	in.open(RMSName.c_str());
+	int rms_strip, det;
+	vector<vector<double> > RMS;
+	for(int i=0;i<total_CM_N;i++){
+		RMS.push_back(vector<double>(CM_Detector::Nstrip,0));
+	}
+	for(int i=0;i<total_MG_N;i++){
+		RMS.push_back(vector<double>(MG_Detector::Nstrip,0));
+	}
+	int n_lines = 0;
+	while(in.good() && n_lines<((total_CM_N*CM_Detector::Nstrip)+(total_MG_N*MG_Detector::Nstrip))){
+		double current_rms;
+		in >> det >> rms_strip >> current_rms;
+		if(det<0 || det>(total_MG_N+total_CM_N-1)){
+			cout << "problem reading RMS file" << endl;
+		}
+		else if(det<total_CM_N && rms_strip>63){
+			cout << "problem reading RMS file" << endl;
+		}
+		else if(rms_strip>60){
+			cout << "problem reading RMS file" << endl;
+		}
+		RMS[det][rms_strip] = current_rms;
+		n_lines++;
+	}
+	in.close();
+	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
+		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle")));
+		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
+		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
+		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
+		(dynamic_cast<CM_Detector*>(detectors.back()))->set_ClusMaxStripAmplCut_Min_Wide(child.second.get<double>("ClusMaxStripAmplCut_Min_Wide"));
+		(dynamic_cast<CM_Detector*>(detectors.back()))->set_ClusSizeCut_Max_Wide(child.second.get<double>("ClusSizeCut_Max_Wide"));
+		detectors.back()->set_RMS(RMS[child.second.get<int>("cm_n")]);
+		CM_N++;
+	}
+	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
+		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes")));
+		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
+		detectors.back()->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
+		detectors.back()->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
+		detectors.back()->set_RMS(RMS[total_CM_N+child.second.get<int>("mg_n")]);
+		(dynamic_cast<MG_Detector*>(detectors.back()))->set_ClusSizeCut_Min(child.second.get<double>("ClusSizeCut_Min"));
+		MG_N++;
+	}
+	if((total_CM_N!=CM_N) || (total_MG_N!=MG_N)){
+		cout << "problem in detectors number" << endl;
+		return;
+	}
 }
 /*
 void CosmicBench::add_MM(Detector * det){

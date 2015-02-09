@@ -5,6 +5,10 @@
 
 #include "tomography.h"
 
+//Boost
+#include <boost/property_tree/ptree.hpp>
+using boost::property_tree::ptree;
+
 using std::string;
 using std::vector;
 
@@ -121,6 +125,7 @@ class CosmicBench{
 		int get_MG_N() const;
 		Detector * get_detector(unsigned int i) const;
 	protected:
+		void Init(ptree config_tree);
 		vector<Detector*> detectors;
 		int CM_N;
 		int MG_N;

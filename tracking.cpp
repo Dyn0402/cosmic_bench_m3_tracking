@@ -134,7 +134,7 @@ int main(int argc, char ** argv){
 	else if(argv[2] == acceptance){
 		acceptanceFunction chombier(0,500,0,500,1270,0,0);
 		TH2D * plot = new TH2D(chombier.plot_XY(500,-200,700,500,-200,700,1600));
-		plot->Draw();
+		plot->Draw("colz");
 	}
 	else{
 		cout << "function not found" << endl;
