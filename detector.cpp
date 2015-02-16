@@ -221,6 +221,9 @@ void CM_Detector::set_RMS(vector<double> RMS_){
 	if(RMS_.size()!=64) return;
 	RMS = RMS_;
 }
+double CM_Detector::get_size() const{
+	return size;
+}
 
 MG_Detector::MG_Detector(): Detector(){
 	mg_n_in_tree = -1;
@@ -320,6 +323,9 @@ double MG_Detector::SRF_fit(double * x, double * p){
 	return_value *= 1 - srf_offset;
 	return_value += srf_offset;
 	return return_value;
+}
+double MG_Detector::get_size() const{
+	return size;
 }
 
 CosmicBench::CosmicBench(){

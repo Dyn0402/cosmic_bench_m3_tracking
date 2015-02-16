@@ -77,7 +77,7 @@ Signal::Signal(string configFilePath){
 	if(exists){
 		TFile *fIn = new TFile(signalName.c_str(),"READ");
 		TTree * treeIn = (TTree*)(fIn->Get("T"));
-		Tsignal::Init(treeIn,CM_n,MG_n);
+		Tsignal::Init(treeIn,CM_N,MG_N);
 	}
 	else{
 		Tsignal::Init(0,CM_N,MG_N);
@@ -260,8 +260,8 @@ void Signal::HoughTracking(long event_nb){
 	//max_z+=10;
 	//min_z-=10;
 	int bin_n = 250;
-	double min_coord = -100;
-	double max_coord = 600;
+	double min_coord = -6*Tomography::XY_size/10.;
+	double max_coord = 6*Tomography::XY_size/10.;
 	TH2D * hough_space_X = new TH2D("hough_space_X","hough_space_X",bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
 	TH2D * hough_space_Y = new TH2D("hough_space_Y","hough_space_Y",bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
 	int suitable_clus_n = 0;

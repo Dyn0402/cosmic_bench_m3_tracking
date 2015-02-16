@@ -85,7 +85,6 @@ void Analyse::Residus(){
 	TH1D * CM_residus[CM_N];
 	TH1D * MG_residus[MG_N];
 	int nbins = 200;
-	int lim = 500;
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
 	for(int i=0;i<CM_N;i++){
@@ -93,17 +92,17 @@ void Analyse::Residus(){
 		name << "Cosmulti_" << i;
 		c_CM[i] = new TCanvas(name.str().c_str(),name.str().c_str());
 		name << "_residu";
-		CM_residus[i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-lim,lim);
+		CM_residus[i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-Tomography::XY_size,Tomography::XY_size);
 	}
 	for(int i=0;i<MG_N;i++){
 		ostringstream name;
 		name << "MultiGen_" << i;
 		c_MG[i] = new TCanvas(name.str().c_str(),name.str().c_str());
 		name << "_residu";
-		MG_residus[i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-lim,lim);
+		MG_residus[i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-Tomography::XY_size,Tomography::XY_size);
 	}
 	TCanvas * c0 = new TCanvas("chiSquare","chiSquare");
-	TH1D * chiSquareH = new TH1D("chiSquares","chiSquares",nbins,0,3*lim);
+	TH1D * chiSquareH = new TH1D("chiSquares","chiSquares",nbins,0,3*Tomography::XY_size);
 
 	if (fChain == 0) return;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
@@ -207,7 +206,6 @@ void Analyse::Residus_ref(){
 	map<string,int> point_nb;
 	map<string,double> efficacity;
 	int nbins = 200;
-	int lim = 500;
 	double marge = 1./10.;
 	int nbins_2D = 100*(1+2*marge);
 	long eventReconstructed = 0;
@@ -222,57 +220,34 @@ void Analyse::Residus_ref(){
 			ostringstream name;
 			if((*it)->get_type() == Tomography::CM){
 				name << "Cosmulti_" << (dynamic_cast<CM_Detector*>(*it))->get_cm_n_in_tree();
-				c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
-				c_MM[name.str()]->Divide(4,4);
-				MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
-				muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
-				muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
-				efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
-				efficacity_2D[name.str()]->SetStats(false);
-				correlation[name.str()] = new TGraph();
-				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-50,550,-5,5);
-				resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-50,550,-5,5);
-				resVSampl[name.str()] = new TProfile((name.str()+"_resVSampl").c_str(),(name.str()+"_resVSampl").c_str(),500,-100,10000,-5,5);
-				resVStime[name.str()] = new TProfile((name.str()+"_resVStime").c_str(),(name.str()+"_resVStime").c_str(),38,-2,34,-5,5);
-				resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
-				resVSanglePerp[name.str()] = new TProfile((name.str()+"_resVSanglePerp").c_str(),(name.str()+"_resVSanglePerp").c_str(),50,-0.6,0.6,-5,5);
-				resVStot[name.str()] = new TProfile((name.str()+"_resVStot").c_str(),(name.str()+"_resVStot").c_str(),26,0,25,-5,5);
-				resVSsize[name.str()] = new TProfile((name.str()+"_resVSsize").c_str(),(name.str()+"_resVSsize").c_str(),50,0,50,-5,5);
-				absResVSampl[name.str()] = new TProfile((name.str()+"_absResVSampl").c_str(),(name.str()+"_absResVSampl").c_str(),500,-100,10000,0,5);
-				absResVStime[name.str()] = new TProfile((name.str()+"_absResVStime").c_str(),(name.str()+"_absResVStime").c_str(),38,-2,34,0,5);
-				absResVSabsAngle[name.str()] = new TProfile((name.str()+"_absResVSangle").c_str(),(name.str()+"_absResVSabsAngle").c_str(),50,0,0.6,0,5);
-				absResVStot[name.str()] = new TProfile((name.str()+"_absResVStot").c_str(),(name.str()+"_absResVStot").c_str(),26,0,25,0,5);
-				absResVSsize[name.str()] = new TProfile((name.str()+"_absResVSsize").c_str(),(name.str()+"_absResVSsize").c_str(),50,0,50,0,5);
-				point_nb[name.str()] = 0;
-				efficacity[name.str()] = 0;
 			}
 			else if((*it)->get_type() == Tomography::MG){
 				name << "Multigen_" << (dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree();
-				c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
-				c_MM[name.str()]->Divide(4,4);
-				MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
-				muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
-				muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
-				efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
-				efficacity_2D[name.str()]->SetStats(false);
-				correlation[name.str()] = new TGraph();
-				angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-50,550,-5,5);
-				resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-50,550,-5,5);
-				resVSampl[name.str()] = new TProfile((name.str()+"_resVSampl").c_str(),(name.str()+"_resVSampl").c_str(),500,-100,10000,-5,5);
-				resVStime[name.str()] = new TProfile((name.str()+"_resVStime").c_str(),(name.str()+"_resVStime").c_str(),38,-2,34,-5,5);
-				resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
-				resVSanglePerp[name.str()] = new TProfile((name.str()+"_resVSanglePerp").c_str(),(name.str()+"_resVSanglePerp").c_str(),50,-0.6,0.6,-5,5);
-				resVStot[name.str()] = new TProfile((name.str()+"_resVStot").c_str(),(name.str()+"_resVStot").c_str(),26,0,25,-5,5);
-				resVSsize[name.str()] = new TProfile((name.str()+"_resVSsize").c_str(),(name.str()+"_resVSsize").c_str(),50,0,50,-5,5);
-				absResVSampl[name.str()] = new TProfile((name.str()+"_absResVSampl").c_str(),(name.str()+"_absResVSampl").c_str(),500,-100,10000,0,5);
-				absResVStime[name.str()] = new TProfile((name.str()+"_absResVStime").c_str(),(name.str()+"_absResVStime").c_str(),38,-2,34,0,5);
-				absResVSabsAngle[name.str()] = new TProfile((name.str()+"_absResVSangle").c_str(),(name.str()+"_absResVSabsAngle").c_str(),50,0,0.6,0,5);
-				absResVStot[name.str()] = new TProfile((name.str()+"_absResVStot").c_str(),(name.str()+"_absResVStot").c_str(),26,0,25,0,5);
-				absResVSsize[name.str()] = new TProfile((name.str()+"_absResVSsize").c_str(),(name.str()+"_absResVSsize").c_str(),50,0,50,0,5);
-				point_nb[name.str()] = 0;
-				efficacity[name.str()] = 0;
 				if((*it)->get_perp_n()>-1) perp_pairs[(dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree()] = (*it)->get_perp_n();
 			}
+			c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
+			c_MM[name.str()]->Divide(4,4);
+			MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
+			muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
+			muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
+			efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
+			efficacity_2D[name.str()]->SetStats(false);
+			correlation[name.str()] = new TGraph();
+			angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
+			resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
+			resVSampl[name.str()] = new TProfile((name.str()+"_resVSampl").c_str(),(name.str()+"_resVSampl").c_str(),500,-100,10000,-5,5);
+			resVStime[name.str()] = new TProfile((name.str()+"_resVStime").c_str(),(name.str()+"_resVStime").c_str(),38,-2,34,-5,5);
+			resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
+			resVSanglePerp[name.str()] = new TProfile((name.str()+"_resVSanglePerp").c_str(),(name.str()+"_resVSanglePerp").c_str(),50,-0.6,0.6,-5,5);
+			resVStot[name.str()] = new TProfile((name.str()+"_resVStot").c_str(),(name.str()+"_resVStot").c_str(),26,0,25,-5,5);
+			resVSsize[name.str()] = new TProfile((name.str()+"_resVSsize").c_str(),(name.str()+"_resVSsize").c_str(),50,0,50,-5,5);
+			absResVSampl[name.str()] = new TProfile((name.str()+"_absResVSampl").c_str(),(name.str()+"_absResVSampl").c_str(),500,-100,10000,0,5);
+			absResVStime[name.str()] = new TProfile((name.str()+"_absResVStime").c_str(),(name.str()+"_absResVStime").c_str(),38,-2,34,0,5);
+			absResVSabsAngle[name.str()] = new TProfile((name.str()+"_absResVSangle").c_str(),(name.str()+"_absResVSabsAngle").c_str(),50,0,0.6,0,5);
+			absResVStot[name.str()] = new TProfile((name.str()+"_absResVStot").c_str(),(name.str()+"_absResVStot").c_str(),26,0,25,0,5);
+			absResVSsize[name.str()] = new TProfile((name.str()+"_absResVSsize").c_str(),(name.str()+"_absResVSsize").c_str(),50,0,50,0,5);
+			point_nb[name.str()] = 0;
+			efficacity[name.str()] = 0;
 			//nref_is_X[name.str()] = (*it)->get_is_X();
 			if((*it)->get_is_X()) nref_x_n++;
 		}
@@ -338,23 +313,18 @@ void Analyse::Residus_ref(){
 						double residu = numeric_limits<double>::max();
 						vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
 						for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-							if(kt->get_is_X()){
-								kt->set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-							}
-							else{
-								kt->set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-							}
+							kt->set_perp_pos_mm(*jt);
 							double current_residu = jt->get_residu_ref(&(*kt));
 							if(current_residu<residu){
 								residu = current_residu;
 								matching_cluster = kt;
 							}
 						}
-						if(jt->eval_X((*it)->get_z())<500 && jt->eval_X((*it)->get_z())>0 && jt->eval_Y((*it)->get_z())<500 && jt->eval_Y((*it)->get_z())>0) muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
+						muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 						if(matching_cluster == current_clusters.end()) continue;
-						if((*matching_cluster).get_is_X()){
-							(*matching_cluster).set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster).get_pos_mm());
+						matching_cluster->set_perp_pos_mm(*jt);
+						if(matching_cluster->get_is_X()){
+							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),matching_cluster->get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
 							resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
 							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
@@ -362,8 +332,7 @@ void Analyse::Residus_ref(){
 							resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
 						}
 						else{
-							(*matching_cluster).set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster).get_pos_mm());
+							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),matching_cluster->get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
 							resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
 							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
@@ -399,23 +368,18 @@ void Analyse::Residus_ref(){
 						double residu = numeric_limits<double>::max();
 						vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
 						for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-							if(kt->get_is_X()){
-								kt->set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-							}
-							else{
-								kt->set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-							}
+							kt->set_perp_pos_mm(*jt);
 							double current_residu = jt->get_residu_ref(&(*kt));
 							if(current_residu<residu){
 								residu = current_residu;
 								matching_cluster = kt;
 							}
 						}
-						if(jt->eval_X((*it)->get_z())<500 && jt->eval_X((*it)->get_z())>0 && jt->eval_Y((*it)->get_z())<500 && jt->eval_Y((*it)->get_z())>0) muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
+						muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 						if(matching_cluster == current_clusters.end()) continue;
-						if((*matching_cluster).get_is_X()){
-							(*matching_cluster).set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster).get_pos_mm());
+						matching_cluster->set_perp_pos_mm(*jt);
+						if(matching_cluster->get_is_X()){
+							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),matching_cluster->get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
 							resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
 							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
@@ -423,8 +387,7 @@ void Analyse::Residus_ref(){
 							resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
 						}
 						else{
-							(*matching_cluster).set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster).get_pos_mm());
+							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),matching_cluster->get_pos_mm());
 							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
 							resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
 							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
@@ -517,7 +480,7 @@ void Analyse::Residus_ref(){
 				efficacity_2D[it->first]->SetBinContent(binN,binContent);
 				double pos_X = muon_total[it->first]->GetXaxis()->GetBinCenter(i);
 				double pos_Y = muon_total[it->first]->GetYaxis()->GetBinCenter(j);
-				if(pos_X<=400 && pos_X>=100 && pos_Y<=400 && pos_Y>=100){
+				if(pos_X<=2*Tomography::XY_size/5. && pos_X>=-2*Tomography::XY_size/5. && pos_Y<=2*Tomography::XY_size/5. && pos_Y>=-2*Tomography::XY_size/5.){
 					total_seen += muon_seen[it->first]->GetBinContent(binN);
 					total_passed += muon_total[it->first]->GetBinContent(binN);
 				}
@@ -587,7 +550,6 @@ void Analyse::Residus_ref_2D(){
 	TH2D* efficacity_2D;
 	double efficacity = 0;
 	int nbins = 200;
-	int lim = 500;
 	double marge = 1./10.;
 	int nbins_2D = 100*(1+2*marge);
 	long eventReconstructed = 0;
@@ -634,9 +596,9 @@ void Analyse::Residus_ref_2D(){
 	}
 
 	c_MM = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
-	muon_seen = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
-	muon_total = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
-	efficacity_2D = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-marge*lim,(1+marge)*lim,nbins_2D,-marge*lim,(1+marge)*lim);
+	muon_seen = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
+	muon_total = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
+	efficacity_2D = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
 	efficacity_2D->SetStats(false);
 
 	TCanvas * c0 = new TCanvas("stats","stats");
@@ -692,12 +654,7 @@ void Analyse::Residus_ref_2D(){
 					double residu = numeric_limits<double>::max();
 					vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
 					for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-						if(kt->get_is_X()){
-							kt->set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-						}
-						else{
-							kt->set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-						}
+						kt->set_perp_pos_mm(*jt);
 						double current_residu = jt->get_residu_ref(&(*kt));
 						if(current_residu<residu){
 							residu = current_residu;
@@ -705,12 +662,7 @@ void Analyse::Residus_ref_2D(){
 						}
 					}
 					if(matching_cluster == current_clusters.end()) continue;
-					if((*matching_cluster).get_is_X()){
-						(*matching_cluster).set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-					}
-					else{
-						(*matching_cluster).set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-					}
+					matching_cluster->set_perp_pos_mm(*jt);
 					if(residu<chisquare_threshold){
 						seen_clus_in_array.push_back(matching_cluster - current_clusters.begin());
 					}
@@ -720,12 +672,7 @@ void Analyse::Residus_ref_2D(){
 					double residu = numeric_limits<double>::max();
 					vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
 					for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-						if(kt->get_is_X()){
-							kt->set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-						}
-						else{
-							kt->set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-						}
+						kt->set_perp_pos_mm(*jt);
 						double current_residu = jt->get_residu_ref(&(*kt));
 						if(current_residu<residu){
 							residu = current_residu;
@@ -733,12 +680,7 @@ void Analyse::Residus_ref_2D(){
 						}
 					}
 					if(matching_cluster == current_clusters.end()) continue;
-					if((*matching_cluster).get_is_X()){
-						(*matching_cluster).set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-					}
-					else{
-						(*matching_cluster).set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-					}
+					matching_cluster->set_perp_pos_mm(*jt);
 					if(residu<chisquare_threshold){
 						seen_clus_in_array.push_back(matching_cluster - current_clusters.begin());
 					}
@@ -792,7 +734,7 @@ void Analyse::Residus_ref_2D(){
 			efficacity_2D->SetBinContent(binN,binContent);
 			double pos_X = muon_total->GetXaxis()->GetBinCenter(i);
 			double pos_Y = muon_total->GetYaxis()->GetBinCenter(j);
-			if(pos_X<=400 && pos_X>=100 && pos_Y<=400 && pos_Y>=100){
+			if(pos_X<=2*Tomography::XY_size/5. && pos_X>=-2*Tomography::XY_size/5. && pos_Y<=2*Tomography::XY_size/5. && pos_Y>=-2*Tomography::XY_size/5.){
 				total_seen += muon_seen->GetBinContent(binN);
 				total_passed += muon_total->GetBinContent(binN);
 			}
@@ -1012,8 +954,8 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1){
 		if(current_z>z_max) z_max = current_z;
 		if(current_z<z_min) z_min = current_z;
 	}
-	double x_min = 0;
-	double x_max = 500;
+	double x_min = -Tomography::XY_size/2.;
+	double x_max = Tomography::XY_size/2.;
 	if(z>z_max){
 		x_min = -500.*(z - z_max)/(z_max - z_min);
 		x_max = 500. - x_min;
@@ -1081,8 +1023,8 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 		if(current_z>z_max) z_max = current_z;
 		if(current_z<z_min) z_min = current_z;
 	}
-	double x_min = 0;
-	double x_max = 500;
+	double x_min = -Tomography::XY_size/2.;
+	double x_max = Tomography::XY_size/2.;
 	if(z>z_max){
 		x_min = -500.*(z - z_max)/(z_max - z_min);
 		x_max = 500. - x_min;
@@ -1199,10 +1141,10 @@ void Analyse::AbsorptionFluxMapNorm(double z,TH2D * background, int nbins, TCanv
 	//gStyle->SetPalette(1);
 	//double z_Pb = 1553;
 	if(c1==0) c1 = new TCanvas("fluxMap","fluxMap");
-	TH2D * fluxMapZ = new TH2D("fluxMapSignal","fluxMapSignal",nbins,-100,600,nbins,-100,600);
+	TH2D * fluxMapZ = new TH2D("fluxMapSignal","fluxMapSignal",background->GetNbinsX(),background->GetXaxis()->GetXmin(),background->GetXaxis()->GetXmax(),background->GetNbinsY(),background->GetYaxis()->GetXmin(),background->GetYaxis()->GetXmax());
 	fluxMapZ->SetStats(0);
 	if(c2 == 0) c2 = new TCanvas("fluxMapNorm","fluxMapNorm");
-	TH2D * fluxMapSigma = new TH2D("fluxMapSigma","fluxMapSigma",nbins,-100,600,nbins,-100,600);
+	TH2D * fluxMapSigma = new TH2D("fluxMapSigma","fluxMapSigma",background->GetNbinsX(),background->GetXaxis()->GetXmin(),background->GetXaxis()->GetXmax(),background->GetNbinsY(),background->GetYaxis()->GetXmin(),background->GetYaxis()->GetXmax());
 	fluxMapSigma->SetStats(0);
 	if(c3 == 0) c3 = new TCanvas("fluxMap_Sigma","fluxMap_Sigma");
 
@@ -1300,10 +1242,10 @@ void Analyse::StoreRayPairs(string outFileName){
 	thetaYDown->SetLineColor(4);
 
 	TCanvas * c4 = new TCanvas("correlation","correlation");
-	TH2D * XY_correlation = new TH2D("correlation","correlation",70,-100,600,70,-100,600);
+	TH2D * XY_correlation = new TH2D("correlation","correlation",70,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.,70,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.);
 
 	TCanvas * c3 = new TCanvas("docas","docas");
-	TH1D * doca = new TH1D("doca","doca",100,0,500);
+	TH1D * doca = new TH1D("doca","doca",100,0,Tomography::XY_size);
 
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
@@ -1644,12 +1586,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 							double residu = numeric_limits<double>::max();
 							vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
 							for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-								if(kt->get_is_X()){
-									kt->set_perp_pos_mm(jt->eval_Y((*it)->get_z()));
-								}
-								else{
-									kt->set_perp_pos_mm(jt->eval_X((*it)->get_z()));
-								}
+								kt->set_perp_pos_mm(*jt);
 								double current_residu = jt->get_residu_ref(&(*kt));
 								if(current_residu<residu){
 									residu = current_residu;
@@ -1673,7 +1610,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 								int channel = MG_Detector::StripToChannel[strip_nb];
 								if(Abs(residu)<50.){
 									SRH->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
-									if(bin_nb>0) SRH_coord[Min(Max(FloorNint(matching_position_perp*bin_nb/500.),0),bin_nb-1)]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
+									if(bin_nb>0) SRH_coord[Min(Max(FloorNint((bin_nb/2.)+matching_position_perp*bin_nb/Tomography::XY_size),0),bin_nb-1)]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
 								}
 								//SRH2D[i]->SetPoint(graph_point_nb, matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
 								//graph_point_nb++;
@@ -1750,12 +1687,12 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 			SRH_coord[i_coord]->Scale(1./scaling_function->GetParameter(0));
 			delete scaling_function;
 			SRH_coord[i_coord]->Fit(SRF_coord[i_coord],"QN");
-			gauss_width_graph->SetPoint(i_coord,(250./bin_nb)+(i_coord*500./bin_nb),SRF_coord[i_coord]->GetParameter(1));
-			gauss_width_graph->SetPointError(i_coord,250./bin_nb,SRF_coord[i_coord]->GetParError(1));
-			lorentz_width_graph->SetPoint(i_coord,(250./bin_nb)+(i_coord*500./bin_nb),SRF_coord[i_coord]->GetParameter(2));
-			lorentz_width_graph->SetPointError(i_coord,250./bin_nb,SRF_coord[i_coord]->GetParError(2));
-			offset_graph->SetPoint(i_coord,(250./bin_nb)+(i_coord*500./bin_nb),SRF_coord[i_coord]->GetParameter(3));
-			offset_graph->SetPointError(i_coord,250./bin_nb,SRF_coord[i_coord]->GetParError(3));
+			gauss_width_graph->SetPoint(i_coord,(Tomography::XY_size/(bin_nb*2.))+(i_coord*Tomography::XY_size/bin_nb),SRF_coord[i_coord]->GetParameter(1));
+			gauss_width_graph->SetPointError(i_coord,(Tomography::XY_size/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(1));
+			lorentz_width_graph->SetPoint(i_coord,(Tomography::XY_size/(bin_nb*2.))+(i_coord*Tomography::XY_size/bin_nb),SRF_coord[i_coord]->GetParameter(2));
+			lorentz_width_graph->SetPointError(i_coord,(Tomography::XY_size/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(2));
+			offset_graph->SetPoint(i_coord,(Tomography::XY_size/(bin_nb*2.))+(i_coord*Tomography::XY_size/bin_nb),SRF_coord[i_coord]->GetParameter(3));
+			offset_graph->SetPointError(i_coord,(Tomography::XY_size/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(3));
 			c_coord[i_coord]->cd();
 			SRH_coord[i_coord]->Draw();
 			SRF_coord[i_coord]->Draw("SAME");

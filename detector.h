@@ -20,6 +20,7 @@ class Detector{
 		bool get_is_up() const;
 		bool get_is_ref() const;
 		virtual Tomography::det_type get_type() const = 0;
+		virtual double get_size() const = 0;
 		double get_offset() const;
 		bool get_direction() const;
 		double get_angle_x() const;
@@ -72,6 +73,8 @@ class CM_Detector: public Detector{
 		static const double thinStripPitch = 500./1024.; // distance between the middle of 2 adjacent thin strips
 		static const double wideStripPitch = 500./32.; // distance between the middle of 2 adjacent wide strips
 		static const int Nstrip = 64;
+		static const double size = 500.;
+		double get_size() const;
 		//Cut setters
 		void set_ClusMaxStripAmplCut_Min_Wide(double cut);
 		void set_ClusSizeCut_Max_Wide(double cut);
@@ -102,6 +105,8 @@ class MG_Detector: public Detector{
 		//MultiGen general charac
 		static const double StripPitch = 500./1024.; // distance between the middle of 2 adjacent strips
 		static const int Nstrip = 61;
+		static const double size = 500.;
+		double get_size() const;
 		//Cut setters
 		void set_ClusSizeCut_Min(double cut);
 		bool test_ClusSize(double size);

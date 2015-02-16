@@ -172,6 +172,19 @@ bool Cluster::get_is_up() const{
 void Cluster::set_perp_pos_mm(double coord){
 	perp_pos_mm = coord;
 }
+void Cluster::set_perp_pos_mm(Ray ray){
+	double n_x = Cos(angle_z)*Sin(angle_y) + Sin(angle_z)*Sin(angle_x)*Cos(angle_y);
+	double n_y = Cos(angle_z)*Sin(angle_x)*Cos(angle_y) - Sin(angle_z)*Sin(angle_y);
+	double n_z = Cos(angle_x)*Cos(angle_y);
+	double true_z = (n_z*z - ray.get_Z_intercept_X()*n_x - ray.get_Z_intercept_Y()*n_y)/(n_z + ray.get_slope_X()*n_x + ray.get_slope_Y()*n_y);
+	if(is_X){
+		perp_pos_mm = ray.get_slope_Y()*true_z + ray.get_Z_intercept_Y();
+	}
+	else{
+		perp_pos_mm = ray.get_slope_X()*true_z + ray.get_Z_intercept_X();
+	}
+
+}
 double Cluster::get_perp_pos_mm() const{
 	return perp_pos_mm;
 }
@@ -284,15 +297,16 @@ double CM_Cluster::get_pos_mm() const{
 	if(strip_type == Tomography::Wide){
 		double pos_mm = 0;
 		if(direction){
-			pos_mm = ((63.-maxStrip)*500./32.);
+			pos_mm = ((31.-maxStrip)*CM_Detector::wideStripPitch);
 		}
 		else{
-			pos_mm = (maxStrip*500./32.);
+			pos_mm = (maxStrip*CM_Detector::wideStripPitch);
 		}
 		if(perp_pos_mm>-1){
 			//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
-		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
+			pos_mm -= CM_Detector::size/2.;
+			if(is_X) pos_mm = (pos_mm*Cos(angle_y)/Cos(angle_z)) - perp_pos_mm*Tan(angle_z);
+			else pos_mm = (pos_mm*Cos(angle_x) + perp_pos_mm*(Sin(angle_z) - Cos(angle_z)*Sin(angle_x)*Tan(angle_y)))/(Cos(angle_z) + Sin(angle_z)*Sin(angle_x)*Tan(angle_y));
 		}
 		pos_mm += offset;
 		return pos_mm;
@@ -303,15 +317,16 @@ double CM_Cluster::correct_strip_nb(int strip_nb) const{
 	if(strip_type == Tomography::Wide){
 		double pos_mm = 0;
 		if(direction){
-			pos_mm = ((63.-strip_nb)*500./32.);
+			pos_mm = ((31.-strip_nb)*CM_Detector::wideStripPitch);
 		}
 		else{
-			pos_mm = (strip_nb*500./32.);
+			pos_mm = (strip_nb*CM_Detector::wideStripPitch);
 		}
 		if(perp_pos_mm>-1){
 			//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
-		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
+			pos_mm -= CM_Detector::size/2.;
+			if(is_X) pos_mm = (pos_mm*Cos(angle_y)/Cos(angle_z)) - perp_pos_mm*Tan(angle_z);
+			else pos_mm = (pos_mm*Cos(angle_x) + perp_pos_mm*(Sin(angle_z) - Cos(angle_z)*Sin(angle_x)*Tan(angle_y)))/(Cos(angle_z) + Sin(angle_z)*Sin(angle_x)*Tan(angle_y));
 		}
 		pos_mm += offset;
 		return pos_mm;
@@ -320,16 +335,17 @@ double CM_Cluster::correct_strip_nb(int strip_nb) const{
 }
 double CM_Cluster::get_z() const{
 	if(strip_type == Tomography::Wide){
-		double real_z = 0;
+		double real_z = z;
 		double pos_mm = 0;
 		if(direction){
-			pos_mm = ((63.-maxStrip)*500./32.);
+			pos_mm = ((31.-maxStrip)*CM_Detector::wideStripPitch);
 		}
 		else{
-			pos_mm = (maxStrip*500./32.);
+			pos_mm = (maxStrip*CM_Detector::wideStripPitch);
 		}
-		if(is_X) real_z = z + (pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (perp_pos_mm-250.)*Sin(angle_x);
-		else real_z = z + (perp_pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (pos_mm-250.)*Sin(angle_x);
+		pos_mm -= CM_Detector::size/2.;
+		if(is_X) real_z += (pos_mm)*((Sin(angle_y)/Cos(angle_x)) - Tan(angle_x)*Tan(angle_z)*Cos(angle_y)) + (perp_pos_mm)*(Tan(angle_x)/Cos(angle_z));
+		else real_z += (pos_mm*(Cos(angle_z)*Sin(angle_x)*Cos(angle_y) + Sin(angle_z)*Sin(angle_y)) + perp_pos_mm*Cos(angle_x)*Sin(angle_y))/(Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y));
 		return real_z;
 	}
 	else return z;
@@ -403,15 +419,15 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& wideStrip_clus){
 double CM_Demux_Cluster::get_pos_mm() const{
 	double pos_mm = 0;
 	if(direction){
-		pos_mm = pos*500./1024.;
+		pos_mm = pos*CM_Detector::thinStripPitch;
 	}
 	else{
-		pos_mm = (1024-pos)*500./1024.;
+		pos_mm = (1023-pos)*CM_Detector::thinStripPitch;
 	}
 	if(perp_pos_mm>-1){
-		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
-		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
+		pos_mm -= CM_Detector::size/2.;
+		if(is_X) pos_mm = (pos_mm*Cos(angle_y)/Cos(angle_z)) - perp_pos_mm*Tan(angle_z);
+		else pos_mm = (pos_mm*Cos(angle_x) + perp_pos_mm*(Sin(angle_z) - Cos(angle_z)*Sin(angle_x)*Tan(angle_y)))/(Cos(angle_z) + Sin(angle_z)*Sin(angle_x)*Tan(angle_y));
 	}
 	pos_mm += offset;
 	return pos_mm;
@@ -419,30 +435,31 @@ double CM_Demux_Cluster::get_pos_mm() const{
 double CM_Demux_Cluster::correct_strip_nb(int strip_nb) const{
 	double pos_mm = 0;
 	if(direction){
-		pos_mm = strip_nb*500./1024.;
+		pos_mm = strip_nb*CM_Detector::thinStripPitch;
 	}
 	else{
-		pos_mm = (1024-strip_nb)*500./1024.;
+		pos_mm = (1023-strip_nb)*CM_Detector::thinStripPitch;
 	}
 	if(perp_pos_mm>-1){
-		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
-		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
+		pos_mm -= CM_Detector::size/2.;
+		if(is_X) pos_mm = (pos_mm*Cos(angle_y)/Cos(angle_z)) - perp_pos_mm*Tan(angle_z);
+		else pos_mm = (pos_mm*Cos(angle_x) + perp_pos_mm*(Sin(angle_z) - Cos(angle_z)*Sin(angle_x)*Tan(angle_y)))/(Cos(angle_z) + Sin(angle_z)*Sin(angle_x)*Tan(angle_y));
 	}
 	pos_mm += offset;
 	return pos_mm;
 }
 double CM_Demux_Cluster::get_z() const{
-	double real_z = 0;
+	double real_z = z;
 	double pos_mm = 0;
 	if(direction){
-		pos_mm = pos*500./1024.;
+		pos_mm = pos*CM_Detector::thinStripPitch;
 	}
 	else{
-		pos_mm = (1024-pos)*500./1024.;
+		pos_mm = (1023-pos)*CM_Detector::thinStripPitch;
 	}
-	if(is_X) real_z = z + (pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (perp_pos_mm-250.)*Sin(angle_x);
-	else real_z = z + (perp_pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (pos_mm-250.)*Sin(angle_x);
+	pos_mm -= CM_Detector::size/2.;
+	if(is_X) real_z += (pos_mm)*((Sin(angle_y)/Cos(angle_x)) - Tan(angle_x)*Tan(angle_z)*Cos(angle_y)) + (perp_pos_mm)*(Tan(angle_x)/Cos(angle_z));
+	else real_z += (pos_mm*(Cos(angle_z)*Sin(angle_x)*Cos(angle_y) + Sin(angle_z)*Sin(angle_y)) + perp_pos_mm*Cos(angle_x)*Sin(angle_y))/(Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y));
 	return real_z;
 }
 CM_Demux_Cluster::~CM_Demux_Cluster(){
@@ -532,15 +549,15 @@ bool MG_Cluster::is_in_det(Detector * det) const{
 double MG_Cluster::get_pos_mm() const{
 	double pos_mm = 0;
 	if(direction){
-		pos_mm = pos*500./1024.;
+		pos_mm = pos*MG_Detector::StripPitch;
 	}
 	else{
-		pos_mm = (1024-pos)*500./1024.;
+		pos_mm = (1023-pos)*MG_Detector::StripPitch;
 	}
 	if(perp_pos_mm>-1){
-		//pos_mm += (perp_pos_mm - 250)*Tan(angle);
-		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
-		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
+		pos_mm -= MG_Detector::size/2.;
+		if(is_X) pos_mm = (pos_mm*Cos(angle_y)/Cos(angle_z)) - perp_pos_mm*Tan(angle_z);
+		else pos_mm = (pos_mm*Cos(angle_x) + perp_pos_mm*(Sin(angle_z) - Cos(angle_z)*Sin(angle_x)*Tan(angle_y)))/(Cos(angle_z) + Sin(angle_z)*Sin(angle_x)*Tan(angle_y));
 	}
 	pos_mm += offset;
 	return pos_mm;
@@ -548,30 +565,31 @@ double MG_Cluster::get_pos_mm() const{
 double MG_Cluster::correct_strip_nb(int strip_nb) const{
 	double pos_mm = 0;
 	if(direction){
-		pos_mm = strip_nb*500./1024.;
+		pos_mm = strip_nb*MG_Detector::StripPitch;
 	}
 	else{
-		pos_mm = (1024-strip_nb)*500./1024.;
+		pos_mm = (1023-strip_nb)*MG_Detector::StripPitch;
 	}
 	if(perp_pos_mm>-1){
-		//pos_mm += (perp_pos_mm - 250)*Tan(angle); // <-- this is a small angle approx eg. Cos(angle)=1
-		if(is_X) pos_mm = 250. + ((Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y))*(pos_mm - 250.)) - (Sin(angle_z)*Cos(angle_x)*(perp_pos_mm - 250.));
-		else pos_mm = 250. + ((Sin(angle_z)*Cos(angle_y) - Cos(angle_z)*Sin(angle_x)*Sin(angle_y))*(perp_pos_mm - 250.)) + (Cos(angle_z)*Cos(angle_x)*(pos_mm - 250.));
+		pos_mm -= MG_Detector::size/2.;
+		if(is_X) pos_mm = (pos_mm*Cos(angle_y)/Cos(angle_z)) - perp_pos_mm*Tan(angle_z);
+		else pos_mm = (pos_mm*Cos(angle_x) + perp_pos_mm*(Sin(angle_z) - Cos(angle_z)*Sin(angle_x)*Tan(angle_y)))/(Cos(angle_z) + Sin(angle_z)*Sin(angle_x)*Tan(angle_y));
 	}
 	pos_mm += offset;
 	return pos_mm;
 }
 double MG_Cluster::get_z() const{
-	double real_z = 0;
+	double real_z = z;
 	double pos_mm = 0;
 	if(direction){
-		pos_mm = pos*500./1024.;
+		pos_mm = pos*MG_Detector::StripPitch;
 	}
 	else{
-		pos_mm = (1024-pos)*500./1024.;
+		pos_mm = (1023-pos)*MG_Detector::StripPitch;
 	}
-	if(is_X) real_z = z + (pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (perp_pos_mm-250.)*Sin(angle_x);
-	else real_z = z + (perp_pos_mm-250.)*Cos(angle_x)*Sin(angle_y) + (pos_mm-250.)*Sin(angle_x);
+	pos_mm -= MG_Detector::size/2.;
+	if(is_X) real_z += (pos_mm)*((Sin(angle_y)/Cos(angle_x)) - Tan(angle_x)*Tan(angle_z)*Cos(angle_y)) + (perp_pos_mm)*(Tan(angle_x)/Cos(angle_z));
+	else real_z += (pos_mm*(Cos(angle_z)*Sin(angle_x)*Cos(angle_y) + Sin(angle_z)*Sin(angle_y)) + perp_pos_mm*Cos(angle_x)*Sin(angle_y))/(Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y));
 	return real_z;
 }
 int MG_Cluster::get_n_in_tree() const{

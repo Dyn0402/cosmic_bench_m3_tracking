@@ -5,6 +5,7 @@
 #include "cluster.h"
 #include "detector.h"
 #include "tomography.h"
+#include "ray.h"
 
 using std::string;
 
@@ -17,6 +18,7 @@ class CM_Detector;
 class MG_Detector;
 class CosmicBench;
 class T;
+class Ray;
 
 class Cluster{
 	public:
@@ -36,6 +38,7 @@ class Cluster{
 		double get_maxStripAmpl() const;
 		int get_maxStrip() const;
 		void set_perp_pos_mm(double coord);
+		void set_perp_pos_mm(Ray ray);
 		double get_perp_pos_mm() const;
 		int find_det(const vector<Detector*> det_array) const;
 		virtual bool is_in_det(Detector * det) const = 0;

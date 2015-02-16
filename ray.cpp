@@ -19,6 +19,7 @@ using std::vector;
 using std::numeric_limits;
 using std::string;
 using TMath::Cos;
+using TMath::Sin;
 using TMath::Sqrt;
 using TMath::ATan;
 using TMath::Abs;
@@ -123,9 +124,9 @@ void Ray_2D::process(){
 	pos->Sort();
 	TF1 * line = new TF1("line","pol1(0)",minZ-10,maxZ+10);
 	//TF1 * line = new TF1("line","[0] + [1]*x",minZ-10,maxZ+10);
-	double maxSlope = 500./(maxZ-minZ);
-	line->SetParameters(250,0);
-	line->SetParLimits(0,-maxSlope*minZ,500+maxSlope*minZ);
+	double maxSlope = Tomography::XY_size/(maxZ-minZ);
+	line->SetParameters(0,0);
+	line->SetParLimits(0,-(Tomography::XY_size/2.)-(maxSlope*minZ),(Tomography::XY_size/2.)+maxSlope*minZ);
 	line->SetParLimits(1,-maxSlope,maxSlope);
 	pos->Fit(line,"QN");
 	chiSquare = line->GetChisquare();
@@ -199,10 +200,10 @@ double Ray_2D::get_residu(Detector * det) const{
 		return numeric_limits<double>::min();
 	}
 	TF1 * line = new TF1("line","[0]*x+[1]",minZ-10,maxZ+10);
-	double maxSlope = 500./(maxZ-minZ);
-	line->SetParameters(0,250);
-	line->SetParLimits(1,0,500);
-	line->SetParLimits(0,-maxSlope,maxSlope);
+	double maxSlope = Tomography::XY_size/(maxZ-minZ);
+	line->SetParameters(0,0);
+	line->SetParLimits(0,-(Tomography::XY_size/2.)-(maxSlope*minZ),(Tomography::XY_size/2.)+maxSlope*minZ);
+	line->SetParLimits(1,-maxSlope,maxSlope);
 	pos->Fit(line,"QN");
 	double residu = det_coord - line->Eval(det->get_z());
 	delete pos; delete line;
@@ -364,12 +365,7 @@ void Ray::angle_correction(){
 		double current_slope_Y = slope_Y;
 
 		for(vector<Cluster*>::iterator it = clusters.begin();it!=clusters.end();++it){
-			if((*it)->get_is_X()){
-				(*it)->set_perp_pos_mm(this->eval_Y((*it)->get_z()));
-			}
-			else{
-				(*it)->set_perp_pos_mm(this->eval_X((*it)->get_z()));
-			}
+			(*it)->set_perp_pos_mm(*this);
 		}
 		this->process();
 		old_delta_param = delta_param;
@@ -408,6 +404,20 @@ double Ray::eval_X(double z) const{
 }
 double Ray::eval_Y(double z) const{
 	return slope_Y*z+Z_intercept_Y;
+}
+double Ray::eval_X(Detector * det) const{
+	double n_x = Cos(det->get_angle_z())*Sin(det->get_angle_y()) + Sin(det->get_angle_z())*Sin(det->get_angle_x())*Cos(det->get_angle_y());
+	double n_y = Cos(det->get_angle_z())*Sin(det->get_angle_x())*Cos(det->get_angle_y()) - Sin(det->get_angle_z())*Sin(det->get_angle_y());
+	double n_z = Cos(det->get_angle_x())*Cos(det->get_angle_y());
+	double z = (n_z*det->get_z() - Z_intercept_X*n_x - Z_intercept_Y*n_y)/(n_z + slope_X*n_x + slope_Y*n_y);
+	return slope_X*z + Z_intercept_X;
+}
+double Ray::eval_Y(Detector * det) const{
+	double n_x = Cos(det->get_angle_z())*Sin(det->get_angle_y()) + Sin(det->get_angle_z())*Sin(det->get_angle_x())*Cos(det->get_angle_y());
+	double n_y = Cos(det->get_angle_z())*Sin(det->get_angle_x())*Cos(det->get_angle_y()) - Sin(det->get_angle_z())*Sin(det->get_angle_y());
+	double n_z = Cos(det->get_angle_x())*Cos(det->get_angle_y());
+	double z = (n_z*det->get_z() - Z_intercept_X*n_x - Z_intercept_Y*n_y)/(n_z + slope_X*n_x + slope_Y*n_y);
+	return slope_Y*z + Z_intercept_Y;
 }
 double Ray::get_residu(Detector * det) const{
 	bool is_in_ray = false;

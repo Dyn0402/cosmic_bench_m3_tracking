@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <iostream>
 #include <time.h>
+#include <limits>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -32,6 +33,7 @@ using std::cout;
 using std::endl;
 using std::flush;
 using std::bitset;
+using std::numeric_limits;
 
 using boost::property_tree::ptree;
 
@@ -118,7 +120,7 @@ void liveDisplay::add_file(string filename){
 void liveDisplay::add_files(int first,int last){
 	string extension = "";
 	if(electronic_type == Tomography::Feminos) extension = ".aqs";
-	else if(electronic_type == Tomography::Dream) extension = "_01..fdf";
+	else if(electronic_type == Tomography::Dream) extension = "_01.fdf";
 	else extension = ".txt";
 	for(int i=first;i<=last;i++){
 		ostringstream name;
@@ -176,11 +178,26 @@ void liveDisplay::flux_map(double z){
 	TCanvas * cDisplay = new TCanvas("event_display");
 	TCanvas * cStats = new TCanvas("stats");
 	int bin_n = 100;
-	double margin = 200;
-	double x_min = 0;
-	double x_max = 500;
-	double y_min = 0;
-	double y_max = 500;
+	double z_max = numeric_limits<double>::min();
+	double z_min = numeric_limits<double>::max();
+	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+		double current_z = (*det_it)->get_z();
+		if(current_z>z_max) z_max = current_z;
+		if(current_z<z_min) z_min = current_z;
+	}
+	double x_min = -Tomography::XY_size/2.;
+	double x_max = Tomography::XY_size/2.;
+	if(z>z_max){
+		x_min = -500.*(z - z_max)/(z_max - z_min);
+		x_max = 500. - x_min;
+	}
+	else if(z<z_min){
+		x_min = -500.*(z_min - z)/(z_max - z_min);
+		x_max = 500. - x_min;
+	}
+	double width = x_max - x_min;
+	x_min -= 0.05*width;
+	x_max += 0.05*width;
 	map<Tomography::det_type,int> detector_div;
 	detector_div[Tomography::CM] = 2;
 	detector_div[Tomography::MG] = 2;
@@ -191,7 +208,7 @@ void liveDisplay::flux_map(double z){
 	long eventSuitable = 0;
 	long processed = 0;
 	time_t last_time = time(NULL);
-	TH2D * flux_map = new TH2D("flux_map","flux_map",bin_n,x_min-margin,x_max+margin,bin_n,y_min-margin,y_max+margin);
+	TH2D * flux_map = new TH2D("flux_map","flux_map",bin_n,x_min,x_max,bin_n,x_min,x_max);
 	flux_map->SetStats(0);
 	TPaveText * stat_text = new TPaveText(0,0,1,1);
 	DataReader * current_data_reader = NULL;

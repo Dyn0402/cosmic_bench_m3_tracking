@@ -494,7 +494,7 @@ void MG_Event::MultiCluster(){
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
 			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
-			SRFgraph->SetPointError(graph_point_n,0.5*500./1024.,detector.get_RMS(MG_Detector::StripToChannel[j]));
+			SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector.get_RMS(MG_Detector::StripToChannel[j]));
 			graph_point_n++;
 		}
 
@@ -506,7 +506,7 @@ void MG_Event::MultiCluster(){
 				y_current /= ClusMaxStripAmpl;
 				//y_current = strip_ampl[MG_Detector::StripToChannel[static_cast<int>(x_current)]][static_cast<int>(ClusMaxSample)]/ClusMaxStripAmpl;
 				SRFgraph->SetPoint(iPoint,x_current,y_current);
-				SRFgraph->SetPointError(iPoint,500./1024.,(SRFgraph->GetEY())[iPoint]/ClusMaxStripAmpl);
+				SRFgraph->SetPointError(iPoint,MG_Detector::StripPitch,(SRFgraph->GetEY())[iPoint]/ClusMaxStripAmpl);
 			}
 			SRFfit->SetParameter(0,ClusPos);
 			SRFfit->SetParLimits(0,ClusPos-0.5*ClusSize,ClusPos+0.5*ClusSize);
@@ -618,7 +618,7 @@ void MG_Event::HoughCluster(){
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
 			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
-			SRFgraph->SetPointError(graph_point_n,0.5*500./1024.,detector.get_RMS(MG_Detector::StripToChannel[j]));
+			SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector.get_RMS(MG_Detector::StripToChannel[j]));
 			graph_point_n++;
 		}
 
@@ -630,7 +630,7 @@ void MG_Event::HoughCluster(){
 				y_current /= ClusMaxStripAmpl;
 				//y_current = strip_ampl[MG_Detector::StripToChannel[static_cast<int>(x_current)]][static_cast<int>(ClusMaxSample)]/ClusMaxStripAmpl;
 				SRFgraph->SetPoint(iPoint,x_current,y_current);
-				SRFgraph->SetPointError(iPoint,500./1024.,(SRFgraph->GetEY())[iPoint]/ClusMaxStripAmpl);
+				SRFgraph->SetPointError(iPoint,MG_Detector::StripPitch,(SRFgraph->GetEY())[iPoint]/ClusMaxStripAmpl);
 			}
 			SRFfit->SetParameter(0,ClusPos);
 			SRFfit->SetParLimits(0,ClusPos-0.5*ClusSize,ClusPos+0.5*ClusSize);
@@ -672,7 +672,7 @@ void MG_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
 TH1D MG_Event::get_ampl_hist() const{
 	ostringstream name;
 	name << "ampl_MG_det_" << n_in_tree << "_evn_" << evn;
-	TH1D histo(name.str().c_str(),name.str().c_str(),1024,0,500);
+	TH1D histo(name.str().c_str(),name.str().c_str(),1024,-MG_Detector::size/2.,MG_Detector::size/2.);
 	vector<pair<int,int> > cluster_edges;
 	for(vector<MG_Cluster>::const_iterator it=clusters.begin();it!=clusters.end();++it){
 		cluster_edges.push_back(pair<int,int>(FloorNint(it->get_pos()-it->get_size()),CeilNint(it->get_pos()+it->get_size())));
@@ -686,7 +686,7 @@ TH1D MG_Event::get_ampl_hist() const{
 		for(int strip=it->first;strip<=it->second;strip++){
 			if(is_used[strip]) continue;
 			int channel = MG_Detector::StripToChannel[strip];
-			histo.Fill(strip*MG_Detector::StripPitch,*max_element(strip_ampl[channel].begin(),strip_ampl[channel].end()));
+			histo.Fill(strip*MG_Detector::StripPitch - MG_Detector::size/2.,*max_element(strip_ampl[channel].begin(),strip_ampl[channel].end()));
 			is_used[strip] = true;
 		}
 	}
@@ -1202,7 +1202,7 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
 		//map_it->second->Scale(scale_factor);
 		if(map_it->second->GetMaximum() > 0) map_it->second->Scale(min_dist/(scale*map_it->second->GetMaximum()));
-		TF1 * offset = new TF1("offset","[0]",0,500);
+		TF1 * offset = new TF1("offset","[0]",-Tomography::XY_size/2.,Tomography::XY_size/2.);
 		offset->SetParameter(0,map_it->first);
 		map_it->second->Add(offset);
 		delete offset;
@@ -1210,7 +1210,7 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_Y.begin();map_it!=ampl_hists_Y.end();++map_it){
 		//map_it->second->Scale(scale_factor);
 		if(map_it->second->GetMaximum() > 0) map_it->second->Scale(min_dist/(scale*map_it->second->GetMaximum()));
-		TF1 * offset = new TF1("offset","[0]",0,500);
+		TF1 * offset = new TF1("offset","[0]",-Tomography::XY_size/2.,Tomography::XY_size/2.);
 		offset->SetParameter(0,map_it->first);
 		map_it->second->Add(offset);
 		delete offset;
@@ -1247,19 +1247,19 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	vector<TLine*> det_X;
 	vector<TLine*> det_Y;
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
-		det_X.push_back(new TLine(0,map_it->first,500,map_it->first));
-		det_Y.push_back(new TLine(0,map_it->first,500,map_it->first));
+		det_X.push_back(new TLine(-Tomography::XY_size/2.,map_it->first,Tomography::XY_size/2.,map_it->first));
+		det_Y.push_back(new TLine(-Tomography::XY_size/2.,map_it->first,Tomography::XY_size/2.,map_it->first));
 		(det_X.back())->SetLineColor(detector_color);
 		(det_Y.back())->SetLineColor(detector_color);
 
 	}
-	TH1D * bg_X = new TH1D("XZ plane","XZ plane",2,-100,600);
-	TH1D * bg_Y = new TH1D("YZ plane","YZ plane",2,-100,600);
-	bg_X->Fill(0.,min_z);
-	bg_X->Fill(500.,max_z);
+	TH1D * bg_X = new TH1D("XZ plane","XZ plane",2,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.);
+	TH1D * bg_Y = new TH1D("YZ plane","YZ plane",2,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.);
+	bg_X->Fill(-Tomography::XY_size/2.,min_z);
+	bg_X->Fill(Tomography::XY_size/2.,max_z);
 	bg_X->SetAxisRange(min_z,max_z,"Y");
-	bg_Y->Fill(0.,min_z);
-	bg_Y->Fill(500.,max_z);
+	bg_Y->Fill(-Tomography::XY_size/2.,min_z);
+	bg_Y->Fill(Tomography::XY_size/2.,max_z);
 	bg_Y->SetAxisRange(min_z,max_z,"Y");
 	TCanvas * cDisplay = NULL;
 	bool is_null = (c1==0);
