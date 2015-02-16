@@ -336,6 +336,7 @@ void Analyse::Residus_ref(){
 							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
 							resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
 							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
+							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_Y()),Abs(residu));
 							resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
 						}
 						point_nb[name.str()]++;

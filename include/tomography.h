@@ -31,6 +31,7 @@ namespace Tomography{
 		Feminos
 	};
 	const double XY_size = 500;
+	const double ADC_max = 4096;
 	const int Nsample = 32;
 	const int SampleMin = 5;
 	const int SampleMax = 21;
