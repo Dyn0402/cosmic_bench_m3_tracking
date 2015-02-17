@@ -482,12 +482,12 @@ void Analyse::Residus_ref(){
 	}
 	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << nentries << endl;
 	for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
-		cout << "resolution : " << endl;
-		MM_residus[it->first]->Fit(offset_fit[it->first]);
-		cout << "angle Z : " << endl;
-		angle_alignment[it->first]->Fit(angle_z_fit[it->first]);
+		cout << endl;
+		cout << endl;
 		it->second->cd(1);
 		MM_residus[it->first]->Draw();
+		cout << "resolution : " << endl;
+		MM_residus[it->first]->Fit(offset_fit[it->first],"N");
 		double total_seen = 0;
 		double total_passed = 0;
 		for(int i=1;i<=nbins_2D;i++){
@@ -510,6 +510,8 @@ void Analyse::Residus_ref(){
 		it->second->cd(3);
 		if(point_nb[it->first]>0) correlation[it->first]->Draw("AP");
 		it->second->cd(4);
+		cout << "angle Z : " << endl;
+		angle_alignment[it->first]->Fit(angle_z_fit[it->first]);
 		angle_alignment[it->first]->Draw();
 		it->second->cd(5);
 		resVSpos[it->first]->Draw();
