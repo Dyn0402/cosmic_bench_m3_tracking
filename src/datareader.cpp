@@ -662,7 +662,6 @@ void DreamDataReader::read_file(string file_name,long evn_offset){
 				}
 				if(FeuHeaderLine>4 && current_event != (evNinFile+evn_offset)){
 					cout << "problem in event id : " << current_event << " != " << evNinFile+evn_offset << endl;
-					break;
 				}
 				isample_nb++;
 				FeuN=0;
@@ -806,6 +805,7 @@ map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::rea
 				}
 				if(FeuHeaderLine!=4 && FeuHeaderLine!=8){
 					cout << "problem in Feu Header" << endl;
+					break;
 				}
 				if(FeuHeaderLine>4 && current_event != event_nb){
 					cout << "problem in event id : " << current_event << " != " << event_nb << endl;

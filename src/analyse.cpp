@@ -186,15 +186,18 @@ void Analyse::Residus_ref(){
 	gStyle->SetNumberContours(512);
 	map<string,TCanvas*> c_MM;
 	map<string,TH1D*> MM_residus;
+	map<string,TF1*> offset_fit;
 	map<string,TH2D*> muon_seen;
 	map<string,TH2D*> muon_total;
 	map<string,TH2D*> efficacity_2D;
 	map<string,TGraph*> correlation;
 	map<string,TProfile*> angle_alignment;
+	map<string,TF1*> angle_z_fit;
 	map<string,TProfile*> resVSpos;
 	map<string,TProfile*> resVSampl;
 	map<string,TProfile*> resVStime;
 	map<string,TProfile*> resVSangle;
+	map<string,TF1*> angle_xy_fit;
 	map<string,TProfile*> resVSanglePerp;
 	map<string,TProfile*> resVStot;
 	map<string,TProfile*> resVSsize;
@@ -248,6 +251,15 @@ void Analyse::Residus_ref(){
 			absResVSsize[name.str()] = new TProfile((name.str()+"_absResVSsize").c_str(),(name.str()+"_absResVSsize").c_str(),50,0,50,0,5);
 			point_nb[name.str()] = 0;
 			efficacity[name.str()] = 0;
+			offset_fit[name.str()] = new TF1("offset_fit","exp(-(x-[0])*(x-[0])/(2*[1]*[1])) + exp(-(x-[0])*(x-[0])/(2*[2]*[2]))",-5,5);
+			offset_fit[name.str()]->SetParameters(0,0.5,2);
+			offset_fit[name.str()]->SetParLimits(0,-10,10);
+			offset_fit[name.str()]->SetParLimits(1,0,1);
+			offset_fit[name.str()]->SetParLimits(2,0,10);
+			angle_z_fit[name.str()] = new TF1("angle_z_fit","pol1(0)",-150,150);
+			angle_z_fit[name.str()]->SetParameters(0,0);
+			angle_z_fit[name.str()]->SetParLimits(0,5,5);
+			angle_z_fit[name.str()]->SetParLimits(1,-1,1);
 			//nref_is_X[name.str()] = (*it)->get_is_X();
 			if((*it)->get_is_X()) nref_x_n++;
 		}
@@ -470,6 +482,10 @@ void Analyse::Residus_ref(){
 	}
 	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << nentries << endl;
 	for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
+		cout << "resolution : " << endl;
+		MM_residus[it->first]->Fit(offset_fit[it->first]);
+		cout << "angle Z : " << endl;
+		angle_alignment[it->first]->Fit(angle_z_fit[it->first]);
 		it->second->cd(1);
 		MM_residus[it->first]->Draw();
 		double total_seen = 0;
