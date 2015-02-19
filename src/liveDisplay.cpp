@@ -188,12 +188,12 @@ void liveDisplay::flux_map(double z){
 	double x_min = -Tomography::XY_size/2.;
 	double x_max = Tomography::XY_size/2.;
 	if(z>z_max){
-		x_min = -500.*(z - z_max)/(z_max - z_min);
-		x_max = 500. - x_min;
+		x_min -= Tomography::XY_size*(z - z_max)/(z_max - z_min);
+		x_max = - x_min;
 	}
 	else if(z<z_min){
-		x_min = -500.*(z_min - z)/(z_max - z_min);
-		x_max = 500. - x_min;
+		x_min -= Tomography::XY_size*(z_min - z)/(z_max - z_min);
+		x_max = - x_min;
 	}
 	double width = x_max - x_min;
 	x_min -= 0.05*width;

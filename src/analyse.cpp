@@ -252,12 +252,13 @@ void Analyse::Residus_ref(){
 			absResVSsize[name.str()] = new TProfile((name.str()+"_absResVSsize").c_str(),(name.str()+"_absResVSsize").c_str(),50,0,50,0,5);
 			point_nb[name.str()] = 0;
 			efficacity[name.str()] = 0;
-			offset_fit[name.str()] = new TF1("offset_fit","[3]*(exp(-(x-[0])*(x-[0])/(2*[1]*[1])) + exp(-(x-[0])*(x-[0])/(2*[2]*[2])))",-5,5);
+			offset_fit[name.str()] = new TF1("offset_fit","[3]*exp(-(x-[0])*(x-[0])/(2*[1]*[1])) + [4]*exp(-(x-[0])*(x-[0])/(2*[2]*[2]))",-5,5);
 			offset_fit[name.str()]->SetParameters(0,0.5,2,nentries/10);
 			offset_fit[name.str()]->SetParLimits(0,-10,10);
 			offset_fit[name.str()]->SetParLimits(1,0,1);
 			offset_fit[name.str()]->SetParLimits(2,0,10);
 			offset_fit[name.str()]->SetParLimits(3,1,nentries);
+			offset_fit[name.str()]->SetParLimits(4,1,nentries);
 			angle_z_fit[name.str()] = new TF1("angle_z_fit","pol1(0)",-150,150);
 			angle_z_fit[name.str()]->SetParameters(0,0);
 			angle_z_fit[name.str()]->SetParLimits(0,-5,5);
@@ -978,12 +979,12 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1){
 	double x_min = -Tomography::XY_size/2.;
 	double x_max = Tomography::XY_size/2.;
 	if(z>z_max){
-		x_min = -500.*(z - z_max)/(z_max - z_min);
-		x_max = 500. - x_min;
+		x_min -= Tomography::XY_size*(z - z_max)/(z_max - z_min);
+		x_max = - x_min;
 	}
 	else if(z<z_min){
-		x_min = -500.*(z_min - z)/(z_max - z_min);
-		x_max = 500. - x_min;
+		x_min -= Tomography::XY_size*(z_min - z)/(z_max - z_min);
+		x_max = - x_min;
 	}
 	double width = x_max - x_min;
 	x_min -= 0.05*width;
@@ -1047,12 +1048,12 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 	double x_min = -Tomography::XY_size/2.;
 	double x_max = Tomography::XY_size/2.;
 	if(z>z_max){
-		x_min = -500.*(z - z_max)/(z_max - z_min);
-		x_max = 500. - x_min;
+		x_min -= Tomography::XY_size*(z - z_max)/(z_max - z_min);
+		x_max = - x_min;
 	}
 	else if(z<z_min){
-		x_min = -500.*(z_min - z)/(z_max - z_min);
-		x_max = 500. - x_min;
+		x_min -= Tomography::XY_size*(z_min - z)/(z_max - z_min);
+		x_max = - x_min;
 	}
 	double width = x_max - x_min;
 	x_min -= 0.05*width;
