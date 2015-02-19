@@ -374,6 +374,7 @@ void CosmicBench::Init(ptree config_tree){
 		n_lines++;
 	}
 	in.close();
+	detectors.clear();
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
 		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z")));
 		detectors.back()->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
