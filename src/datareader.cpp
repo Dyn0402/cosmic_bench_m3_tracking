@@ -869,7 +869,9 @@ int DreamDataReader::get_first_event_nb(string file_name){
 			}
 			FeuHeaderLine++;
 		}
-		else break;
+		else if(FeuHeaderLine>0 && !(current_data.is_Feu_header())){
+			break;
+		}
 		iFile.read((char*)&current_data,sizeof(current_data));
 		current_data.ntohs_();
 	}
