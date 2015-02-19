@@ -391,7 +391,7 @@ void liveDisplay::flux_map(double z){
 				for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
 					flux_map->Fill(it->eval_X(z),it->eval_Y(z));
 				}
-				if((time(NULL)-last_time) > 0){
+				if((time(NULL)-last_time) > 5){
 					current_full_event->EventDisplay(cDisplay);
 					cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << processed << flush;
 					cMap->cd();

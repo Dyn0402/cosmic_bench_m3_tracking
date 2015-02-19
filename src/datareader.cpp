@@ -673,7 +673,6 @@ void DreamDataReader::read_file(string file_name,long evn_offset){
 				}
 				isample_nb++;
 				FeuN=0;
-				FeuHeaderLine=0;
 				zs_mode = false;
 				if(isample == (Nsample-1)){
 					if(FeuHeaderLine>4 && current_event != (Nevent+1)){
@@ -687,6 +686,7 @@ void DreamDataReader::read_file(string file_name,long evn_offset){
 					isample=-1; isample_prev=-2;
 					reset_tree_leaf();
 				}
+				FeuHeaderLine=0;
 				iFile.ignore(sizeof(current_data));
 			}
 		}
@@ -826,7 +826,6 @@ map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::rea
 				}
 				isample_nb++;
 				FeuN=0;
-				FeuHeaderLine=0;
 				zs_mode = false;
 				file->ignore(sizeof(current_data));
 				if(isample == (Nsample-1)){
@@ -839,6 +838,7 @@ map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::rea
 					event_complete = true;
 					break;
 				}
+				FeuHeaderLine=0;
 			}
 		}
 		file->read((char*)&current_data,sizeof(current_data));
