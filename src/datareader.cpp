@@ -527,10 +527,9 @@ void DreamDataReader::process(){
 		cout << "tree already initiated" << endl;
 		return;
 	}
-	int current_offset = 1;
 	for(vector<string>::iterator it=file_names.begin();it!=file_names.end();++it){
+		int current_offset = get_first_event_nb(*it);
 		read_file(*it,current_offset);
-		current_offset = outTree->GetEntries();
 	}
 	Write();
 	exists = true;
@@ -849,6 +848,30 @@ map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::rea
 	event_ampl[Tomography::CM] = CM_Ampl;
 	return event_ampl;
 }
+int DreamDataReader::get_first_event_nb(string file_name){
+	ifstream iFile(file_name.c_str(),ifstream::binary);
+	if(!iFile.is_open()){
+		cout << "file : " << file_name << " can't be opened" << endl;
+		return -1;
+	}
+	DataLineDream current_data;
+	int FeuHeaderLine = 0;
+	iFile.read((char*)&current_data,sizeof(current_data));
+	current_data.ntohs_();
+	while(iFile.good() /*&& evNinFile<6000*/){
+		if(current_data.is_Feu_header()){
+			if(FeuHeaderLine==1){
+				return current_data.get_data();
+			}
+			FeuHeaderLine++;
+		}
+		iFile.read((char*)&current_data,sizeof(current_data));
+		current_data.ntohs_();
+	}
+	iFile.close();
+	return -1;
+}
+
 FeminosDataReader::FeminosDataReader(string baseFileName, map<int,Tomography::det_type> det_type_by_asic_, map<int,int> det_n_by_asic_, bool exists_,bool ped_done_,bool cns_done_, long max_event_): DataReader(baseFileName,det_type_by_asic_,det_n_by_asic_,exists_,ped_done_,cns_done_,max_event_){
 	DAQType = Tomography::Feminos;
 }
@@ -878,11 +901,9 @@ void FeminosDataReader::process(){
 		return;
 	}
 	global_offset = get_first_event_nb(file_names.front());
-	Nevent = global_offset;
 	for(vector<string>::iterator it=file_names.begin();it!=file_names.end();++it){
-		long current_offset = global_offset + outTree->GetEntries();
+		long current_offset = get_first_event_nb(*it);
 		read_file(*it,current_offset);
-		Nevent++;
 	}
 	Write();
 	exists = true;

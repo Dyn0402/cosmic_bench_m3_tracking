@@ -77,6 +77,7 @@ class DreamDataReader: public DataReader{
 		~DreamDataReader();
 		void process();
 		map<Tomography::det_type,vector<vector<vector<double> > > > read_event(ifstream * file,long event_nb, bool fill_tree = true);
+		int get_first_event_nb(string file_name);
 	protected:
 		void read_file(string file_name,long evn_offset);
 		int mapping(Tomography::det_type det_type, int channel);

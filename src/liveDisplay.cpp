@@ -215,7 +215,6 @@ void liveDisplay::flux_map(double z){
 	long event_nb = 0;
 	if(electronic_type == Tomography::Feminos){
 		current_data_reader = new FeminosDataReader("live",det_type_by_asic,det_n_by_asic);
-		event_nb = dynamic_cast<FeminosDataReader*>(current_data_reader)->get_first_event_nb(filenames.front());
 	}
 	else if(electronic_type == Tomography::Dream){
 		current_data_reader = new DreamDataReader("live",det_type_by_asic,det_n_by_asic);
@@ -225,8 +224,18 @@ void liveDisplay::flux_map(double z){
 	for(vector<string>::iterator filename_it = filenames.begin();filename_it!=filenames.end();++filename_it){
 		cout << *filename_it << endl;
 		ifstream data_file(filename_it->c_str(),ifstream::binary);
+		bool is_open = data_file.is_open();
+		if(!is_open){
+			cout << "can't open file ! Switch to next one" << endl;
+			continue;
+		}
+		if(electronic_type == Tomography::Feminos){
+			event_nb = dynamic_cast<FeminosDataReader*>(current_data_reader)->get_first_event_nb(*filename_it);
+		}
+		else if(electronic_type == Tomography::Dream){
+			event_nb = dynamic_cast<DreamDataReader*>(current_data_reader)->get_first_event_nb(*filename_it);
+		}
 		start_inotify(*filename_it);
-		bool is_open = true;
 		int current_pos = data_file.tellg();
 		while(is_open){
 			if(max_event>0 && processed>max_event) break;
