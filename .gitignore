@@ -5,6 +5,7 @@ tracking
 MultiCluster
 DataReader
 live
+AutoAlign
 Linkdef
 *.[oa]
 *.C

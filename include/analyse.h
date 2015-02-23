@@ -6,16 +6,20 @@
 #include <string>
 #include <TH2D.h>
 #include <TCanvas.h>
+#include <boost/property_tree/ptree.hpp>
 
 using std::string;
+using boost::property_tree::ptree;
 
 class Analyse: public T, public CosmicBench{
 	public:
 		Analyse(string configFilePath);
+		Analyse(ptree config_tree);
 		~Analyse();
 		void Efficacity();
 		void Residus();
 		void Residus_ref();
+		double Residus_ref_cost();
 		void Residus_ref_2D();
 		TH2D * AbsorptionFluxMap(double z, TCanvas * c1 = 0);
 		void AbsorptionFluxMapNorm(double z,TH2D * background, int nbins = 100, TCanvas * c1 = 0, TCanvas * c2 = 0, TCanvas * c3 = 0);

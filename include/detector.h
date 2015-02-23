@@ -129,6 +129,7 @@ class MG_Detector: public Detector{
 class CosmicBench{
 	public:
 		CosmicBench();
+		CosmicBench(ptree config_tree);
 		~CosmicBench();
 		//void add_MM(Detector * det);
 		int get_CM_N() const;

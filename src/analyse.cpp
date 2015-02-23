@@ -76,6 +76,15 @@ Analyse::Analyse(string configFilePath){
 	T::Init(tree,CM_N,MG_N);
 	signal_file_name = config_tree.get<string>("signal_file");
 }
+Analyse::Analyse(ptree config_tree){
+	TFile *f = new TFile((config_tree.get<string>("Tree")).c_str());
+	cout << config_tree.get<string>("Tree") << endl;
+	TTree * tree = (TTree*)(f->Get("T"));
+	max_event = config_tree.get<long>("max_event");
+	CosmicBench::Init(config_tree);
+	T::Init(tree,CM_N,MG_N);
+	signal_file_name = config_tree.get<string>("signal_file");
+}
 Analyse::~Analyse(){
 
 }
@@ -556,6 +565,189 @@ void Analyse::Residus_ref(){
 	ray_clus_n->Draw();
 	c0->Modified();
 	c0->Update();
+}
+double Analyse::Residus_ref_cost(){
+	int non_ref_n = 0;
+	double chisquare_threshold = 10;
+	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
+		if(!((*it)->get_is_ref())) non_ref_n++;
+	}
+	map<string,TH1D*> MM_residus;
+	map<string,TF1*> offset_fit;
+	map<string,TProfile*> angle_alignment;
+	map<string,TF1*> angle_z_fit;
+	map<string,TProfile*> resVSangle;
+	map<string,TF1*> angle_xy_fit;
+	int nbins = 200;
+	double marge = 1./10.;
+	long eventReconstructed = 0;
+	double eventSuitable = 0;
+	map<int,int> perp_pairs;
+	//map<string, unsigned int> det_in_nref_dir;
+	//map<string, bool> nref_is_X;
+	//unsigned int det_x_n = 0;
+	unsigned int nref_x_n = 0;
+	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
+	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
+		if(!((*it)->get_is_ref())){
+			ostringstream name;
+			if((*it)->get_type() == Tomography::CM){
+				name << "Cosmulti_" << (dynamic_cast<CM_Detector*>(*it))->get_cm_n_in_tree();
+			}
+			else if((*it)->get_type() == Tomography::MG){
+				name << "Multigen_" << (dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree();
+				if((*it)->get_perp_n()>-1) perp_pairs[(dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree()] = (*it)->get_perp_n();
+			}
+			MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
+			angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
+			resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
+			offset_fit[name.str()] = new TF1("offset_fit","[3]*exp(-(x-[0])*(x-[0])/(2*[1]*[1])) + [4]*exp(-(x-[0])*(x-[0])/(2*[2]*[2]))",-5,5);
+			offset_fit[name.str()]->SetParameters(0,0.5,2,nentries/10);
+			offset_fit[name.str()]->SetParLimits(0,-10,10);
+			offset_fit[name.str()]->SetParLimits(1,0,1);
+			offset_fit[name.str()]->SetParLimits(2,0,10);
+			offset_fit[name.str()]->SetParLimits(3,1,nentries);
+			offset_fit[name.str()]->SetParLimits(4,1,nentries);
+			angle_z_fit[name.str()] = new TF1("angle_z_fit","pol1(0)",-150,150);
+			angle_z_fit[name.str()]->SetParameters(0,0);
+			angle_z_fit[name.str()]->SetParLimits(0,-5,5);
+			angle_z_fit[name.str()]->SetParLimits(1,-1,1);
+			angle_xy_fit[name.str()] = new TF1("angle_xy_fit","pol2(0)",-0.3,0.3);
+			angle_xy_fit[name.str()]->SetParameters(0,0,0);
+			angle_xy_fit[name.str()]->SetParLimits(0,-5,5);
+			angle_xy_fit[name.str()]->SetParLimits(1,-5,5);
+			angle_xy_fit[name.str()]->SetParLimits(2,-20,20);
+			//nref_is_X[name.str()] = (*it)->get_is_X();
+			if((*it)->get_is_X()) nref_x_n++;
+		}
+		//if((*it)->get_is_X()) det_x_n++;
+	}
+	/*
+	for(map<string,bool>::iterator it = nref_is_X.begin();it!=nref_is_X.end();++it){
+		if(it->second) det_in_nref_dir[it->first] = det_x_n - nref_x_n;
+		else det_in_nref_dir[it->first] = (MG_N + CM_N - det_x_n) - (nref_is_X.size() - nref_x_n);
+	}
+	*/
+	for(map<int,int>::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
+		if(perp_pairs.count(map_it->second)==0){
+			cout << "2D detectors must be set to non ref in both direction" << endl;
+			return 0;
+		}
+	}
+	if(non_ref_n>2){
+		cout << "too many non ref det" << endl;
+	}
+	if(nref_x_n>1){
+		cout << "too many non ref det" << endl;
+	}
+
+	if (fChain == 0) return 0;
+	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
+	for (Long64_t jentry=0; jentry<nentries;jentry++){
+		Long64_t ientry = LoadTree(jentry);
+		if (ientry < 0) break;
+		fChain->GetEntry(jentry);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
+		vector<Ray>::iterator ray_it = currentRays.begin();
+		while(ray_it!= currentRays.end()){
+			if(ray_it->get_chiSquare_X()>-1 && ray_it->get_chiSquare_Y()>-1 && ((ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y())/ray_it->get_clus_n())<chisquare_threshold){
+				++ray_it;
+			}
+			else ray_it = currentRays.erase(ray_it);
+		}
+		eventReconstructed+=currentRays.size();
+		eventSuitable+=currentCBEvent->get_clus_N()*1./(CM_N+MG_N);
+		
+		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
+			if(!((*it)->get_is_ref())){
+				if((*it)->get_type() == Tomography::CM_Demux){
+					ostringstream name;
+					name << "Cosmulti_" << (*it)->get_n_in_tree();
+					vector<CM_Demux_Cluster> current_clusters = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
+					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
+						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
+						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
+						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
+						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
+						if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
+						double residu = numeric_limits<double>::max();
+						vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
+						for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+							kt->set_perp_pos_mm(*jt);
+							double current_residu = jt->get_residu_ref(&(*kt));
+							if(current_residu<residu){
+								residu = current_residu;
+								matching_cluster = kt;
+							}
+						}
+						if(matching_cluster == current_clusters.end()) continue;
+						matching_cluster->set_perp_pos_mm(*jt);
+						if(matching_cluster->get_is_X()){
+							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
+						}
+						else{
+							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
+						}
+						current_clusters.erase(matching_cluster);
+						MM_residus[name.str()]->Fill(residu);
+					}
+				}
+				else if((*it)->get_type() == Tomography::MG){
+					ostringstream name;
+					name << "Multigen_" << (*it)->get_n_in_tree();
+					vector<MG_Cluster> current_clusters = (dynamic_cast<MG_Event*>(*it))->get_clusters();
+					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
+						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
+						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
+						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
+						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
+						if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
+						double residu = numeric_limits<double>::max();
+						vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
+						for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+							kt->set_perp_pos_mm(*jt);
+							double current_residu = jt->get_residu_ref(&(*kt));
+							if(current_residu<residu){
+								residu = current_residu;
+								matching_cluster = kt;
+							}
+						}
+						if(matching_cluster == current_clusters.end()) continue;
+						matching_cluster->set_perp_pos_mm(*jt);
+						if(matching_cluster->get_is_X()){
+							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
+						}
+						else{
+							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
+						}
+						current_clusters.erase(matching_cluster);
+						MM_residus[name.str()]->Fill(residu);
+					}
+				}
+			}
+		}
+		delete currentCBEvent;
+		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << jentry << flush;
+	}
+	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << nentries << endl;
+	double cost = 0;
+	for(map<string,TH1D*>::iterator it = MM_residus.begin();it!=MM_residus.end();++it){
+		MM_residus[it->first]->Fit(offset_fit[it->first],"RN");
+		cost += (offset_fit[it->first]->GetParameter(0))*(offset_fit[it->first]->GetParameter(0));
+		angle_alignment[it->first]->Fit(angle_z_fit[it->first],"RN");
+		cost += (angle_z_fit[it->first]->GetParameter(1))*(angle_z_fit[it->first]->GetParameter(1));
+		cost += (angle_z_fit[it->first]->GetParameter(2))*(angle_z_fit[it->first]->GetParameter(2));
+		resVSangle[it->first]->Fit(angle_xy_fit[it->first],"RN");
+		cost += (angle_xy_fit[it->first]->GetParameter(1))*(angle_xy_fit[it->first]->GetParameter(1));
+	}
+	return cost;
 }
 void Analyse::Residus_ref_2D(){
 	int non_ref_n = 0;

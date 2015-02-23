@@ -341,6 +341,9 @@ CosmicBench::~CosmicBench(){
 	CM_N = 0;
 	MG_N = 0;
 }
+CosmicBench::CosmicBench(ptree config_tree){
+	Init(config_tree);
+}
 void CosmicBench::Init(ptree config_tree){
 	CM_N = 0;
 	MG_N = 0;
