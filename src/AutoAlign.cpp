@@ -15,6 +15,7 @@
 
 #include "analyse.h"
 #include "detector.h"
+#include "tomography.h"
 
 using boost::property_tree::ptree;
 
@@ -73,10 +74,14 @@ Minimizer::Minimizer(ptree config, string path_){
 		MG2D_pair_[current_n] = current_perp_n;
 		detector_z_start_[current_n] = child.second.get<double>("z");
 	}
+	cout << MG2D_pair_ << endl;
+	cout << detector_z_start_ << endl;
 	for(map<int,int>::iterator map_it = MG2D_pair_.begin();map_it!=MG2D_pair_.end();++map_it){
 		MG2D_pair.push_back(pair<int,int>(map_it->first,map_it->second));
 		detector_z_start.push_back(detector_z_start_[map_it->first]);
 	}
+	MG2D_pair.pop_back();
+	detector_z_start.pop_back();
 }
 
 double Minimizer::operator()(const double * x){
