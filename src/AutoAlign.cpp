@@ -40,6 +40,7 @@ private:
 	int iteration_nb;
 	string path;
 	vector<pair<int,int> > MG2D_pair;
+	vector<double> detector_z_start;
 };
 
 Minimizer::Minimizer(ptree config, string path_){
@@ -48,6 +49,7 @@ Minimizer::Minimizer(ptree config, string path_){
 	iteration_nb = 0;
 	path = path_;
 	map<int,int> MG2D_pair_;
+	map<int,double> detector_z_start_;
 	BOOST_FOREACH(const ptree::value_type& child, config_tree_start.get_child("CosmicBench.MultiGens")){
 		int current_n = child.second.get<int>("mg_n");
 		int current_perp_n = child.second.get<int>("2D_perp_n");
@@ -69,9 +71,11 @@ Minimizer::Minimizer(ptree config, string path_){
 			else continue;
 		}
 		MG2D_pair_[current_n] = current_perp_n;
+		detector_z_start_[current_n] = child.second.get<double>("z");
 	}
 	for(map<int,int>::iterator map_it = MG2D_pair_.begin();map_it!=MG2D_pair_.end();++map_it){
 		MG2D_pair.push_back(pair<int,int>(map_it->first,map_it->second));
+		detector_z_start.push_back(detector_z_start_[map_it->first]);
 	}
 }
 
@@ -83,7 +87,7 @@ double Minimizer::operator()(const double * x){
 	for(unsigned int i=0;i<MG2D_pair.size();i++){
 		for(ptree::iterator tree_it = config_tree_current.get_child("CosmicBench.MultiGens").begin(); tree_it != config_tree_current.get_child("CosmicBench.MultiGens").end(); tree_it++){
 			if(tree_it->second.get<int>("mg_n") == MG2D_pair[i].first || tree_it->second.get<int>("mg_n") == MG2D_pair[i].second){
-				tree_it->second.put<double>("z",tree_it->second.get<double>("z") + x[(6*i)+2]);
+				tree_it->second.put<double>("z",detector_z_start[i] + x[(6*i)+2]);
 				tree_it->second.put<double>("angle_x",x[(6*i)+3]);
 				tree_it->second.put<double>("angle_y",x[(6*i)+4]);
 				tree_it->second.put<double>("angle_z",x[(6*i)+5]);
