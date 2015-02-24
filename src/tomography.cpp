@@ -43,6 +43,21 @@ ostream& operator<<(ostream& os, const map<double,int>& map_){
 	return os;
 
 }
+ostream& operator<<(ostream& os, const map<int,int>& map_){
+	if(map_.size()<1) return os;
+	os << "[ ";
+	map<int,int>::const_iterator it=map_.begin();
+	map<int,int>::const_iterator jt = map_.end();
+	jt--;
+	while(it!=jt){
+		os << it->first << " -> " << it->second << " ; ";
+		++it;
+	}
+	os << it->first << " -> " << it->second << " ]";
+	return os;
+
+}
+
 Tomography::elec_type Tomography::str_to_elec(string str){
 	elec_type return_value = unknown_elec;
 	if(str == "dream") return_value = Dream;

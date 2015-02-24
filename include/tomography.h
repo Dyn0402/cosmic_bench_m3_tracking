@@ -10,6 +10,7 @@ using std::map;
 using std::string;
 
 ostream& operator<<(ostream& os, const map<double,int>& map_);
+ostream& operator<<(ostream& os, const map<int,int>& map_);
 
 namespace Tomography{
 
