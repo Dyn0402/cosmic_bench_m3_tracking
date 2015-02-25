@@ -68,7 +68,7 @@ using TMath::Min;
 Analyse::Analyse(string configFilePath){
 	ptree config_tree;
 	read_json(configFilePath, config_tree);
-	TFile *f = new TFile((config_tree.get<string>("Tree")).c_str());
+	f = new TFile((config_tree.get<string>("Tree")).c_str());
 	cout << config_tree.get<string>("Tree") << endl;
 	TTree * tree = (TTree*)(f->Get("T"));
 	max_event = config_tree.get<long>("max_event");
@@ -77,7 +77,7 @@ Analyse::Analyse(string configFilePath){
 	signal_file_name = config_tree.get<string>("signal_file");
 }
 Analyse::Analyse(ptree config_tree){
-	TFile *f = new TFile((config_tree.get<string>("Tree")).c_str());
+	f = new TFile((config_tree.get<string>("Tree")).c_str());
 	cout << config_tree.get<string>("Tree") << endl;
 	TTree * tree = (TTree*)(f->Get("T"));
 	max_event = config_tree.get<long>("max_event");
@@ -86,7 +86,7 @@ Analyse::Analyse(ptree config_tree){
 	signal_file_name = config_tree.get<string>("signal_file");
 }
 Analyse::~Analyse(){
-
+	delete f;
 }
 void Analyse::Residus(){
 	TCanvas * c_CM[CM_N];

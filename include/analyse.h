@@ -6,6 +6,7 @@
 #include <string>
 #include <TH2D.h>
 #include <TCanvas.h>
+#include <TFile.h>
 #include <boost/property_tree/ptree.hpp>
 
 using std::string;
@@ -36,6 +37,7 @@ class Analyse: public T, public CosmicBench{
 	protected:
 		string signal_file_name;
 		long max_event;
+		TFile * f;
 
 };
 
