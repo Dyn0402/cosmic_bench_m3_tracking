@@ -25,6 +25,7 @@
 #include <TFitResultPtr.h>
 #include <TLine.h>
 #include <TMath.h>
+#include <TF1.h>
 
 //Boost
 #include <boost/property_tree/ptree.hpp>
@@ -45,6 +46,7 @@ using std::setfill;
 using TMath::CeilNint;
 using TMath::Min;
 using TMath::Sqrt;
+using TMath::ATan;
 
 //boost
 using boost::property_tree::ptree;
@@ -521,17 +523,33 @@ void Signal::SignalDispersion(){
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
 	TCanvas * cDisplay = new TCanvas("cDisplay");
-	cDisplay->Divide(2);
+	cDisplay->Divide(2,2);
 	TCanvas * cControl = new TCanvas("cControl");
 	cControl->Divide(3);
-	TH2D * signalShape_X = new TH2D("signalShape_X","signalShape_X",60,-15,15,32,0,32);
-	TH2D * signalShape_Y = new TH2D("signalShape_Y","signalShape_Y",60,-15,15,32,0,32);
+	TCanvas * cAnalyse = new TCanvas("cAnalyse");
+	cAnalyse->Divide(2);
+	int nbin_time = Tomography::Nsample;
+	TH2D * signalShape_X_pos = new TH2D("signalShape_X_pos","signalShape_X_pos",60,-6,6,nbin_time,0,nbin_time);
+	TH2D * signalShape_Y_pos = new TH2D("signalShape_Y_pos","signalShape_Y_pos",60,-15,15,nbin_time,0,nbin_time);
+	TH2D * signalShape_X_neg = new TH2D("signalShape_X_neg","signalShape_X_neg",60,-6,6,nbin_time,0,nbin_time);
+	TH2D * signalShape_Y_neg = new TH2D("signalShape_Y_neg","signalShape_Y_neg",60,-15,15,nbin_time,0,nbin_time);
+	TGraph * mean_X_pos = new TGraph();
+	TGraph * mean_Y_pos = new TGraph();
+	TGraph * mean_X_neg = new TGraph();
+	TGraph * mean_Y_neg = new TGraph();
+	mean_X_pos->SetMarkerStyle(2);
+	mean_Y_pos->SetMarkerStyle(2);
+	mean_X_neg->SetMarkerStyle(2);
+	mean_Y_neg->SetMarkerStyle(2);
+
+	TH2D * angle_shape_corr_X = new TH2D("angle_shape_corr_X","angle_shape_corr_X",50,-0.5,0.5,50,-1,1);
+	TH2D * angle_shape_corr_Y = new TH2D("angle_shape_corr_Y","angle_shape_corr_Y",50,-0.5,0.5,50,-1,1);
 
 	TH1D * clus_pos = new TH1D("clus_pos","clus_pos",1024,0,1023);
 	TH1D * clus_size = new TH1D("clus_size","clus_size",50,-1,47);
-	TH1D * ray_slope = new TH1D("slope","slope",100,0,0.4);
-	double min_angle = 0;
-	double max_angle = 1;
+	TH1D * ray_slope = new TH1D("slope","slope",100,0,1);
+	double min_angle = -1;
+	double max_angle = 10;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	if(CM_N>0){
 		cout << "does not support CM detectors" << endl;
@@ -582,7 +600,7 @@ void Signal::SignalDispersion(){
 		CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,events);
 		vector<Ray> current_rays = CBEvent->get_absorption_rays();
 		for(vector<Ray>::iterator ray_it = current_rays.begin();ray_it!=current_rays.end();++ray_it){
-			double slope = Sqrt((ray_it->get_slope_Y()*ray_it->get_slope_Y()) + (ray_it->get_slope_X()*ray_it->get_slope_X()));
+			double slope = ATan(Sqrt((ray_it->get_slope_Y()*ray_it->get_slope_Y()) + (ray_it->get_slope_X()*ray_it->get_slope_X())));
 			if(slope<min_angle || slope>max_angle) continue;
 			ray_slope->Fill(slope);
 			vector<Cluster*> current_clusters = ray_it->get_clus();
@@ -593,25 +611,61 @@ void Signal::SignalDispersion(){
 				int right = (((*clus_it)->get_pos() + (*clus_it)->get_size()) < 1023) ? ((*clus_it)->get_pos() + (*clus_it)->get_size()) : 1023;
 				int current_n = (*clus_it)->get_n_in_tree();
 				int current_X = (*clus_it)->get_is_X();
-				for(int i=left;i<=right;i++){
-					for(int j=0;j<Tomography::Nsample;j++){
+				TGraph * gFit = new TGraph();
+				TF1 * lFit = new TF1("lfit","pol1(0)",5,15);
+				lFit->SetParameters(0,0);
+				lFit->SetParLimits(0,-5,5);
+				lFit->SetParLimits(1,-1,1);
+				for(int j=0;j<Tomography::Nsample;j++){
+					double mean = 0;
+					double ampl = 0;
+					for(int i=left;i<=right;i++){
+						double current_ampl = StripAmpl_MG_corr[current_n][MG_Detector::StripToChannel[i]][j];
+						double current_pos = i - (*clus_it)->get_pos();
+						mean = (mean*ampl + current_pos*current_ampl)/(ampl+current_ampl);
+						ampl += current_ampl;
 						if(current_X){
-							signalShape_X->Fill(i - (*clus_it)->get_pos(),j,StripAmpl_MG_corr[current_n][MG_Detector::StripToChannel[i]][j]);
+							if(ray_it->get_slope_X() > 0) signalShape_X_pos->Fill(current_pos,j,current_ampl);
+							else signalShape_X_neg->Fill(current_pos,j,current_ampl);
 						}
 						else{
-							signalShape_Y->Fill(i - (*clus_it)->get_pos(),j,StripAmpl_MG_corr[current_n][MG_Detector::StripToChannel[i]][j]);
+							if(ray_it->get_slope_Y() > 0) signalShape_Y_pos->Fill(current_pos,j,current_ampl);
+							else signalShape_Y_neg->Fill(current_pos,j,current_ampl);
 						}
 					}
+					gFit->SetPoint(j,j,mean);
 				}
+				gFit->Fit(lFit,"QNR");
+				if(current_X) angle_shape_corr_X->Fill(ray_it->get_slope_X(), lFit->GetParameter(1));
+				else angle_shape_corr_Y->Fill(ray_it->get_slope_Y(), lFit->GetParameter(1));
+				delete gFit; delete lFit;
 			}
 		}
-
+		delete CBEvent;
+		for(vector<Event*>::iterator ev_it = events.begin();ev_it!=events.end();++ev_it){
+			delete *ev_it;
+		}
+		events.clear();
 		if(ientry%100 == 0) cout << "\r" << ientry << "/" << nentries << flush;
 		if((ientry%5000 == 0) && Tomography::live_graphic_display){
+			for(int i=1;i<=nbin_time;i++){
+				mean_X_pos->SetPoint(i-1,signalShape_X_pos->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+				mean_Y_pos->SetPoint(i-1,signalShape_Y_pos->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+				mean_X_neg->SetPoint(i-1,signalShape_X_neg->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+				mean_Y_neg->SetPoint(i-1,signalShape_Y_neg->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+			}
 			cDisplay->cd(1);
-			signalShape_X->Draw("COLZ");
+			signalShape_X_pos->Draw("COLZ");
+			mean_X_pos->Draw("PSAME");
 			cDisplay->cd(2);
-			signalShape_Y->Draw("COLZ");
+			signalShape_Y_pos->Draw("COLZ");
+			mean_Y_pos->Draw("PSAME");
+			cDisplay->cd(3);
+			signalShape_X_neg->Draw("COLZ");
+			mean_X_neg->Draw("PSAME");
+			cDisplay->cd(4);
+			signalShape_Y_neg->Draw("COLZ");
+			mean_Y_neg->Draw("PSAME");
 			cDisplay->Modified();
 			cDisplay->Update();
 			cControl->cd(1);
@@ -622,12 +676,33 @@ void Signal::SignalDispersion(){
 			ray_slope->Draw();
 			cControl->Modified();
 			cControl->Update();
+			cAnalyse->cd(1);
+			angle_shape_corr_X->Draw("COLZ");
+			cAnalyse->cd(2);
+			angle_shape_corr_Y->Draw("COLZ");
+			cAnalyse->Modified();
+			cAnalyse->Update();
 		}
 	}
+	cout << "\r" << nentries << "/" << nentries << endl;
+	for(int i=1;i<=nbin_time;i++){
+		mean_X_pos->SetPoint(i-1,signalShape_X_pos->ProjectionX("_px",i,i)->GetMean(),i);
+		mean_Y_pos->SetPoint(i-1,signalShape_Y_pos->ProjectionX("_px",i,i)->GetMean(),i);
+		mean_X_neg->SetPoint(i-1,signalShape_X_neg->ProjectionX("_px",i,i)->GetMean(),i);
+		mean_Y_neg->SetPoint(i-1,signalShape_Y_neg->ProjectionX("_px",i,i)->GetMean(),i);
+	}
 	cDisplay->cd(1);
-	signalShape_X->Draw("COLZ");
+	signalShape_X_pos->Draw("COLZ");
+	mean_X_pos->Draw("PSAME");
 	cDisplay->cd(2);
-	signalShape_Y->Draw("COLZ");
+	signalShape_Y_pos->Draw("COLZ");
+	mean_Y_pos->Draw("PSAME");
+	cDisplay->cd(3);
+	signalShape_X_neg->Draw("COLZ");
+	mean_X_neg->Draw("PSAME");
+	cDisplay->cd(4);
+	signalShape_Y_neg->Draw("COLZ");
+	mean_Y_neg->Draw("PSAME");
 	cDisplay->Modified();
 	cDisplay->Update();
 	cControl->cd(1);
@@ -638,5 +713,11 @@ void Signal::SignalDispersion(){
 	ray_slope->Draw();
 	cControl->Modified();
 	cControl->Update();
+	cAnalyse->cd(1);
+	angle_shape_corr_X->Draw("COLZ");
+	cAnalyse->cd(2);
+	angle_shape_corr_Y->Draw("COLZ");
+	cAnalyse->Modified();
+	cAnalyse->Update();
 	cout << endl;
 }
