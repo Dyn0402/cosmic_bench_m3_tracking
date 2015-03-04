@@ -4,13 +4,18 @@
 #include <ostream>
 #include <map>
 #include <string>
+#include <vector>
 
 using std::ostream;
 using std::map;
 using std::string;
+using std::vector;
 
 template<typename T,typename R>
 ostream& operator<<(ostream& os, const map<T,R>& map_);
+
+template<typename T>
+ostream& operator<<(ostream& os,const vector<T>& vec_);
 
 namespace Tomography{
 

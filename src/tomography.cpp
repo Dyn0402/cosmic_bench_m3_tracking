@@ -32,7 +32,10 @@ ostream& Tomography::operator<<(ostream& os, const elec_type& elec){
 
 template<typename T,typename R>
 ostream& operator<<(ostream& os, const map<T,R>& map_){
-	if(map_.size()<1) return os;
+	if(map_.size()<1){
+		os << "[]";
+		return os;
+	}
 	os << "[ ";
 	typename map<T,R>::const_iterator it=map_.begin();
 	typename map<T,R>::const_iterator jt = map_.end();
@@ -44,9 +47,29 @@ ostream& operator<<(ostream& os, const map<T,R>& map_){
 	os << it->first << " -> " << it->second << " ]";
 	return os;
 }
-template ostream& operator<<(ostream& os, const map<int,int>& map_);
+
+template<typename T>
+ostream& operator<<(ostream& os,const vector<T>& vec_){
+	if(vec_.empty()){
+		os << "{}";
+		return os;
+	}
+	os << "{ ";
+	typename vector<T>::const_iterator it = vec_.begin();
+	typename vector<T>::const_iterator jt = vec_.end();
+	jt--;
+	while(it!=jt){
+		os << *it << " ; ";
+		++it;
+	}
+	os << *it << " }";
+	return os;
+}
+
+//template ostream& operator<<(ostream& os, const map<int,int>& map_);
 template ostream& operator<<(ostream& os, const map<int,double>& map_);
 template ostream& operator<<(ostream& os, const map<double,int>& map_);
+template ostream& operator<<(ostream& os, const map<bool,map<int,int> >& map_);
 
 Tomography::elec_type Tomography::str_to_elec(string str){
 	elec_type return_value = unknown_elec;
