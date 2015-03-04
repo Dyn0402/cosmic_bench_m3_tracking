@@ -639,6 +639,7 @@ void Signal::SignalDispersion(){
 				if(current_X) angle_shape_corr_X->Fill(ray_it->get_slope_X(), lFit->GetParameter(1));
 				else angle_shape_corr_Y->Fill(ray_it->get_slope_Y(), lFit->GetParameter(1));
 				delete gFit; delete lFit;
+				delete *clus_it;
 			}
 		}
 		delete CBEvent;

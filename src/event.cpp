@@ -1054,10 +1054,8 @@ unsigned int CosmicBenchEvent::get_clus_N_by_det(Detector * det) const{
 }
 vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 	this->Demux_CM();
-	typedef int plane_index_t;
-	map<bool, map<plane_index_t,vector<Cluster*> > > currentClusters;
-	map<bool, map<plane_index_t,int> > sizes;
-	int plane_index = 0;
+	map<bool, map<double,vector<Cluster*> > > currentClusters;
+	map<bool, map<double,int> > sizes;
 	for(vector<Event*>::iterator it=events.begin();it!=events.end();++it){
 		if((*it)->get_is_ref()){
 			Tomography::det_type det_type = (*it)->get_type();
@@ -1065,28 +1063,35 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 				//CM_Demux_Event * currentEvent = dynamic_cast<CM_Demux_Event*>(*it);
 				vector<CM_Demux_Cluster> currentCluster = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
 				for(vector<CM_Demux_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
-					currentClusters[jt->get_is_X()][plane_index].push_back(new CM_Demux_Cluster(*jt));
-					sizes[jt->get_is_X()][plane_index]++;
+					currentClusters[jt->get_is_X()][jt->get_z()].push_back(new CM_Demux_Cluster(*jt));
+					sizes[jt->get_is_X()][jt->get_z()]++;
 				}
-				plane_index++;
 			}
 			else if(det_type == Tomography::MG){
 				//MG_Event * currentEvent = dynamic_cast<MG_Event*>(*it);
 				vector<MG_Cluster> currentCluster = (dynamic_cast<MG_Event*>(*it))->get_clusters();
 				for(vector<MG_Cluster>::iterator jt=currentCluster.begin();jt!=currentCluster.end();++jt){
-					currentClusters[jt->get_is_X()][plane_index].push_back(new MG_Cluster(*jt));
-					sizes[jt->get_is_X()][plane_index]++;
+					currentClusters[jt->get_is_X()][jt->get_z()].push_back(new MG_Cluster(*jt));
+					sizes[jt->get_is_X()][jt->get_z()]++;
 				}
-				plane_index++;
 			}
 			else continue;
 		}
 	}
 	map<bool, vector<Ray_2D> > suitableRays;
 	vector<Ray> returnRays;
-	if(sizes[true].size()<3 || sizes[false].size()<3) return returnRays;
+	if(sizes[true].size()<3 || sizes[false].size()<3){
+		for(map<bool, map<double,vector<Cluster*> > >::iterator jt = currentClusters.begin();jt!=currentClusters.end();++jt){
+			for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+				for(unsigned int i=0;i<(kt->second).size();i++){
+					delete ((kt->second)[i]);
+				}
+			}
+		}
+		return returnRays;
+	}
 	//compute for both acoordinates
-	for(map<bool, map<plane_index_t,vector<Cluster*> > >::iterator it = currentClusters.begin();it!=currentClusters.end();++it){
+	for(map<bool, map<double,vector<Cluster*> > >::iterator it = currentClusters.begin();it!=currentClusters.end();++it){
 		bool b = true;
 		/*
 		//get size
@@ -1103,19 +1108,19 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 			while(b && (it->second).size()>2){
 				b = false;
 				//find best combinaison of clusters
-				vector<map<plane_index_t,int> > comb = combinaisons(sizes[it->first], (drop>0));
+				vector<map<double,int> > comb = combinaisons(sizes[it->first], (drop>0));
 				double current_chiSquare = numeric_limits<double>::max();
-				map<plane_index_t,int> best_comb;
+				map<double,int> best_comb;
 				char coord = (it->first) ? 'X' : 'Y';
 				Ray_2D bestRay = Ray_2D(coord);
-				for(vector<map<plane_index_t,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
+				for(vector<map<double,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
 					//try a comb
 					Ray_2D currentRay = Ray_2D(coord);
 					/*
 					bool has_up = false;
 					bool has_down = false;
 					*/
-					for(map<plane_index_t,int>::iterator nt = kt->begin();nt!= kt->end();++nt){
+					for(map<double,int>::iterator nt = kt->begin();nt!= kt->end();++nt){
 						currentRay.add_cluster(it->second[nt->first][nt->second]);
 						/*
 						if(nt->second[(*kt)[nt->first]]->get_is_up()) has_up = true;
@@ -1134,7 +1139,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 				}
 				if(b){
 					suitableRays[it->first].push_back(Ray_2D(bestRay));
-					for(map<plane_index_t,int>::iterator kt = best_comb.begin();kt!=best_comb.end();++kt){
+					for(map<double,int>::iterator kt = best_comb.begin();kt!=best_comb.end();++kt){
 						delete ((it->second)[kt->first][kt->second]);
 						(it->second)[kt->first].erase((it->second)[kt->first].begin()+kt->second);
 						sizes[it->first][kt->first]--;
@@ -1156,8 +1161,8 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 		returnRays.push_back(Ray(suitableRays[true][i],suitableRays[false][i]));
 		returnRays.back().angle_correction();
 	}
-	for(map<bool, map<plane_index_t,vector<Cluster*> > >::iterator jt = currentClusters.begin();jt!=currentClusters.end();++jt){
-		for(map<plane_index_t,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+	for(map<bool, map<double,vector<Cluster*> > >::iterator jt = currentClusters.begin();jt!=currentClusters.end();++jt){
+		for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
 			for(unsigned int i=0;i<(kt->second).size();i++){
 				delete ((kt->second)[i]);
 			}
