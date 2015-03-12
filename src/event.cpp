@@ -612,10 +612,27 @@ void MG_Event::HoughCluster(){
 				}
 				else break;
 			}
-			cluster_list.push_back(current_cluster);
+			if(detector.test_ClusSize(1 + current_cluster.second - current_cluster.first)) cluster_list.push_back(current_cluster);
 			k = current_cluster.second+1;
 		}
 		else k++;
+	}
+	k=0;
+	if(cluster_list.empty()){
+		while(k<n){
+			if(channelOverThreshold.count(MG_Detector::StripToChannel[k])>0){
+				pair<int,int> current_cluster(k,k);
+				for(int j=k+1;j<n;j++){
+					if(channelOverThreshold.count(MG_Detector::StripToChannel[j])>0){
+						current_cluster.second = j;
+					}
+					else break;
+				}
+				cluster_list.push_back(current_cluster);
+				k = current_cluster.second+1;
+			}
+			else k++;
+		}
 	}
 	//third loop : store the clusters and their caracteristics
 	NClus = cluster_list.size();
@@ -1170,6 +1187,11 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 	}
 	return returnRays;
 }
+
+vector<Ray> CosmicBenchEvent::get_hough_rays(double chiSquare_threshold = Tomography::chisquare_threshold){
+	vector<Ray> returnRays;
+}
+
 void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	gStyle->SetOptStat(false);
 	double chisquare_threshold = 100;

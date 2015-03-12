@@ -109,6 +109,7 @@ class MG_Detector: public Detector{
 		double get_size() const;
 		//Cut setters
 		void set_ClusSizeCut_Min(double cut);
+		double get_ClusSizeCut_Min() const;
 		bool test_ClusSize(double size_);
 		int get_mg_n_in_tree() const;
 		Tomography::det_type get_type() const;

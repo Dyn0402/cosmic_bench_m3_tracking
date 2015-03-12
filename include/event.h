@@ -140,6 +140,7 @@ class CosmicBenchEvent{
 		void Demux_CM();
 		void do_cuts();
 		vector<Ray> get_absorption_rays(double chiSquare_threshold = Tomography::chisquare_threshold);
+		vector<Ray> get_hough_rays(double chiSquare_threshold = Tomography::chisquare_threshold);
 		template<typename T>
 		static vector<map<T,int> > combinaisons(map<T,int> sizes, bool allow_drop = false);
 		//void MultiCluster();

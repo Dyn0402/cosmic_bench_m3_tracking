@@ -532,6 +532,13 @@ bool MG_Cluster::is_suitable(MG_Detector * detector){
 	if(!(detector->test_ClusSize(size))) return false;
 	return true;
 }
+bool MG_Cluster::is_suitable_hough(MG_Detector * detector){
+	if(!is_in_det(detector)) return false;
+	if(pos>1023 || pos<0) return false;
+	if(!(detector->test_ClusTOT(TOT))) return false;
+	if(!(detector->test_ClusMaxSample(maxSample))) return false;
+	return true;
+}
 bool MG_Cluster::is_in_det(Detector * det) const{
 	if(det->get_type() != Tomography::MG) return false;
 	return ((dynamic_cast<MG_Detector*>(det))->get_mg_n_in_tree() == mg_n_in_tree);

@@ -295,6 +295,9 @@ vector<unsigned int> MG_Detector::ChannelToStrip(unsigned int channel_nb){
 void MG_Detector::set_ClusSizeCut_Min(double cut){
 	ClusSizeCut_Min = cut;
 }
+double MG_Detector::get_ClusSizeCut_Min() const{
+	return ClusSizeCut_Min;
+}
 bool MG_Detector::test_ClusSize(double size_){
 	if(size_<ClusSizeCut_Min) return false;
 	return true;

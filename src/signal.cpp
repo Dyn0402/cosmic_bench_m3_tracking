@@ -254,16 +254,17 @@ void Signal::HoughTracking(long event_nb){
 			vector<MG_Cluster> current_cluster = current_event.get_clusters();
 			vector<MG_Cluster>::iterator clus_it = current_cluster.begin();
 			while(clus_it!=current_cluster.end()){
-				if(!(clus_it->is_suitable(current_det))){
+				if(!(clus_it->is_suitable_hough(current_det))){
 					current_cluster.erase(clus_it);
 					clus_it = current_cluster.begin();
 				}
 				else ++clus_it;
 			}
-			cout << "number of suitable cluster for detector n°" << current_det->get_mg_n_in_tree() << " : " << current_cluster.size() << endl;
+			cout << "number of suitable cluster for detector n°" << current_det->get_mg_n_in_tree() << " : " << current_cluster.size();
 			all_cluster[current_det->get_is_X()][current_det->get_z()].insert(all_cluster[current_det->get_is_X()][current_det->get_z()].end(),current_cluster.begin(),current_cluster.end());
 			events.push_back(new MG_Event(current_event));
 			(events.back())->MultiCluster();
+			cout << " (" << (events.back())->get_NClus() << ")" << endl;
 		}
 		if((*it)->get_z()>max_z) max_z = (*it)->get_z();
 		if((*it)->get_z()<min_z) min_z = (*it)->get_z();
@@ -322,63 +323,66 @@ void Signal::HoughTracking(long event_nb){
 	int_X->SetMarkerColor(2);
 	int_Y->SetMarkerColor(2);
 	map<bool,Point_2D> hough_ray;
-	for(map<bool,map<double,vector<MG_Cluster> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
-		vector<map<double,int> > comb = CosmicBenchEvent::combinaisons(sizes[jt->first]);
-		double smallest_distance = numeric_limits<double>::max();
-		bool found = false;
-		Point_2D best_intersection;
-		for(vector<map<double,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
-			vector<Point_2D> intersections;
-			for(map<double,int>::iterator map_it = kt->begin();map_it!=kt->end();++map_it){
-				Line_2D first_line;
-				MG_Cluster first_cluster = (jt->second)[map_it->first][map_it->second];
-				if(!(first_cluster.get_is_up())) first_line = Line_2D(Point_2D(min_coord + (first_cluster.get_pos_mm() - min_coord)*(min_z-max_z)/(first_cluster.get_z()-max_z),min_coord),Point_2D(max_coord + (first_cluster.get_pos_mm() - max_coord)*(min_z-max_z)/(first_cluster.get_z()-max_z),max_coord));
-				else first_line = Line_2D(Point_2D(min_coord,min_coord + (first_cluster.get_pos_mm() - min_coord)*(max_z-min_z)/(first_cluster.get_z()-min_z)),Point_2D(max_coord,max_coord + (first_cluster.get_pos_mm() - max_coord)*(max_z-min_z)/(first_cluster.get_z()-min_z)));
-				map<double,int>::iterator map_jt = map_it;
-				map_jt++;
-				while(map_jt!=kt->end()){
-					Line_2D second_line;
-					MG_Cluster second_cluster = (jt->second)[map_jt->first][map_jt->second];
-					if(!(second_cluster.get_is_up())) second_line = Line_2D(Point_2D(min_coord + (second_cluster.get_pos_mm() - min_coord)*(min_z-max_z)/(second_cluster.get_z()-max_z),min_coord),Point_2D(max_coord + (second_cluster.get_pos_mm() - max_coord)*(min_z-max_z)/(second_cluster.get_z()-max_z),max_coord));
-					else second_line = Line_2D(Point_2D(min_coord,min_coord + (second_cluster.get_pos_mm() - min_coord)*(max_z-min_z)/(second_cluster.get_z()-min_z)),Point_2D(max_coord,max_coord + (second_cluster.get_pos_mm() - max_coord)*(max_z-min_z)/(second_cluster.get_z()-min_z)));
-					intersections.push_back(first_line.intersection(second_line));
-					++map_jt;
-				}
-			}
-			if(intersections.size()>1){
-				double biggest_distance = 0;
-				for(vector<Point_2D>::iterator vec_it = intersections.begin();vec_it!=intersections.end();++vec_it){
-					vector<Point_2D>::iterator vec_jt = vec_it;
-					vec_jt++;
-					while(vec_jt!=intersections.end()){
-						double current_distance = ((*vec_it) - (*vec_jt)).norm();
-						if(current_distance> biggest_distance) biggest_distance = current_distance;
-						++vec_jt;
+	for(int drop = 0;drop<2;drop++){
+		for(map<bool,map<double,vector<MG_Cluster> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
+			if(hough_ray.count(jt->first)>0) continue;
+			vector<map<double,int> > comb = CosmicBenchEvent::combinaisons(sizes[jt->first], (drop>0));
+			double smallest_distance = numeric_limits<double>::max();
+			bool found = false;
+			Point_2D best_intersection;
+			for(vector<map<double,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
+				vector<Point_2D> intersections;
+				for(map<double,int>::iterator map_it = kt->begin();map_it!=kt->end();++map_it){
+					Line_2D first_line;
+					MG_Cluster first_cluster = (jt->second)[map_it->first][map_it->second];
+					if(!(first_cluster.get_is_up())) first_line = Line_2D(Point_2D(min_coord + (first_cluster.get_pos_mm() - min_coord)*(min_z-max_z)/(first_cluster.get_z()-max_z),min_coord),Point_2D(max_coord + (first_cluster.get_pos_mm() - max_coord)*(min_z-max_z)/(first_cluster.get_z()-max_z),max_coord));
+					else first_line = Line_2D(Point_2D(min_coord,min_coord + (first_cluster.get_pos_mm() - min_coord)*(max_z-min_z)/(first_cluster.get_z()-min_z)),Point_2D(max_coord,max_coord + (first_cluster.get_pos_mm() - max_coord)*(max_z-min_z)/(first_cluster.get_z()-min_z)));
+					map<double,int>::iterator map_jt = map_it;
+					map_jt++;
+					while(map_jt!=kt->end()){
+						Line_2D second_line;
+						MG_Cluster second_cluster = (jt->second)[map_jt->first][map_jt->second];
+						if(!(second_cluster.get_is_up())) second_line = Line_2D(Point_2D(min_coord + (second_cluster.get_pos_mm() - min_coord)*(min_z-max_z)/(second_cluster.get_z()-max_z),min_coord),Point_2D(max_coord + (second_cluster.get_pos_mm() - max_coord)*(min_z-max_z)/(second_cluster.get_z()-max_z),max_coord));
+						else second_line = Line_2D(Point_2D(min_coord,min_coord + (second_cluster.get_pos_mm() - min_coord)*(max_z-min_z)/(second_cluster.get_z()-min_z)),Point_2D(max_coord,max_coord + (second_cluster.get_pos_mm() - max_coord)*(max_z-min_z)/(second_cluster.get_z()-min_z)));
+						intersections.push_back(first_line.intersection(second_line));
+						++map_jt;
 					}
 				}
-				if(biggest_distance<smallest_distance){
-					smallest_distance = biggest_distance;
-					found = true;
-					vector<Point_2D>::iterator vec_it = intersections.begin();
-					best_intersection = *vec_it;
-					++vec_it;
-					while(vec_it!=intersections.end()){
-						best_intersection += *vec_it;
+				if(intersections.size()>1){
+					double biggest_distance = 0;
+					for(vector<Point_2D>::iterator vec_it = intersections.begin();vec_it!=intersections.end();++vec_it){
+						vector<Point_2D>::iterator vec_jt = vec_it;
+						vec_jt++;
+						while(vec_jt!=intersections.end()){
+							double current_distance = ((*vec_it) - (*vec_jt)).norm();
+							if(current_distance> biggest_distance) biggest_distance = current_distance;
+							++vec_jt;
+						}
+					}
+					if(biggest_distance<smallest_distance && biggest_distance<10){
+						smallest_distance = biggest_distance;
+						found = true;
+						vector<Point_2D>::iterator vec_it = intersections.begin();
+						best_intersection = *vec_it;
 						++vec_it;
+						while(vec_it!=intersections.end()){
+							best_intersection += (*vec_it);
+							++vec_it;
+						}
+						best_intersection /= intersections.size();
 					}
-					best_intersection /= intersections.size();
 				}
 			}
-		}
-		if(found){
-			hough_ray[jt->first] = best_intersection;
-			if(jt->first){
-				int_X->SetPoint(X_int_nb,best_intersection.get_X(),best_intersection.get_Y());
-				X_int_nb++;
-			}
-			else{
-				int_Y->SetPoint(Y_int_nb,best_intersection.get_X(),best_intersection.get_Y());
-				Y_int_nb++;
+			if(found){
+				hough_ray[jt->first] = best_intersection;
+				if(jt->first){
+					int_X->SetPoint(X_int_nb,best_intersection.get_X(),best_intersection.get_Y());
+					X_int_nb++;
+				}
+				else{
+					int_Y->SetPoint(Y_int_nb,best_intersection.get_X(),best_intersection.get_Y());
+					Y_int_nb++;
+				}
 			}
 		}
 	}
@@ -612,7 +616,7 @@ void Signal::SignalDispersion(){
 	TCanvas * cControl = new TCanvas("cControl");
 	cControl->Divide(2,2);
 	TCanvas * cAnalyse = new TCanvas("cAnalyse");
-	cAnalyse->Divide(2);
+	cAnalyse->Divide(2,2);
 	int nbin_time = Tomography::Nsample;
 	TH2D * signalShape_X_pos = new TH2D("signalShape_X_pos","signalShape_X_pos",60,-6,6,nbin_time,0,nbin_time);
 	TH2D * signalShape_Y_pos = new TH2D("signalShape_Y_pos","signalShape_Y_pos",60,-15,15,nbin_time,0,nbin_time);
@@ -629,6 +633,8 @@ void Signal::SignalDispersion(){
 
 	TH2D * angle_shape_corr_X = new TH2D("angle_shape_corr_X","angle_shape_corr_X",50,-0.5,0.5,50,-1,1);
 	TH2D * angle_shape_corr_Y = new TH2D("angle_shape_corr_Y","angle_shape_corr_Y",50,-0.5,0.5,50,-1,1);
+	TH2D * slope_corr_X = new TH2D("slope_corr_X","slope_corr_X",50,-1,1,50,-1,1);
+	TH2D * slope_corr_Y = new TH2D("slope_corr_Y","slope_corr_Y",50,-1,1,50,-1,1);
 
 	TH1D * clus_pos = new TH1D("clus_pos","clus_pos",1024,0,1023);
 	TH1D * clus_size = new TH1D("clus_size","clus_size",50,-1,47);
@@ -700,6 +706,8 @@ void Signal::SignalDispersion(){
 			if(ray_it->get_slope_X()==0 && ray_it->get_slope_Y()<0) phi = Pi();
 			ray_phi->Fill(phi);
 			vector<Cluster*> current_clusters = ray_it->get_clus();
+			vector<double> clus_slopes_X;
+			vector<double> clus_slopes_Y;
 			for(vector<Cluster*>::iterator clus_it = current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
 				clus_pos->Fill((*clus_it)->get_pos());
 				clus_size->Fill((*clus_it)->get_size());
@@ -741,12 +749,27 @@ void Signal::SignalDispersion(){
 				}
 				if(gFit_nb>1){
 					gFit->Fit(lFit,"QNRFM");
-					
-					if(current_X) angle_shape_corr_X->Fill(ray_it->get_slope_X(), lFit->GetParameter(1));
-					else angle_shape_corr_Y->Fill(ray_it->get_slope_Y(), lFit->GetParameter(1));
+					if(current_X){
+						clus_slopes_X.push_back(lFit->GetParameter(1));
+						angle_shape_corr_X->Fill(ray_it->get_slope_X(), lFit->GetParameter(1));
+					}
+					else{
+						clus_slopes_Y.push_back(lFit->GetParameter(1));
+						angle_shape_corr_Y->Fill(ray_it->get_slope_Y(), lFit->GetParameter(1));
+					}
 				}
 				delete gFit; delete lFit;
 				delete *clus_it;
+			}
+			for(vector<double>::iterator slope_it = clus_slopes_X.begin();slope_it!=clus_slopes_X.end();++slope_it){
+				for(vector<double>::iterator slope_jt = slope_it+1;slope_jt!=clus_slopes_X.end();++slope_jt){
+					slope_corr_X->Fill(*slope_it,*slope_jt);
+				}
+			}
+			for(vector<double>::iterator slope_it = clus_slopes_Y.begin();slope_it!=clus_slopes_Y.end();++slope_it){
+				for(vector<double>::iterator slope_jt = slope_it+1;slope_jt!=clus_slopes_Y.end();++slope_jt){
+					slope_corr_Y->Fill(*slope_it,*slope_jt);
+				}
 			}
 		}
 		delete CBEvent;
@@ -792,6 +815,10 @@ void Signal::SignalDispersion(){
 			angle_shape_corr_X->Draw("COLZ");
 			cAnalyse->cd(2);
 			angle_shape_corr_Y->Draw("COLZ");
+			cAnalyse->cd(3);
+			slope_corr_X->Draw("COLZ");
+			cAnalyse->cd(4);
+			slope_corr_Y->Draw("COLZ");
 			cAnalyse->Modified();
 			cAnalyse->Update();
 		}
@@ -833,6 +860,10 @@ void Signal::SignalDispersion(){
 	angle_shape_corr_X->Draw("COLZ");
 	cAnalyse->cd(2);
 	angle_shape_corr_Y->Draw("COLZ");
+	cAnalyse->cd(3);
+	slope_corr_X->Draw("COLZ");
+	cAnalyse->cd(4);
+	slope_corr_Y->Draw("COLZ");
 	cAnalyse->Modified();
 	cAnalyse->Update();
 	cout << endl;

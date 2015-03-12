@@ -117,6 +117,7 @@ class MG_Cluster: public Cluster{
 		~MG_Cluster();
 		static bool is_suitable(T * treeObject,int number_,MG_Detector * detector, long entry = -1);
 		bool is_suitable(MG_Detector * detector);
+		bool is_suitable_hough(MG_Detector * detector);
 		bool is_in_det(Detector * det) const;
 		double get_pos_mm() const;
 		double correct_strip_nb(int strip_nb) const;
