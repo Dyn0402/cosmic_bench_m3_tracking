@@ -1,7 +1,21 @@
 #include "tomography.h"
+#include "datareader.h"
 #include <map>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+
+#include <boost/property_tree/ptree.hpp>
+#include <boost/foreach.hpp>
 
 using std::map;
+using std::cout;
+using std::endl;
+using std::ostringstream;
+using std::setw;
+using std::setfill;
+
+using boost::property_tree::ptree;
 
 ostream& Tomography::operator<<(ostream& os, const det_type& det){
 	switch(det){
@@ -77,4 +91,69 @@ Tomography::elec_type Tomography::str_to_elec(string str){
 	if(str == "dream") return_value = Dream;
 	else if(str == "feminos") return_value = Feminos;
 	return return_value;
+}
+
+void Tomography::process_elec_files(ptree config_tree){
+	int total_CM_N = config_tree.get<int>("total_CM_N");
+	int total_MG_N = config_tree.get<int>("total_MG_N");
+	int CM_N = 0;
+	int MG_N = 0;
+	map<int,Tomography::det_type> det_type_by_asic;
+	map<int,int> det_n_by_asic;
+	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
+		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::CM;
+		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("cm_n");
+		CM_N++;
+	}
+	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
+		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::MG;
+		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("mg_n");
+		MG_N++;
+	}
+	if((total_CM_N!=CM_N) || (total_MG_N!=MG_N)){
+		cout << "problem in detectors number" << endl;
+		return;
+	}
+	Tomography::elec_type electronic_type = Tomography::str_to_elec(config_tree.get<string>("electronic_type"));
+	string data_file_basename = config_tree.get<string>("data_file_basename");
+	string signalName = config_tree.get<string>("signal_file");
+	string PedName = config_tree.get<string>("Ped");
+	string RMSName = config_tree.get<string>("RMSPed");
+	int max_event = config_tree.get<int>("max_event");
+	ifstream file;
+	file.open(signalName.c_str(),ifstream::in);
+	bool exists = file.good();
+	file.close();
+	file.open(PedName.c_str(),ifstream::in);
+	bool ped_done = file.good();
+	file.close();
+	file.open(RMSName.c_str(),ifstream::in);
+	bool compute_rms = !(file.good());
+	file.close();
+	DataReader * blah = NULL;
+	if(electronic_type == Tomography::Dream){
+		blah = new DreamDataReader(signalName,PedName,RMSName,det_type_by_asic,det_n_by_asic,exists,exists,exists,max_event);
+	}
+	else if(electronic_type == Tomography::Feminos){
+		blah = new FeminosDataReader(signalName,PedName,RMSName,det_type_by_asic,det_n_by_asic,exists,exists,exists,max_event);
+	}
+	else{
+		cout << "electronic type : " << electronic_type << " unknown !" << endl;
+		return;
+	}
+	int first_data_file = config_tree.get<int>("data_file_first");
+	int last_data_file = config_tree.get<int>("data_file_last") + 1;
+	for(int i=first_data_file;i<last_data_file;i++){
+		ostringstream dataFileName;
+		dataFileName << data_file_basename << setw(3) << setfill('0') << i;
+		if(electronic_type == Tomography::Dream) dataFileName << "_01.fdf";
+		else if(electronic_type == Tomography::Feminos) dataFileName << ".aqs";
+		else dataFileName << ".txt";
+		blah->add_file_to_process(dataFileName.str());
+	}
+	blah->process();
+	if(!ped_done) blah->compute_ped();
+	blah->do_ped_sub();
+	blah->do_common_noise_sub();
+	if(compute_rms) blah->compute_RMSPed();
 }

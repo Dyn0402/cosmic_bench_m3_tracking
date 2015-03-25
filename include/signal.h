@@ -10,15 +10,21 @@
 #include <string>
 #include <map>
 
+#include <boost/property_tree/ptree.hpp>
+
 using std::string;
 using std::map;
+
+using boost::property_tree::ptree;
 
 class Signal: public Tsignal, public CosmicBench{
 	public:
 		Signal(string configFilePath);
+		Signal(ptree config_tree);
 		~Signal();
 		void MultiCluster();
 		void ElecToAnalyse();
+		void ElecToRays(string outFileName);
 		void EventDisplay(int evn_min = 0, int evn_max = 20);
 		void HoughTracking(long event_nb);
 		map<int,TProfile*> SignalOverNoise();

@@ -8,6 +8,7 @@
 #include "Tsignal.h"
 #include "tomography.h"
 #include "acceptanceFunction.h"
+#include "Tray.h"
 //ROOT
 #include <TTree.h>
 #include <TFile.h>
@@ -1189,6 +1190,46 @@ void Analyse::Efficacity(){
 	test_order->Draw();
 	c_test->Modified();
 	c_test->Update();
+}
+void Analyse::ExportAbsorptionRays(string outFileName){
+	long eventReconstructed = 0;
+	long eventSuitable = 0;
+	double chisquare_threshold = 100;
+
+	double Z_Up = numeric_limits<double>::min();
+	double Z_Down = numeric_limits<double>::max();
+	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+		double current_z = (*det_it)->get_z();
+		if(current_z>Z_Up) Z_Up = current_z;
+		if(current_z<Z_Down) Z_Down = current_z;
+	}
+
+	Tray * rayTree = new Tray(outFileName);
+
+	//if (fChain == 0) return;
+	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
+
+	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
+	for (Long64_t jentry=0; jentry<nentries;jentry++){
+		Long64_t ientry = LoadTree(jentry);
+		if (ientry < 0) break;
+		fChain->GetEntry(jentry);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
+		vector<Ray>::iterator ray_it = currentRays.begin();
+		while(ray_it!= currentRays.end()){
+			if(ray_it->get_chiSquare_X()>-1 && ray_it->get_chiSquare_Y()>-1 && ((ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y())/ray_it->get_clus_n())<chisquare_threshold) ++ray_it;
+			else ray_it = currentRays.erase(ray_it);
+		}
+		eventReconstructed+=currentRays.size();
+		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		delete currentCBEvent;
+		rayTree->fillTree(evn,evttime,currentRays,Z_Up,Z_Down);
+		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
+	}
+	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
+	rayTree->Write();
+	rayTree->CloseFile();
 }
 TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1){
 	long eventReconstructed = 0;

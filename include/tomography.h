@@ -6,10 +6,14 @@
 #include <string>
 #include <vector>
 
+#include <boost/property_tree/ptree.hpp>
+
 using std::ostream;
 using std::map;
 using std::string;
 using std::vector;
+
+using boost::property_tree::ptree;
 
 template<typename T,typename R>
 ostream& operator<<(ostream& os, const map<T,R>& map_);
@@ -49,6 +53,7 @@ namespace Tomography{
 	ostream& operator<<(ostream& os, const det_type& det);
 	ostream& operator<<(ostream& os, const strip_type& strip);
 	ostream& operator<<(ostream& os, const elec_type& elec);
+	void process_elec_files(ptree config_tree);
 }
 
 #endif

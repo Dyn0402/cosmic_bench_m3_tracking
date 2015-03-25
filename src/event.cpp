@@ -1188,7 +1188,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 	return returnRays;
 }
 
-vector<Ray> CosmicBenchEvent::get_hough_rays(double chiSquare_threshold = Tomography::chisquare_threshold){
+vector<Ray> CosmicBenchEvent::get_hough_rays(double chiSquare_threshold){
 	vector<Ray> returnRays;
 }
 

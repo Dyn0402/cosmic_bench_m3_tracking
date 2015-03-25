@@ -207,6 +207,7 @@ void liveDisplay::flux_map(double z){
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
 	long processed = 0;
+	double evttime = 0;
 	time_t last_time = time(NULL);
 	TH2D * flux_map_h = new TH2D("flux_map","flux_map",bin_n,x_min,x_max,bin_n,x_min,x_max);
 	flux_map_h->SetStats(0);
@@ -244,7 +245,7 @@ void liveDisplay::flux_map(double z){
 			if(!(read_mask & IN_MODIFY)) continue;
 			while(data_file.good()){
 				current_pos = data_file.tellg();
-				map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,event_nb);
+				map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,event_nb,evttime);
 				if(event_ampl.size()==0){
 					data_file.clear();
 					data_file.seekg(current_pos, data_file.beg);

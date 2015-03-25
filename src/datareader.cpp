@@ -507,9 +507,9 @@ void DataReader::compute_RMSPed(){
 	outTree->SetBranchStatus("*",1);
 	RMSPedFile.close();
 }
-map<Tomography::det_type,vector<vector<vector<double> > > > DataReader::read_event(ifstream * file,int& event_nb, bool fill_tree){
+map<Tomography::det_type,vector<vector<vector<double> > > > DataReader::read_event(ifstream * file,int& event_nb, double& evttime_){
 	long event_nb_ = event_nb;
-	map<Tomography::det_type,vector<vector<vector<double> > > > return_map = read_event(file,event_nb_,fill_tree);
+	map<Tomography::det_type,vector<vector<vector<double> > > > return_map = read_event(file,event_nb_,evttime_);
 	event_nb = event_nb_;
 	return return_map;
 }
@@ -696,7 +696,7 @@ void DreamDataReader::read_file(string file_name,long evn_offset){
 	cout << "\r" << "event processed in file : " << file_name << " : " << evNinFile << " (total number of event : " << evNinFile + evn_offset - global_offset << ")" << endl;
 	iFile.close();
 }
-map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::read_event(ifstream * file,long& event_nb, bool fill_tree){
+map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::read_event(ifstream * file,long& event_nb, double& evttime_){
 	int isample=-1; int isample_prev=-2;
 	int isample_nb=0;
 	int ichannel=0;
@@ -845,9 +845,10 @@ map<Tomography::det_type,vector<vector<vector<double> > > > DreamDataReader::rea
 		current_data.ntohs_();	
 	}
 	map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl;
+	evttime_ = 0;
 	if(!event_complete) return event_ampl;
 	Nevent = event_nb;
-	if(fill_tree && !exists) Fill();
+	evttime_ = evttime;
 	vector<vector<vector<double> > > MG_Ampl(MG_N,vector<vector<double> >(Nstrip_MG,vector<double>(Nsample,0)));
 	vector<vector<vector<double> > > CM_Ampl(CM_N,vector<vector<double> >(Nstrip_CM,vector<double>(Nsample,0)));
 	for(unsigned int i=0;i<MG_N;i++){
@@ -1038,7 +1039,7 @@ void FeminosDataReader::read_file(string file_name,long evn_offset){
 	iFile.close();
 }
 
-map<Tomography::det_type,vector<vector<vector<double> > > > FeminosDataReader::read_event(ifstream * file,long& event_nb, bool fill_tree){
+map<Tomography::det_type,vector<vector<vector<double> > > > FeminosDataReader::read_event(ifstream * file,long& event_nb, double& evttime_){
 	int card=0;
 	int chip=0;
 	int channel=0;
@@ -1128,10 +1129,11 @@ map<Tomography::det_type,vector<vector<vector<double> > > > FeminosDataReader::r
 		}
 		file->read((char*)&current_data,sizeof(current_data));
 	}
+	evttime_ = 0;
 	if(!event_complete) return event_ampl;
 	event_nb++;
 	Nevent = event_nb;
-	if(fill_tree && !exists) Fill();
+	evttime_ = evttime;
 	vector<vector<vector<double> > > MG_Ampl(MG_N,vector<vector<double> >(Nstrip_MG,vector<double>(Nsample,0)));
 	vector<vector<vector<double> > > CM_Ampl(CM_N,vector<vector<double> >(Nstrip_CM,vector<double>(Nsample,0)));
 	for(unsigned int i=0;i<MG_N;i++){

@@ -5,6 +5,7 @@
 #include "ray.h"
 #include "datareader.h"
 #include "point.h"
+#include "Tray.h"
 
 #include <fstream>
 #include <string>
@@ -95,6 +96,44 @@ Signal::Signal(string configFilePath){
 	analyseTree = config_tree.get<string>("Tree");
 	use_srf = config_tree.get<bool>("use_SRF");
 }
+
+Signal::Signal(ptree config_tree){
+	electronic_type = Tomography::str_to_elec(config_tree.get<string>("electronic_type"));
+	data_file_basename = config_tree.get<string>("data_file_basename");
+	signalName = config_tree.get<string>("signal_file");
+	PedName = config_tree.get<string>("Ped");
+	RMSName = config_tree.get<string>("RMSPed");
+	max_event = config_tree.get<long>("max_event");
+	data_file_first = config_tree.get<int>("data_file_first");
+	data_file_last = config_tree.get<int>("data_file_last");
+	cout << signalName << endl;
+	cout << RMSName << endl;
+	ifstream fIn_test(signalName.c_str());
+	exists = fIn_test.good();
+	fIn_test.close();
+	CosmicBench::Init(config_tree);
+	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
+		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::CM;
+		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("cm_n");
+	}
+	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
+		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::MG;
+		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("mg_n");
+	}
+	if(CM_N!=0) cout << "warning, CosMultis are not fully supported !" << endl;
+	if(exists){
+		fIn = new TFile(signalName.c_str(),"READ");
+		TTree * treeIn = (TTree*)(fIn->Get("T"));
+		Tsignal::Init(treeIn,CM_N,MG_N);
+	}
+	else{
+		Tsignal::Init(0,CM_N,MG_N);
+		cout << "Waring, signal file is missing !" << endl;
+	}
+	analyseTree = config_tree.get<string>("Tree");
+	use_srf = config_tree.get<bool>("use_SRF");
+}
+
 Signal::~Signal(){
 	if(exists){
 		delete fIn;
@@ -179,7 +218,7 @@ void Signal::ElecToAnalyse(){
 		name << data_file_basename << setfill('0') << setw(3) << i << extension;
 		ifstream data_file(name.str().c_str(),ifstream::binary);
 		while(data_file.good()){
-			map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,Nevent,false);
+			map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,Nevent,evttime);
 			if(event_ampl.size()==0) break;
 			map<Tomography::det_type,vector<vector<float> > >::iterator ped_it = Pedestal.begin();
 			for(map<Tomography::det_type,vector<vector<vector<double> > > >::iterator it = event_ampl.begin();it!=event_ampl.end();++it){
@@ -218,7 +257,7 @@ void Signal::ElecToAnalyse(){
 					cm_events.back().MultiCluster();
 				}
 			}
-			analyseFile->fillTree(Nevent,0,mg_events,cm_events);
+			analyseFile->fillTree(Nevent,evttime,mg_events,cm_events);
 			Nevent++;
 			event_nb++;
 			event_nb_file++;
@@ -228,6 +267,112 @@ void Signal::ElecToAnalyse(){
 	}
 	analyseFile->Write();
 	analyseFile->CloseFile();
+}
+void Signal::ElecToRays(string outFileName){
+	cout << "Reading Pedestal : " << PedName << endl;
+	map<Tomography::det_type,vector<vector<float> > > Pedestal;
+	Pedestal[Tomography::CM] = vector<vector<float> >(CM_N,vector<float>(DataReader::Nstrip_CM,0));
+	Pedestal[Tomography::MG] = vector<vector<float> >(MG_N,vector<float>(DataReader::Nstrip_MG,0));
+	ifstream pedFile(PedName.c_str());
+	for(int i=0;i<CM_N;i++){
+		for(int j=0;j<DataReader::Nstrip_CM;j++){
+			pedFile >> i >> j >> Pedestal[Tomography::CM][i][j];
+		}
+	}
+	for(int i=0;i<MG_N;i++){
+		for(int j=0;j<DataReader::Nstrip_MG;j++){
+			pedFile >> i >> j >> Pedestal[Tomography::MG][i][j];
+		}
+	}
+
+	double Z_Up = numeric_limits<double>::min();
+	double Z_Down = numeric_limits<double>::max();
+	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+		double current_z = (*det_it)->get_z();
+		if(current_z>Z_Up) Z_Up = current_z;
+		if(current_z<Z_Down) Z_Down = current_z;
+	}
+
+	pedFile.close();
+	cout << "destination file : " << outFileName << endl;
+	Tray * rayFile = new Tray(outFileName);
+	Nevent = 0;
+	long event_nb = 0;
+	string extension = "";
+	DataReader * current_data_reader;
+	if(electronic_type == Tomography::Feminos){
+		extension = ".aqs";
+		current_data_reader = new FeminosDataReader("tmp",det_type_by_asic,det_n_by_asic);
+		ostringstream name;
+		name << data_file_basename << setfill('0') << setw(3) << data_file_first << extension;
+		Nevent = dynamic_cast<FeminosDataReader*>(current_data_reader)->get_first_event_nb(name.str());
+	}
+	else if(electronic_type == Tomography::Dream){
+		extension = "_01.fdf";
+		current_data_reader = new DreamDataReader("tmp",det_type_by_asic,det_n_by_asic);
+	}
+	else return;
+	map<Tomography::det_type,int> detector_div;
+	detector_div[Tomography::CM] = 2;
+	detector_div[Tomography::MG] = 2;
+	map<Tomography::det_type,int> Nstrip;
+	Nstrip[Tomography::CM] = DataReader::Nstrip_CM;
+	Nstrip[Tomography::MG] = DataReader::Nstrip_MG;
+	for(int i=data_file_first;i<=data_file_last;i++){
+		int event_nb_file = 0;
+		ostringstream name;
+		name << data_file_basename << setfill('0') << setw(3) << i << extension;
+		ifstream data_file(name.str().c_str(),ifstream::binary);
+		while(data_file.good()){
+			map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,Nevent,evttime);
+			if(event_ampl.size()==0) break;
+			map<Tomography::det_type,vector<vector<float> > >::iterator ped_it = Pedestal.begin();
+			for(map<Tomography::det_type,vector<vector<vector<double> > > >::iterator it = event_ampl.begin();it!=event_ampl.end();++it){
+				vector<vector<float> >::iterator ped_jt = (ped_it->second).begin();
+				for(vector<vector<vector<double> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+					for(int k=0;k<DataReader::Nsample;k++){
+						for(int det_div=0;det_div<detector_div[it->first];det_div++){
+							int strip_nb = Nstrip[it->first]/detector_div[it->first] + Nstrip[it->first]%detector_div[it->first];
+							int strip_offset = det_div*strip_nb;
+							vector<float> current_sample(strip_nb,0);
+							for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+								current_sample[j] = (*jt)[j+strip_offset][k] - (*ped_jt)[j+strip_offset];
+							}
+							sort(current_sample.begin(),current_sample.end());
+							float median = current_sample[strip_nb/2];
+							for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+								(*jt)[j+strip_offset][k] -= median + (*ped_jt)[j+strip_offset];
+							}
+						}
+					}
+					++ped_jt;
+				}
+				++ped_it;
+			}
+			vector<Event*> events;
+			for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
+				if((*it)->get_type() == Tomography::MG){
+					MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
+					events.push_back(new MG_Event(*current_det,event_ampl[Tomography::MG][current_det->get_mg_n_in_tree()],use_srf,event_nb));
+					(events.back())->MultiCluster();
+				}
+				else if((*it)->get_type() == Tomography::CM){
+					CM_Detector * current_det = dynamic_cast<CM_Detector*>(*it);
+					events.push_back(new CM_Event(*current_det,event_ampl[Tomography::CM][current_det->get_cm_n_in_tree()],use_srf,event_nb));
+					(events.back())->MultiCluster();
+				}
+			}
+			CosmicBenchEvent CBEvent(this,events);
+			rayFile->fillTree(Nevent,evttime,CBEvent.get_absorption_rays(),Z_Up,Z_Down);
+			Nevent++;
+			event_nb++;
+			event_nb_file++;
+			if(event_nb_file%100 == 0) cout << "\r" << "processing " << name.str() << " : " << event_nb_file << " (total : " << event_nb << ")" << flush;
+		}
+		cout << "\r" << "processing " << name.str() << " : " << event_nb_file << " (total : " << event_nb << ")" << endl;
+	}
+	rayFile->Write();
+	rayFile->CloseFile();
 }
 
 void Signal::HoughTracking(long event_nb){
