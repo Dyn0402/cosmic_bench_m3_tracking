@@ -35,6 +35,10 @@ bool DataLineDream::is_data_zs() const{
 bool DataLineDream::is_channel_ID() const{
 	return (((data) & 0x7000)>>12)==1;
 }
+bool DataLineDream::is_EOE() const{
+	return (((data) & 0x7800)>>11)==15;
+	//return (((data) & 0x0800)>>11)==1;
+}
 bool DataLineDream::get_zs_mode() const{
 	return (((data) & 0x400)>>10);
 }

@@ -14,6 +14,7 @@ class DataLineDream{
 		bool is_channel_ID() const;
 		bool is_Feu_header() const;
 		bool is_data_header() const;
+		bool is_EOE() const;
 		bool get_zs_mode() const;
 		int get_Feu_ID() const;
 		int get_sample_ID() const;
