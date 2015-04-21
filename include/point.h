@@ -49,6 +49,7 @@ class Line{
 		Line(Point first,Point second);
 		//Line(Point origin_,Point direction_);
 		Line(const Line& other);
+		Line& operator=(const Line& other);
 		bool is_parallel(const Line& other) const;
 		bool is_coplanar(const Line& other) const;
 		Point PoCA(const Line& other) const;
@@ -100,6 +101,7 @@ class Line_2D{
 		Line_2D(Point_2D first,Point_2D second);
 		//Line_2D(Point_2D origin_,Point_2D direction_);
 		Line_2D(const Line_2D& other);
+		Line_2D& operator=(const Line_2D& other);
 		bool is_parallel(const Line_2D& other) const;
 		Point_2D intersection(const Line_2D& other) const;
 	//protected:

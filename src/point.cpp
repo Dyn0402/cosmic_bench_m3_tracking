@@ -141,6 +141,11 @@ Line::Line(const Line& other){
 	origin = other.origin;
 	direction = other.direction;
 }
+Line& Line::operator=(const Line& other){
+	origin = other.origin;
+	direction = other.direction;
+	return *this;
+}
 bool Line::is_parallel(const Line& other) const{
 	return (direction*other.direction).is_null();
 }
@@ -276,6 +281,11 @@ Line_2D::Line_2D(Point_2D origin_,Point_2D direction_){
 Line_2D::Line_2D(const Line_2D& other){
 	origin = other.origin;
 	direction = other.direction;
+}
+Line_2D& Line_2D::operator=(const Line_2D& other){
+	origin = other.origin;
+	direction = other.direction;
+	return *this;
 }
 bool Line_2D::is_parallel(const Line_2D& other) const{
 	return (Abs(det(other.direction,direction)) <= numeric_limits<double>::epsilon());
