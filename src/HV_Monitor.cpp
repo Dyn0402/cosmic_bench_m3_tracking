@@ -121,7 +121,7 @@ int main(int argc, char ** argv){
 	unsigned int duration = config_tree.get<int>("duration");
 	for(unsigned int i=0;i<duration;i++){
 		ntp_gettime(&current_time);
-		wait_time.tv_nsec = 1000*(1000000-current_time.time.tv_usec);
+		wait_time.tv_nsec = (1000000000-current_time.time.tv_usec);
 		nanosleep(&wait_time,&remaining_time);
 		for(map<CAEN_Ch::Param,CAEN_Ch::param_value*>::iterator params_it = channel_params.begin();params_it!=channel_params.end();++params_it){
 			channel_values[params_it->first] = blah->get_Ch_param(used_channel,params_it->first);
