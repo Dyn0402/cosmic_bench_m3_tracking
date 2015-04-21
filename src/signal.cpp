@@ -366,6 +366,7 @@ void Signal::ElecToRays(string outFileName){
 				}
 			}
 			CosmicBenchEvent CBEvent(this,events);
+			CBEvent.do_cuts();
 			rayFile->fillTree(Nevent,evttime,CBEvent.get_absorption_rays(),Z_Up,Z_Down);
 			for(vector<Event*>:: iterator event_it=events.begin();event_it!=events.end();++event_it){
 				delete (*event_it);
