@@ -47,6 +47,10 @@ namespace Tomography{
 	const int SampleMax = 21;
 	const double sigma = 4.;
 	const int TOTCut = 3;
+	const int Nchannel = 64;
+	const int Nasic_FEU = 8;
+	const string DreamExt = "fdf";
+	const string FeminosExt = "aqs";
 	const double chisquare_threshold = 100;
 	const bool live_graphic_display = true; // toggle updating of canvas during calculation
 	elec_type str_to_elec(string str);
