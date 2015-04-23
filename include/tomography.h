@@ -49,6 +49,7 @@ namespace Tomography{
 	const int TOTCut = 3;
 	const int Nchannel = 64;
 	const int Nasic_FEU = 8;
+	const int Nasic_Feminos = 4;
 	const string DreamExt = "fdf";
 	const string FeminosExt = "aqs";
 	const double chisquare_threshold = 100;
