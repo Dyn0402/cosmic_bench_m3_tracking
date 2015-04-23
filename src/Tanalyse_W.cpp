@@ -129,7 +129,7 @@ void Tanalyse_W::Init()
       CM_ClusT = new Double_t[CMN][600];
       CM_StripMaxAmpl = new Double_t[CMN][32];
 
-      int CM_MaxNClus = 300;
+      int CM_MaxNClus = 600;
 
       char leefCMNClus[100];
       sprintf(leefCMNClus,"CM_NClus[%d]/I",CMN);
