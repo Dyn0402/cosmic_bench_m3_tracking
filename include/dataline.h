@@ -1,5 +1,6 @@
 #ifndef dataline_h
 #define dataline_h
+#include <stdint.h>
 
 class DataLineDream{
 	public:
@@ -21,7 +22,8 @@ class DataLineDream{
 		int get_channel_ID() const;
 		int get_dream_ID() const;
 		short get_data() const;
-		unsigned short int data;
+		//unsigned short int data;
+		uint16_t data;
 };
 
 class DataLineFeminos{
@@ -42,7 +44,8 @@ class DataLineFeminos{
 		bool is_frame_start() const;
 		bool is_built_event_start() const;
 		bool is_end_of_built_event() const;
-		unsigned short int data;
+		//unsigned short int data;
+		uint16_t data;
 };
 
 #endif
