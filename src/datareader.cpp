@@ -179,7 +179,7 @@ void DataReader::process(){
 	if(outTree != NULL){
 		outTree->Reset_raw();
 	}
-	while((!(reader->is_end())) && (event_nb<max_event)){
+	while((!(reader->is_end())) && ((event_nb<max_event)*(max_event>0))){
 		process_event();
 		event_nb++;
 	}
@@ -303,7 +303,7 @@ void DataReader::compute_RMSPed(){
 	long nentries = Min(outTree->T->GetEntries(),tot_event);
 	map<Tomography::det_type,vector<vector<TH1F*> > > ampl_hist;
 	for(map<Tomography::det_type,vector<vector<vector<float> > > >::iterator type_it = StripAmpl.begin();type_it!=StripAmpl.end();++type_it){
-		ampl_hist[type_it->first] = vector<vector<TH1F*> >((type_it->second).size(),vector<TH1F*>((type_it->second)[0].size()));
+		ampl_hist[type_it->first] = vector<vector<TH1F*> >((type_it->second).size(),vector<TH1F*>((type_it->second)[0].size(),NULL));
 		for(vector<vector<TH1F*> >::iterator det_it = ampl_hist[type_it->first].begin();det_it!=ampl_hist[type_it->first].end();++det_it){
 			for(unsigned int i=0;i<det_it->size();i++){
 				ostringstream name;
@@ -342,7 +342,7 @@ void DataReader::do_ped_sub(){
 	if(outTree != NULL){
 		outTree->Reset_ped();
 	}
-	while(event_nb<max_event && event_nb<outTree->T->GetEntriesFast()){
+	while(((event_nb<max_event)*(max_event>0)) && event_nb<outTree->T->GetEntriesFast()){
 		StripAmpl = outTree->read_raw(event_nb);
 		do_ped_sub_event();
 		outTree->fillTree_ped(StripAmpl[Tomography::MG],StripAmpl[Tomography::CM]);
@@ -357,7 +357,7 @@ void DataReader::do_common_noise_sub(){
 	if(outTree != NULL){
 		outTree->Reset_corr();
 	}
-	while(event_nb<max_event && event_nb<outTree->T->GetEntriesFast()){
+	while(((event_nb<max_event)*(max_event>0)) && event_nb<outTree->T->GetEntriesFast()){
 		StripAmpl = outTree->read_ped(event_nb);
 		do_common_noise_sub_event();
 		outTree->fillTree_corr(StripAmpl[Tomography::MG],StripAmpl[Tomography::CM]);
