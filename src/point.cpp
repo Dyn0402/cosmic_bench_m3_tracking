@@ -165,6 +165,94 @@ Point Line::PoCA(const Line& other) const{
 		return ((closest_point_other+closest_point)*0.5);
 	}
 }
+Point Line::get_direction() const{
+	return direction;
+}
+Point Line:: get_origin() const{
+	return origin;
+}
+
+Plane::Plane(){
+	a = 0;
+	b = 0;
+	c = 0;
+	d = 0;
+}
+Plane::Plane(Point norm, Point origin){
+	Point corr = norm/(norm.norm());
+	a = corr.get_X();
+	b = corr.get_Y();
+	c = corr.get_Z();
+	d = -scalar_product(corr,origin);
+}
+Plane::Plane(Line first, Line second){
+	if(!first.is_coplanar(second)){
+		//cout << "cannot construct plane with non coplanar lines" << endl;
+		a = 0;
+		b = 0;
+		c = 0;
+		d = 0;
+		return;
+	}
+	Point origin = first.PoCA(second);
+	Point norm = (first.get_direction())*(second.get_direction());
+	norm /= norm.norm();
+	a = norm.get_X();
+	b = norm.get_Y();
+	c = norm.get_Z();
+	d = -scalar_product(norm,origin);
+}
+Plane::Plane(double a_, double b_, double c_, double d_){
+	double corr = Point(a,b,c).norm();
+	a = a_/corr;
+	b = b_/corr;
+	c = c_/corr;
+	d = d_/corr;
+}
+Plane::Plane(const Plane& other){
+	a = other.a;
+	b = other.b;
+	c = other.c;
+	d = other.d;
+}
+Plane& Plane::operator=(const Plane& other){
+	a = other.a;
+	b = other.b;
+	c = other.c;
+	d = other.d;
+	return *this;
+}
+double Plane::get_a() const{
+	return a;
+}
+double Plane::get_b() const{
+	return b;
+}
+double Plane::get_c() const{
+	return c;
+}
+double Plane::get_d() const{
+	return d;
+}
+Point Plane::get_norm() const{
+	return Point(a,b,c);
+}
+bool Plane::is_parallel(Plane other) const{
+	return ((get_norm()*(other.get_norm())).norm() <= numeric_limits<double>::epsilon());
+}
+bool Plane::is_parallel(Line other) const{
+	return (scalar_product(get_norm(),other.get_direction()) <= numeric_limits<double>::epsilon());
+}
+Point Plane::intersection(Line other) const{
+	if(is_parallel(other)){
+		return Point();
+	}
+	Point line_origin = other.get_origin();
+	Point line_direction = other.get_direction();
+	Point plane_norm = get_norm();
+	return (line_origin + line_direction*((d - scalar_product(line_origin,plane_norm))/scalar_product(line_direction,plane_norm)));
+}
+
 
 Point_2D operator+(const Point_2D& P1, const Point_2D& P2){
 	Point_2D copie(P1);

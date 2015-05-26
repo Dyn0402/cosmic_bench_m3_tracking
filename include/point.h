@@ -53,11 +53,36 @@ class Line{
 		bool is_parallel(const Line& other) const;
 		bool is_coplanar(const Line& other) const;
 		Point PoCA(const Line& other) const;
+		Point get_direction() const;
+		Point get_origin() const;
 	protected:
 		Point origin;
 		Point direction;
 };
 
+
+class Plane{
+	public:
+		Plane();
+		Plane(Point norm, Point origin);
+		Plane(Line first, Line second);
+		Plane(double a_, double b_, double c_, double d_);
+		Plane(const Plane& other);
+		Plane& operator=(const Plane& other);
+		double get_a() const;
+		double get_b() const;
+		double get_c() const;
+		double get_d() const;
+		Point get_norm() const;
+		bool is_parallel(Plane other) const;
+		bool is_parallel(Line other) const;
+		Point intersection(Line other) const;
+	protected:
+		double a;
+		double b;
+		double c;
+		double d;
+};
 
 class Point_2D;
 
