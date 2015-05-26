@@ -279,6 +279,7 @@ void DreamElecReader::read_next_event_file(int feu_id){
 			}
 			else if(FeuHeaderLine>3){
 				if(DataHeaderLine<4 && current_data.is_data_header()){
+					asic_nb=0;
 					asicN = current_data.get_dream_ID();
 					DataHeaderLine++;
 				}
@@ -340,11 +341,16 @@ void DreamElecReader::read_next_event_file(int feu_id){
 						has_bug = true;
 						break;
 					}
-					if(isample==0) current_event_old = current_event;
-					else if(current_event_old != current_event){
-						cout << "problem in event ID" << endl;
+					if(asic_nb!=Tomography::Nasic_FEU){
+						cout << "Problem in number of asic (" << asic_nb << ")" << endl;
 						has_bug = true;
 						break;
+					}
+					if(isample==0) current_event_old = current_event;
+					else if(current_event_old != current_event && !has_bug){
+						cout << "problem in event ID (" << current_event_old << ";" << current_event << ")[sample=" << isample << "]" << endl;
+						has_bug = true;
+						//break; //comment this until bugfix by irakli :)
 					}
 					isample_nb++;
 					zs_mode = false;
@@ -352,7 +358,6 @@ void DreamElecReader::read_next_event_file(int feu_id){
 					(feu_data[feu_id].file)->ignore(sizeof(current_data));
 					if(current_data.is_EOE()){
 						if(isample_nb!=Tomography::Nsample) cout << "Reached EOE with less than " << Tomography::Nsample << " samples (" << isample_nb << ")" << endl;
-						if(asic_nb!=Tomography::Nasic_FEU) cout << "Reached EOE with less than " << Tomography::Nasic_FEU << " asics (" << asic_nb << ")" << endl;
 						isample=-1; isample_prev=-2;
 						event_complete = true;
 						break;
