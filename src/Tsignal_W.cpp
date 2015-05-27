@@ -46,7 +46,7 @@ void Tsignal_W::Init()
    // code, but the routine can be extended by the user if needed.
    // Init() will be called many times when running on PROOF
    // (once per file to be processed).
-   T->Branch("evn", &evn, "evn/I");
+   T->Branch("Nevent", &Nevent, "Nevent/I");
    T->Branch("evttime", &evttime, "evttime/D");
    if(MGN>0){
       StripAmpl_MG = new Float_t[MGN][61][Tomography::Nsample];
@@ -112,8 +112,8 @@ void Tsignal_W::CloseFile(){
    saveFile->Close();
 }
 void Tsignal_W::fillTree_raw(int evn_, double evttime_, vector<vector<vector<float> > > mg_ampl, vector<vector<vector<float> > > cm_ampl){
-   evn = evn_;
-   T->GetBranch("evn")->Fill();
+   Nevent = evn_;
+   T->GetBranch("Nevent")->Fill();
    evttime = evttime_;
    T->GetBranch("evttime")->Fill();
    if(mg_ampl.size()!=static_cast<unsigned int>(MGN)){

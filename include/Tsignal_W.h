@@ -30,7 +30,7 @@ public :
    // Declaration of leaf types
    int CMN;
    int MGN;
-   Int_t           evn;
+   Int_t           Nevent;
    Double_t        evttime;
    Float_t         (*StripAmpl_MG)[61][Tomography::Nsample];
    Float_t         (*StripAmpl_MG_ped)[61][Tomography::Nsample];
