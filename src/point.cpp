@@ -250,7 +250,7 @@ Point Plane::intersection(Line other) const{
 	Point line_origin = other.get_origin();
 	Point line_direction = other.get_direction();
 	Point plane_norm = get_norm();
-	return (line_origin + line_direction*((d - scalar_product(line_origin,plane_norm))/scalar_product(line_direction,plane_norm)));
+	return (line_origin + line_direction*((scalar_product(line_origin,plane_norm) - d)/scalar_product(line_direction,plane_norm)));
 }
 
 
