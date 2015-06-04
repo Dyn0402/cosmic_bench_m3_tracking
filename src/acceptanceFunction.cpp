@@ -161,16 +161,36 @@ void acceptanceFunction::plot_3D(){
 
 }
 
-TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,double y1,double y2, double z){
+TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,double y1,double y2, double z, double y_angle){
+	double x_min_plot = x1;
+	double x_max_plot = x2;
+	double y_min_plot = y1;
+	double y_max_plot = y2;
+	if(Abs(y_angle)>Pi()/2.){
+		return TH2D("error","error",nbin_x,x_min_plot,x_max_plot,nbin_y,y_min_plot,y_max_plot);
+	}
 	int step_x = 20*nbin_x;
 	int step_y = 20*nbin_y;
 	TH2D proba_XY("proba_XY","proba_XY",nbin_x,x1,x2,nbin_y,y1,y2);
 	proba_XY.SetStats(false);
+	double width_x = x_max_plot - x_min_plot;
+	double width_y = y_max_plot - y_min_plot;
+	x_max_plot += width_x/(nbin_x*100.);
+	x_min_plot += width_x/(nbin_x*100.);
+	y_max_plot += width_y/(nbin_y*100.);
+	y_min_plot += width_y/(nbin_y*100.);
+	double width_step_x = (x_max_plot - x_min_plot)/step_x;
+	double width_step_y = (y_max_plot - y_min_plot)/step_y;
 	for(int i=0;i<step_x;i++){
-		double x = x1 + i*(x2-x1)/step_x;
+		double x = x_min_plot + i*width_step_x;
+		if(x<x1 || x>x2) continue;
 		for(int j=0;j<step_y;j++){
-			double y = y1 + j*(y2-y1)/step_y;
-			double proba = (*this)(x,y,z);
+			double y = y_min_plot + j*width_step_y;
+			if(y<y1 || y>y2) continue;
+			double real_x = x;
+			double real_y = y*Cos(y_angle);
+			double real_z = z + y*Sin(y_angle);
+			double proba = (*this)(real_x,real_y,real_z);
 			proba_XY.Fill(x,y,proba);
 		}
 	}
@@ -208,12 +228,26 @@ TH2D acceptanceFunction::plot_XY(int nbin_x, int nbin_y,double z, double y_angle
 	y_max_plot += 0.05*width_y;
 	y_min_plot -= 0.05*width_y;
 	cout << x_min_plot << " " << x_max_plot << " " << y_min_plot << " " << y_max_plot << endl;
-	TH2D proba_XY("proba_XY","proba_XY",nbin_x,x_min_plot,x_max_plot,nbin_y,y_min_plot,y_max_plot);
+	const double x_min_hist = x_min_plot;
+	const double x_max_hist = x_max_plot;
+	const double y_min_hist = y_min_plot;
+	const double y_max_hist = y_max_plot;
+	TH2D proba_XY("proba_XY","proba_XY",nbin_x,x_min_hist,x_max_hist,nbin_y,y_min_hist,y_max_hist);
 	proba_XY.SetStats(false);
+	width_x = x_max_plot - x_min_plot;
+	width_y = y_max_plot - y_min_plot;
+	x_max_plot += width_x/(nbin_x*100.);
+	x_min_plot += width_x/(nbin_x*100.);
+	y_max_plot += width_y/(nbin_y*100.);
+	y_min_plot += width_y/(nbin_y*100.);
+	double width_step_x = (x_max_plot - x_min_plot)/step_x;
+	double width_step_y = (y_max_plot - y_min_plot)/step_y;
 	for(int i=0;i<step_x;i++){
-		double x = x_min_plot + i*(x_max_plot-x_min_plot)/step_x;
+		double x = x_min_plot + i*width_step_x;
+		if(x<x_min_hist || x>x_max_hist) continue;
 		for(int j=0;j<step_y;j++){
-			double y = y_min_plot + j*(y_max_plot-y_min_plot)/step_y;
+			double y = y_min_plot + j*width_step_y;
+			if(y<y_min_hist || y>y_max_hist) continue;
 			double real_x = x;
 			double real_y = y*Cos(y_angle);
 			double real_z = z + y*Sin(y_angle);

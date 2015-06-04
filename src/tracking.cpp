@@ -9,11 +9,14 @@
 #include <TSystem.h>
 #include <TCanvas.h>
 #include "acceptanceFunction.h"
+#include <TMath.h>
 
 using std::cout;
 using std::endl;
 using std::flush;
 using std::ostringstream;
+
+using TMath::Pi;
 
 int main(int argc, char ** argv){
 	if(argc<3){
@@ -60,7 +63,14 @@ int main(int argc, char ** argv){
 		}
 		else{
 			float z = atof(argv[3]);
-			blah->AbsorptionFluxMap(z);
+			float y_angle = 0;
+			if(argc>4){
+				y_angle = atof(argv[4]);
+			}
+			cout << "flux map param : " << endl;
+			cout << "   z : " << z << "mm" << endl;
+			cout << "   y_angle : " << y_angle << "°" << endl;
+			blah->AbsorptionFluxMap(z,0,y_angle*Pi()/180.);
 		}
 	}
 	else if(argv[2] == tomoAbs){
