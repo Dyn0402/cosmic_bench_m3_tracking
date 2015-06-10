@@ -1271,7 +1271,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1, double y_angle){
 		x_max = Max(Abs((corner_a-orig).get_X()),Abs((corner_b-orig).get_X()));
 		y_max = Max((corner_a-orig).get_Y(),(corner_b-orig).get_Y());
 		x_min = -x_max;
-		y_max = Min((corner_a-orig).get_Y(),(corner_b-orig).get_Y());
+		y_min = Min((corner_a-orig).get_Y(),(corner_b-orig).get_Y());
 	}
 	y_max = y_max/Cos(y_angle);
 	y_min = y_min/Cos(y_angle);
