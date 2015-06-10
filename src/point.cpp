@@ -43,7 +43,7 @@ double Point::normSquare() const{
 	return (x*x)+(y*y)+(z*z);
 }
 bool Point::is_null() const{
-	bool epsilon = numeric_limits<double>::epsilon();
+	double epsilon = numeric_limits<double>::epsilon();
 	return (Abs(x) <= epsilon && Abs(y) <= epsilon && Abs(z) <= epsilon);
 }
 Point Point::operator-() const{
@@ -241,8 +241,9 @@ bool Plane::is_parallel(Plane other) const{
 	return ((get_norm()*(other.get_norm())).norm() <= numeric_limits<double>::epsilon());
 }
 bool Plane::is_parallel(Line other) const{
-	return (scalar_product(get_norm(),other.get_direction()) <= numeric_limits<double>::epsilon());
+	return (Abs(scalar_product(get_norm(),other.get_direction())) <= numeric_limits<double>::epsilon());
 }
+#include <iostream>
 Point Plane::intersection(Line other) const{
 	if(is_parallel(other)){
 		return Point();
@@ -250,7 +251,7 @@ Point Plane::intersection(Line other) const{
 	Point line_origin = other.get_origin();
 	Point line_direction = other.get_direction();
 	Point plane_norm = get_norm();
-	return (line_origin + line_direction*((scalar_product(line_origin,plane_norm) - d)/scalar_product(line_direction,plane_norm)));
+	return (line_origin - line_direction*((scalar_product(line_origin,plane_norm) + d)/scalar_product(line_direction,plane_norm)));
 }
 
 

@@ -87,6 +87,8 @@ double acceptanceFunction::operator()(double x,double y, double z){
 	theta_y_max -= bench_angle;
 	if(theta_x_min<-Pi()/2.) theta_x_min = -Pi()/2.;
 	if(theta_x_max<-Pi()/2.) theta_x_max = -Pi()/2.;
+	if(theta_x_min>Pi()/2.) theta_x_min = Pi()/2.;
+	if(theta_x_max>Pi()/2.) theta_x_max = Pi()/2.;
 
 	TF2 dist("dist","cos(sqrt(x*x+y*y))*cos(sqrt(x*x+y*y))",-Pi()/2.,Pi()/2.,-Pi()/2.,Pi()/2.);
 	ROOT::Math::WrappedMultiTF1 wf1(dist);
@@ -189,7 +191,7 @@ TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,doubl
 			if(y<y1 || y>y2) continue;
 			double real_x = x;
 			double real_y = y*Cos(y_angle);
-			double real_z = z + y*Sin(y_angle);
+			double real_z = z - y*Sin(y_angle);
 			double proba = (*this)(real_x,real_y,real_z);
 			proba_XY.Fill(x,y,proba);
 		}
@@ -210,24 +212,25 @@ TH2D acceptanceFunction::plot_XY(int nbin_x, int nbin_y,double z, double y_angle
 		Point orig(0,0,z);
 		Point norm(0,Sin(y_angle),Cos(y_angle));
 		Plane proj(norm,orig);
-		cout << proj.get_a() << "*x + " << proj.get_b() << "*y + " << proj.get_c() << "*z + " << proj.get_d() << " = 0" << endl;
 		Line first_line(Point(x_min,y_min,z_Down),Point(x_max,y_max,z_Up));
 		Line second_line(Point(x_max,y_max,z_Down),Point(x_min,y_min,z_Up));
 		Point corner_a = proj.intersection(first_line);
 		Point corner_b = proj.intersection(second_line);
+		cout << corner_a << endl;
+		cout << corner_b << endl;
 		x_max_plot = Max(Abs((corner_a-orig).get_X()),Abs((corner_b-orig).get_X()));
-		y_max_plot = Max(Abs((corner_a-orig).get_Y()),Abs((corner_b-orig).get_Y()));
+		y_max_plot = Max((corner_a-orig).get_Y(),(corner_b-orig).get_Y());
 		x_min_plot = -x_max_plot;
+		y_min_plot = Min((corner_a-orig).get_Y(),(corner_b-orig).get_Y());
 	}
 	y_max_plot = y_max_plot/Cos(y_angle);
-	y_min_plot = -y_max_plot;
+	y_min_plot = y_min_plot/Cos(y_angle);
 	double width_x = x_max_plot - x_min_plot;
 	double width_y = y_max_plot - y_min_plot;
 	x_max_plot += 0.05*width_x;
 	x_min_plot -= 0.05*width_x;
 	y_max_plot += 0.05*width_y;
 	y_min_plot -= 0.05*width_y;
-	cout << x_min_plot << " " << x_max_plot << " " << y_min_plot << " " << y_max_plot << endl;
 	const double x_min_hist = x_min_plot;
 	const double x_max_hist = x_max_plot;
 	const double y_min_hist = y_min_plot;
@@ -250,7 +253,7 @@ TH2D acceptanceFunction::plot_XY(int nbin_x, int nbin_y,double z, double y_angle
 			if(y<y_min_hist || y>y_max_hist) continue;
 			double real_x = x;
 			double real_y = y*Cos(y_angle);
-			double real_z = z + y*Sin(y_angle);
+			double real_z = z - y*Sin(y_angle);
 			double proba = (*this)(real_x,real_y,real_z);
 			proba_XY.Fill(x,y,proba);
 		}
