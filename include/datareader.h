@@ -33,6 +33,7 @@ class DataReader{
 		void do_ped_CMN_sub_event();
 		long get_event_n();
 		double get_evttime();
+		bool is_end();
 		map<Tomography::det_type,vector<vector<vector<float> > > > get_data();
 	protected:
 		void Init(map<int,Tomography::det_type> det_type_by_asic_, map<int,int> det_n_by_asic_, string PedName_, string RMSName_, string outFileName = "", long max_event_ = -1);

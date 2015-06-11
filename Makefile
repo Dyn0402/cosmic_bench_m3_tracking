@@ -40,7 +40,7 @@ AutoAlign_obj = $(patsubst %, $(ODIR)/%, $(AutoAlign_obj_tmp))
 HV_Monitor_obj_tmp = HV_Monitor.o CAEN_comm.o
 HV_Monitor_obj = $(patsubst %, $(ODIR)/%, $(HV_Monitor_obj_tmp))
 
-wrapper_obj_tmp = wrapper.o signal.o detector.o event.o cluster.o Tanalyse_W.o ray.o point.o Tsignal_R.o datareader.o dataline.o ElecReader.o tomography.o Tray.o
+wrapper_obj_tmp = wrapper.o detector.o event.o cluster.o ray.o point.o datareader.o Tsignal_W.o dataline.o ElecReader.o tomography.o Tray.o
 wrapper_obj = $(patsubst %, $(ODIR)/%, $(wrapper_obj_tmp))
 
 #------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ dir: $(ODIR)
 $(ODIR):
 	mkdir -p $(ODIR)
 
-exec: tracking absorptionMap MultiCluster testCapa DataReader AutoAlign HV_Monitor
+exec: tracking absorptionMap MultiCluster testCapa DataReader AutoAlign HV_Monitor wrapper
 
 todo: wrapper live
 

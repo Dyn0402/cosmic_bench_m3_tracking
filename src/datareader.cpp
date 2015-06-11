@@ -117,6 +117,7 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk){
 	if(save_to_disk){
 		outTree = new Tsignal_W(signalName,CM_N,MG_N);
 	}
+	else outTree = NULL;
 	if(DAQtype==Tomography::Dream){
 		map<int,int> feu_id_to_n;
 		BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("FEU")){
@@ -457,6 +458,9 @@ double DataReader::get_evttime(){
 }
 map<Tomography::det_type,vector<vector<vector<float> > > > DataReader::get_data(){
 	return StripAmpl;
+}
+bool DataReader::is_end(){
+	return (reader->is_end());
 }
 int DataReader::Dream_mapping(Tomography::det_type det,int channel){
 	if(det == Tomography::MG){
