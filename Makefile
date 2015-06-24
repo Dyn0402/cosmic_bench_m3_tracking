@@ -37,7 +37,7 @@ live_obj = $(patsubst %, $(ODIR)/%, $(live_obj_tmp))
 AutoAlign_obj_tmp = AutoAlign.o analyse.o Tanalyse_R.o event.o ray.o cluster.o detector.o point.o Tsignal_R.o tomography.o acceptanceFunction.o Tray.o
 AutoAlign_obj = $(patsubst %, $(ODIR)/%, $(AutoAlign_obj_tmp))
 
-HV_Monitor_obj_tmp = HV_Monitor.o CAEN_comm.o
+HV_Monitor_obj_tmp = HV_Monitor.o CAEN_comm.o tomography.o
 HV_Monitor_obj = $(patsubst %, $(ODIR)/%, $(HV_Monitor_obj_tmp))
 
 wrapper_obj_tmp = wrapper.o detector.o event.o cluster.o ray.o point.o datareader.o Tsignal_W.o dataline.o ElecReader.o tomography.o Tray.o

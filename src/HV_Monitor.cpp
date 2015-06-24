@@ -10,11 +10,16 @@
 #include <fstream>
 #include <cstdio>
 
+#include <csignal>
+#include <cstdlib>
+#include <unistd.h>
+
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/foreach.hpp>
 
 #include "CAEN_comm.h"
+#include "tomography.h"
 
 #include <TFile.h>
 #include <TTree.h>
@@ -38,7 +43,11 @@ using std::ofstream;
 using boost::property_tree::ptree;
 
 int main(int argc, char ** argv){
-
+	struct sigaction sigIntHandler;
+	sigIntHandler.sa_handler = Tomography::signal_handler;
+	sigemptyset(&sigIntHandler.sa_mask);
+	sigIntHandler.sa_flags = 0;
+	sigaction(SIGINT, &sigIntHandler, NULL);
 	if(argc<2){
 		cout << "Indicate a config file name" << endl;
 		return 1;
@@ -119,7 +128,7 @@ int main(int argc, char ** argv){
 		IMon_csv << fixed << setprecision(3);
 	}
 	unsigned int duration = config_tree.get<int>("duration");
-	for(unsigned int i=0;i<duration;i++){
+	for(unsigned int i=0;(i<duration && Tomography::can_continue);i++){
 		ntp_gettime(&current_time);
 		wait_time.tv_nsec = (1000000000-current_time.time.tv_usec);
 		nanosleep(&wait_time,&remaining_time);
