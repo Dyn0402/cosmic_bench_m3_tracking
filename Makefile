@@ -16,7 +16,7 @@ LIBS          = $(ROOTLIBS) -lNetx -lm -ldl -rdynamic
 GLIBS         = $(ROOTGLIBS) -L/usr/X11R6/lib -lXpm -lX11 -lm -ldl -rdynamic -lpthread -lMinuit2
 LDFLAGS       =  $(GLIBS)
 
-DataReader_obj_tmp = NewDataReader.o datareader.o ElecReader.o Tsignal_W.o dataline.o tomography.o
+DataReader_obj_tmp = NewDataReader.o datareader.o ElecReader.o Tsignal_W.o dataline.o tomography.o Tanalyse_W.o event.o detector.o ray.o cluster.o point.o
 DataReader_obj = $(patsubst %, $(ODIR)/%, $(DataReader_obj_tmp))
 
 absorptionMap_obj_tmp = absorptionMap.o analyse.o Tanalyse_R.o event.o ray.o cluster.o detector.o point.o Tsignal_R.o tomography.o acceptanceFunction.o Tray.o dataline.o
