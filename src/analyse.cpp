@@ -1428,7 +1428,7 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 		event_n_interval++;
 		if(event_n_interval%interval_length == 0){
 			cout << setw(20) << interval_n <<  "|" << setw(20) << reconstructed_track <<  "|" << setw(20) << track_in_ellipse <<  "|" << setw(20) << track_in_band <<  "|" << setw(20) << track_in_vertical_band << endl;
-			for(int j=1;j<=tank_profile->GetNbinsX();j++){
+			for(int j=1;j<=tank_profile->GetNbinsY();j++){
 				int binN = tank_profile->GetBin(interval_n,j);
 				tank_profile->SetBinContent(binN,tank_profile->GetBinContent(binN)/track_in_vertical_band);
 			}
@@ -1455,7 +1455,7 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 	}
 	cout << setw(20) << interval_n <<  "|" << setw(20) << reconstructed_track <<  "|" << setw(20) << track_in_ellipse <<  "|" << setw(20) << track_in_band <<  "|" << setw(20) << track_in_vertical_band << endl;
 	if(event_n_interval != 0){
-		for(int j=1;j<=tank_profile->GetNbinsX();j++){
+		for(int j=1;j<=tank_profile->GetNbinsY();j++){
 			int binN = tank_profile->GetBin(interval_n,j);
 			tank_profile->SetBinContent(binN,tank_profile->GetBinContent(binN)/track_in_vertical_band);
 		}
