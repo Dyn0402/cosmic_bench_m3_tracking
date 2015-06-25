@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "tomography.h"
+#include "cluster.h"
 
 //Boost
 #include <boost/property_tree/ptree.hpp>
@@ -11,6 +12,8 @@ using boost::property_tree::ptree;
 
 using std::string;
 using std::vector;
+
+class Cluster;
 
 class Detector{
 	public:
@@ -28,20 +31,19 @@ class Detector{
 		double get_angle_z() const;
 		int get_perp_n() const;
 		int get_clustering_holes() const;
-		//seters
-		void set_ClusTOTCut_Min(double cut);
-		void set_ClusMaxSampleCut_Min(double cut);
-		void set_ClusMaxSampleCut_Max(double cut);
-		bool test_ClusTOT(double TOT) const;
-		bool test_ClusMaxSample(double maxSample) const;
 		double get_RMS(int i) const;
 		virtual void set_RMS(vector<double> RMS_) = 0;
+		int get_n_in_tree() const;
+		virtual int get_Nstrip() const = 0;
+		virtual double get_StripPitch() const = 0;
+		virtual bool is_suitable(Cluster * clus) const = 0;
 		virtual ~Detector();
+		virtual Detector * Clone() const = 0;
 	protected:
 		Detector();	
 		Detector(const Detector& other);
 		Detector& operator=(const Detector& other);
-		Detector(double z_, bool is_X_, bool is_up_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_);	
+		Detector(double z_, bool is_X_, bool is_up_,int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_);	
 		double z; //altitude inside cosmic bench
 		bool is_X;//coordinate measured by the detector
 		bool is_up;//bloc (up|down) which the detector is part of
@@ -52,13 +54,10 @@ class Detector{
 		double angle_x;
 		double angle_y;
 		double angle_z;
-		//Detector dependent Cuts
-		double ClusTOTCut_Min;
-		double ClusMaxSampleCut_Min;
-		double ClusMaxSampleCut_Max;
 		vector<double> RMS;
 		int perp_n;
 		int clustering_holes;
+		int n_in_tree;
 
 };
 
@@ -75,21 +74,28 @@ class CM_Detector: public Detector{
 		static const int Nstrip = 64;
 		static const double size = 500.;
 		double get_size() const;
-		//Cut setters
+		int get_Nstrip() const;
+		double get_StripPitch() const;
+		//Cut
 		void set_ClusMaxStripAmplCut_Min_Wide(double cut);
 		void set_ClusSizeCut_Max_Wide(double cut);
-		bool test_ClusMaxStripAmpl_Wide(double maxStripAmpl) const;
-		bool test_ClusSize_Wide(double size_) const;
-		int get_cm_n_in_tree() const;
+		void set_ClusTOTCut_Min(double cut);
+		void set_ClusMaxSampleCut_Min(double cut);
+		void set_ClusMaxSampleCut_Max(double cut);
+		//---
 		bool get_use_thin_strip() const;
 		Tomography::det_type get_type() const;
 		void set_RMS(vector<double> RMS_);
+		bool is_suitable(Cluster * clus) const;
+		Detector * Clone() const;
 	protected:
-		int cm_n_in_tree;
 		bool use_thin_strip;
 		//Detector dependent Cuts
 		double ClusMaxStripAmplCut_Min_Wide;
 		double ClusSizeCut_Max_Wide;
+		double ClusTOTCut_Min;
+		double ClusMaxSampleCut_Min;
+		double ClusMaxSampleCut_Max;
 };
 
 class MG_Detector: public Detector{
@@ -99,7 +105,6 @@ class MG_Detector: public Detector{
 		MG_Detector& operator=(const MG_Detector& other);
 		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_);
 		~MG_Detector();
-		static unsigned int StripToChannel_f(unsigned int strip_nb);
 		static const vector<unsigned int> StripToChannel;
 		static vector<unsigned int> ChannelToStrip(unsigned int channel_nb);
 		//MultiGen general charac
@@ -107,19 +112,26 @@ class MG_Detector: public Detector{
 		static const int Nstrip = 61;
 		static const double size = 500.;
 		double get_size() const;
-		//Cut setters
+		int get_Nstrip() const;
+		double get_StripPitch() const;
+		//Cut
 		void set_ClusSizeCut_Min(double cut);
-		double get_ClusSizeCut_Min() const;
-		bool test_ClusSize(double size_);
-		int get_mg_n_in_tree() const;
+		void set_ClusTOTCut_Min(double cut);
+		void set_ClusMaxSampleCut_Min(double cut);
+		void set_ClusMaxSampleCut_Max(double cut);
+		//---
 		Tomography::det_type get_type() const;
 		void set_RMS(vector<double> RMS_);
 		void set_SRF(double offset_, double gauss, double lorentz, double ratio);
 		double SRF_fit(double * x, double * p);
+		bool is_suitable(Cluster * clus) const;
+		Detector * Clone() const;
 	protected:
-		int mg_n_in_tree;
 		//Detector dependant cuts
 		double ClusSizeCut_Min;
+		double ClusTOTCut_Min;
+		double ClusMaxSampleCut_Min;
+		double ClusMaxSampleCut_Max;
 		//Strip Response Function Parameters
 		double srf_offset;
 		double srf_gauss_width;
@@ -131,6 +143,8 @@ class CosmicBench{
 	public:
 		CosmicBench();
 		CosmicBench(ptree config_tree);
+		CosmicBench(const CosmicBench& other);
+		CosmicBench& operator=(const CosmicBench& other);
 		~CosmicBench();
 		//void add_MM(Detector * det);
 		int get_CM_N() const;

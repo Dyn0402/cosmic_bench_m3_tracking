@@ -41,14 +41,15 @@ class Cluster{
 		void set_perp_pos_mm(Ray ray);
 		double get_perp_pos_mm() const;
 		int find_det(const vector<Detector*> det_array) const;
-		virtual bool is_in_det(Detector * det) const = 0;
-		virtual int get_n_in_tree() const = 0;
+		bool is_in_det(const Detector * det) const;
+		int get_n_in_tree() const;
+		virtual Cluster * Clone() const = 0;
 	protected:
 		Cluster();
 		Cluster(const Cluster& other);
 		Cluster& operator=(const Cluster& other);
-		Cluster(Tanalyse_R * treeObject, long entry = -1);
-		Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
+		Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry = -1);
+		Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		int evn;
 		double evttime;
 		int number;
@@ -70,6 +71,7 @@ class Cluster{
 		double angle_y;
 		double angle_z;
 		double perp_pos_mm;
+		int n_in_tree;
 };
 
 class CM_Cluster: public Cluster{
@@ -78,20 +80,16 @@ class CM_Cluster: public Cluster{
 		CM_Cluster();
 		CM_Cluster(const CM_Cluster& other);
 		CM_Cluster& operator=(const CM_Cluster& other);
-		CM_Cluster(Tanalyse_R * treeObject,int number_,CM_Detector * det, long entry = -1);
-		CM_Cluster(CM_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
+		CM_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry = -1);
+		CM_Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~CM_Cluster();
-		static bool is_suitable(Tanalyse_R * treeObject,int number_,CM_Detector * detector, long entry = -1);
-		bool is_suitable(CM_Detector * detector);
-		bool is_in_det(Detector * det) const;
 		Tomography::strip_type get_strip_type() const;
 		virtual double get_pos_mm() const;
 		virtual double correct_strip_nb(int strip_nb) const;
 		virtual double get_z() const;
-		int get_n_in_tree() const;
+		virtual Cluster * Clone() const;
 	protected:
 		Tomography::strip_type strip_type;
-		int cm_n_in_tree;
 };
 
 class CM_Demux_Cluster: public CM_Cluster{
@@ -105,6 +103,7 @@ class CM_Demux_Cluster: public CM_Cluster{
 		double get_pos_mm() const;
 		double correct_strip_nb(int strip_nb) const;
 		double get_z() const;
+		Cluster * Clone() const;
 };
 
 class MG_Cluster: public Cluster{
@@ -112,19 +111,13 @@ class MG_Cluster: public Cluster{
 		MG_Cluster();
 		MG_Cluster(const MG_Cluster& other);
 		MG_Cluster& operator=(const MG_Cluster& other);
-		MG_Cluster(Tanalyse_R * treeObject,int number_,MG_Detector * det, long entry = -1);
-		MG_Cluster(MG_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
+		MG_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry = -1);
+		MG_Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~MG_Cluster();
-		static bool is_suitable(Tanalyse_R * treeObject,int number_,MG_Detector * detector, long entry = -1);
-		bool is_suitable(MG_Detector * detector);
-		bool is_suitable_hough(MG_Detector * detector);
-		bool is_in_det(Detector * det) const;
 		double get_pos_mm() const;
 		double correct_strip_nb(int strip_nb) const;
 		double get_z() const;
-		int get_n_in_tree() const;
-	protected:
-		int mg_n_in_tree;
+		Cluster * Clone() const;
 };
 
 #endif

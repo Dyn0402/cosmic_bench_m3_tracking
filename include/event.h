@@ -39,23 +39,12 @@ class Event{
 		bool get_is_X() const;
 		virtual ~Event();
 		virtual void MultiCluster() = 0;
-		virtual void do_cuts() = 0;
+		void do_cuts();
 		virtual void set_strip_ampl(vector<vector<double> > strip_ampl_) = 0;
+		virtual void MultiCluster() = 0;
+		vector<Cluster*> get_clusters() const;
+		virtual TH1D * get_ampl_hist() const = 0;
 	protected:
-		Event();
-		Event(const Event& other);
-		Event& operator=(const Event& other);
-		Event(Tanalyse_R * treeObject, bool use_srf_,long entry = -1);
-		int evn;
-		double z;
-		bool is_X;
-		Tomography::det_type type;
-		int n_in_tree;
-		bool has_spark;
-		bool is_ref;
-		int NClus;
-		bool use_srf;
-		vector<vector<double> > strip_ampl;
 		struct StripInfo {
 			double MaxAmpl;
 			int MaxSample;
@@ -63,6 +52,18 @@ class Event{
 			double Time;
 			bool signal_sample[Tomography::Nsample];
 		};
+		Event(int evn_ = -1);
+		Event(const Event& other);
+		Event& operator=(const Event& other);
+		Event(Tanalyse_R * treeObject, Detector * det,long entry = -1);
+		Event(Detector * detector_,int evn_);
+		int evn;
+		Tomography::det_type type;
+		bool has_spark;
+		int NClus;
+		vector<vector<double> > strip_ampl;
+		vector<Cluster*> clusters;
+		Detector * detector;
 };
 
 class CM_Event: public Event{
@@ -71,17 +72,12 @@ class CM_Event: public Event{
 		CM_Event();
 		CM_Event(const CM_Event& other);
 		CM_Event& operator=(const CM_Event& other);
-		CM_Event(Tanalyse_R * treeObject,CM_Detector * det, bool use_srf_, long entry = -1);
-		CM_Event(CM_Detector detector_, vector<vector<double> > strip_ampl_, bool use_srf_, int evn_);
+		CM_Event(Tanalyse_R * treeObject,Detector * det, long entry = -1);
+		CM_Event(Detector * detector_, vector<vector<double> > strip_ampl_, int evn_);
 		~CM_Event();
 		void MultiCluster();
-		void do_cuts();
-		vector<CM_Cluster> get_clusters() const;
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
-	protected:
-		CM_Detector detector;
-		bool use_thin_strip;
-		vector<CM_Cluster> clusters;
+		TH1D * get_ampl_hist() const;
 };
 
 class CM_Demux_Event: public Event{
@@ -91,13 +87,10 @@ class CM_Demux_Event: public Event{
 		CM_Demux_Event(const CM_Demux_Event& other);
 		CM_Demux_Event& operator=(const CM_Demux_Event& other);
 		CM_Demux_Event(const CM_Event& rawEvent);
-		vector<CM_Demux_Cluster> get_clusters() const;
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		~CM_Demux_Event();
 		void MultiCluster();
-		void do_cuts();
-	protected:
-		vector<CM_Demux_Cluster> clusters;
+		TH1D * get_ampl_hist() const;
 };
 
 class MG_Event: public Event{
@@ -112,12 +105,9 @@ class MG_Event: public Event{
 		~MG_Event();
 		void MultiCluster();
 		void HoughCluster();
-		void do_cuts();
-		vector<MG_Cluster> get_clusters() const;
 		TH1D * get_ampl_hist() const;
 	protected:
-		MG_Detector detector;
-		vector<MG_Cluster> clusters;
+		bool use_srf;
 };
 
 //Group events objects of a same event

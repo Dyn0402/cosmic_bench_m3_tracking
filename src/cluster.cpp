@@ -35,6 +35,7 @@ Cluster::Cluster(){
 	angle_x = 0;
 	angle_y = 0;
 	angle_z = 0;
+	n_in_tree = -1;
 }
 Cluster::Cluster(const Cluster& other){
 	type = other.type;
@@ -57,6 +58,7 @@ Cluster::Cluster(const Cluster& other){
 	angle_x = other.angle_x;
 	angle_y = other.angle_y;
 	angle_z = other.angle_z;
+	n_in_tree = other.n_in_tree;
 }
 Cluster& Cluster::operator=(const Cluster& other){
 	type = other.type;
@@ -79,16 +81,16 @@ Cluster& Cluster::operator=(const Cluster& other){
 	angle_x = other.angle_x;
 	angle_y = other.angle_y;
 	angle_z = other.angle_z;
+	n_in_tree = other.n_in_tree;
 	return *this;
 }
-Cluster::Cluster(Tanalyse_R * treeObject, long entry){
+Cluster::Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
 	}
 	evn = treeObject->evn;
-	evn = -1;
-	number = -1;
+	number = number_;
 	ampl = -1;
 	size = -1;
 	pos = -1;
@@ -97,44 +99,38 @@ Cluster::Cluster(Tanalyse_R * treeObject, long entry){
 	maxStrip = -1;
 	TOT = -1;
 	t = -1;
-	z = -1;
-	is_X = -1;
-	is_up = -1;
-	offset = 0;
-	direction = false;
+	z = det->get_z();
+	is_X = det->get_is_X();
+	is_up = det->get_is_up();
+	offset = det->get_offset();
+	direction = det->get_direction();
 	perp_pos_mm = -1;
-	angle_x = 0;
-	angle_y = 0;
-	angle_z = 0;
+	angle_x = det->get_angle_x();
+	angle_y = det->get_angle_y();
+	angle_z = det->get_angle_z();
+	n_in_tree = det->get_n_in_tree();
 }
-Cluster::Cluster(double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_){
+Cluster::Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_){
 	evn = -1;
-	number = -1;
-	ampl = -1;
-	size = -1;
-	pos = -1;
-	maxStripAmpl = -1;
-	maxSample = -1;
-	maxStrip = -1;
-	TOT = -1;
-	t = -1;
-	z = -1;
-	is_X = -1;
-	is_up = -1;
-	offset = 0;
-	direction = false;
-	perp_pos_mm = -1;
-	angle_x = 0;
-	angle_y = 0;
-	angle_z = 0;
-	pos = pos_;
-	size = size_;
+	number = number_;
 	ampl = ampl_;
+	size = size_;
+	z = det->get_z();
+	is_X = det->get_is_X();
+	is_up = det->get_is_up();
+	offset = det->get_offset();
+	direction = det->get_direction();
+	perp_pos_mm = -1;
+	angle_x = det->get_angle_x();
+	angle_y = det->get_angle_y();
+	angle_z = det->get_angle_z();
+	pos = pos_;
 	maxSample = maxSample_;
 	maxStripAmpl = maxStripAmpl_;
 	maxStrip = maxStrip_;
 	TOT = TOT_;
 	t = t_;
+	n_in_tree = det->get_n_in_tree();
 }
 Tomography::det_type Cluster::get_type() const{
 	return type;
@@ -169,6 +165,9 @@ int Cluster::get_maxStrip() const{
 bool Cluster::get_is_up() const{
 	return is_up;
 }
+int Cluster::get_n_in_tree() const{
+	return n_in_tree;
+}
 void Cluster::set_perp_pos_mm(double coord){
 	perp_pos_mm = coord;
 }
@@ -195,100 +194,59 @@ int Cluster::find_det(const vector<Detector*> det_array) const{
 	}
 	return n_pos;
 }
+bool Cluster::is_in_det(const Detector * det) const{
+	return ((type == det->get_type()) && (n_in_tree == det->get_n_in_tree()));
+}
 Cluster::~Cluster(){
 
 }
 
 CM_Cluster::CM_Cluster(): Cluster(){
 	type = Tomography::CM;
-	cm_n_in_tree = -1;
 }
 CM_Cluster::CM_Cluster(const CM_Cluster& other): Cluster(other){
 	type = Tomography::CM;
 	strip_type = other.strip_type;
-	cm_n_in_tree = other.cm_n_in_tree;
 }
 CM_Cluster& CM_Cluster::operator=(const CM_Cluster& other){
 	Cluster::operator=(other);
 	type = other.type;
 	strip_type = other.strip_type;
-	cm_n_in_tree = other.cm_n_in_tree;
 	return *this;
 }
-CM_Cluster::CM_Cluster(Tanalyse_R * treeObject,int number_,CM_Detector * det, long entry): Cluster(treeObject,entry){
+CM_Cluster::CM_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry): Cluster(treeObject,number_,det,entry){
+	if(det->get_type() != Tomography::CM){
+		*this = CM_Cluster();
+		return;
+	}
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
 	}
-	number = number_;
-	cm_n_in_tree = det->get_cm_n_in_tree();
-	z = det->get_z();
-	is_X = det->get_is_X();
-	is_up = det->get_is_up();
-	offset = det->get_offset();
-	direction = det->get_direction();
-	angle_x = det->get_angle_x();
-	angle_y = det->get_angle_y();
-	angle_z = det->get_angle_z();
-	ampl = treeObject->CM_ClusAmpl[cm_n_in_tree][number];
-	size = treeObject->CM_ClusSize[cm_n_in_tree][number];
-	pos = treeObject->CM_ClusPos[cm_n_in_tree][number];
-	maxStripAmpl = treeObject->CM_ClusMaxStripAmpl[cm_n_in_tree][number];
-	maxSample = treeObject->CM_ClusMaxSample[cm_n_in_tree][number];
-	TOT = treeObject->CM_ClusTOT[cm_n_in_tree][number];
-	t = treeObject->CM_ClusT[cm_n_in_tree][number];
-	maxStrip = treeObject->CM_ClusMaxStrip[cm_n_in_tree][number];
+	ampl = treeObject->CM_ClusAmpl[n_in_tree][number];
+	size = treeObject->CM_ClusSize[n_in_tree][number];
+	pos = treeObject->CM_ClusPos[n_in_tree][number];
+	maxStripAmpl = treeObject->CM_ClusMaxStripAmpl[n_in_tree][number];
+	maxSample = treeObject->CM_ClusMaxSample[n_in_tree][number];
+	TOT = treeObject->CM_ClusTOT[n_in_tree][number];
+	t = treeObject->CM_ClusT[n_in_tree][number];
+	maxStrip = treeObject->CM_ClusMaxStrip[n_in_tree][number];
 	type = Tomography::CM;
 	(pos>31) ? strip_type = Tomography::Wide : strip_type = Tomography::Thin;
 }
-CM_Cluster::CM_Cluster(CM_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(pos_,size_,ampl_,maxSample_, maxStripAmpl_,TOT_,t_, maxStrip_){
-	number = number_;
-	cm_n_in_tree = det->get_cm_n_in_tree();
-	z = det->get_z();
-	is_X = det->get_is_X();
-	is_up = det->get_is_up();
-	offset = det->get_offset();
-	direction = det->get_direction();
-	angle_x = det->get_angle_x();
-	angle_y = det->get_angle_y();
-	angle_z = det->get_angle_z();
+CM_Cluster::CM_Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(det, number_, pos_, size_, ampl_, maxSample_, maxStripAmpl_, TOT_, t_, maxStrip_){
+	if(det->get_type() != Tomography::CM){
+		*this = CM_Cluster();
+		return;
+	}
 	type = Tomography::CM;
 	(pos>31) ? strip_type = Tomography::Wide : strip_type = Tomography::Thin;
 }
 CM_Cluster::~CM_Cluster(){
 	
 }
-bool CM_Cluster::is_suitable(Tanalyse_R * treeObject,int number_,CM_Detector * detector, long entry){
-	//cout << "blah" << endl;
-	if(entry>-1){
-		treeObject->LoadTree(entry);
-		treeObject->GetEntry(entry);
-	}
-	int n_in_tree = detector->get_cm_n_in_tree();
-	if(treeObject->CM_ClusPos[n_in_tree][number_]>63 || treeObject->CM_ClusPos[n_in_tree][number_]<0) return false;
-	if(treeObject->CM_ClusMaxStrip[n_in_tree][number_]>63 || treeObject->CM_ClusMaxStrip[n_in_tree][number_]<0) return false;
-	if(!(detector->test_ClusTOT(treeObject->CM_ClusTOT[n_in_tree][number_]))) return false;
-	if(!(detector->test_ClusMaxSample(treeObject->CM_ClusMaxSample[n_in_tree][number_]))) return false;
-	if(treeObject->CM_ClusPos[n_in_tree][number_]>31){
-		if(!(detector->test_ClusMaxStripAmpl_Wide(treeObject->CM_ClusMaxStripAmpl[n_in_tree][number_]))) return false;
-		if(!(detector->test_ClusSize_Wide(treeObject->CM_ClusSize[n_in_tree][number_]))) return false;
-	}
-	return true;
-}
-bool CM_Cluster::is_suitable(CM_Detector * detector){
-	if(!is_in_det(detector)) return false;
-	if(pos>1023 || pos<0) return false;
-	if(!(detector->test_ClusTOT(TOT))) return false;
-	if(!(detector->test_ClusMaxSample(maxSample))) return false;
-	if(pos>31){
-		if(!(detector->test_ClusMaxStripAmpl_Wide(maxStripAmpl))) return false;
-		if(!(detector->test_ClusSize_Wide(size))) return false;
-	}
-	return true;
-}
-bool CM_Cluster::is_in_det(Detector * det) const{
-	if(det->get_type() != Tomography::CM) return false;
-	return ((dynamic_cast<CM_Detector*>(det))->get_cm_n_in_tree() == cm_n_in_tree);
+Cluster * CM_Cluster::Clone() const{
+	return new CM_Cluster(*this);
 }
 Tomography::strip_type CM_Cluster::get_strip_type() const{
 	return strip_type;
@@ -344,9 +302,6 @@ double CM_Cluster::get_z() const{
 	}
 	else return z;
 }
-int CM_Cluster::get_n_in_tree() const{
-	return cm_n_in_tree;
-}
 
 CM_Demux_Cluster::CM_Demux_Cluster(): CM_Cluster(){
 	type = Tomography::CM_Demux;
@@ -366,8 +321,8 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& thinStrip_clus, const CM_Cl
 	strip_type = Tomography::Demux;
 	if(thinStrip_clus.pos>31 || wideStrip_clus.pos<32) return;
 	if(thinStrip_clus.evn != wideStrip_clus.evn) return;
-	if(thinStrip_clus.cm_n_in_tree != wideStrip_clus.cm_n_in_tree) return;
-	cm_n_in_tree = thinStrip_clus.cm_n_in_tree;
+	if(thinStrip_clus.n_in_tree != wideStrip_clus.n_in_tree) return;
+	n_in_tree = thinStrip_clus.n_in_tree;
 	z = thinStrip_clus.z;
 	is_X = thinStrip_clus.is_X;
 	is_up = thinStrip_clus.is_up;
@@ -391,7 +346,7 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& wideStrip_clus){
 	type = Tomography::CM_Demux;
 	strip_type = Tomography::Demux;
 	if(wideStrip_clus.pos<32) return;
-	cm_n_in_tree = wideStrip_clus.cm_n_in_tree;
+	n_in_tree = wideStrip_clus.n_in_tree;
 	z = wideStrip_clus.z;
 	is_X = wideStrip_clus.is_X;
 	is_up = wideStrip_clus.is_up;
@@ -452,96 +407,55 @@ double CM_Demux_Cluster::get_z() const{
 	else real_z += (pos_mm*(Cos(angle_z)*Sin(angle_x)*Cos(angle_y) + Sin(angle_z)*Sin(angle_y)) + perp_pos_mm*Cos(angle_x)*Sin(angle_y))/(Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y));
 	return real_z;
 }
+Cluster * CM_Demux_Cluster::Clone() const{
+	return new CM_Demux_Cluster(*this);
+}
 CM_Demux_Cluster::~CM_Demux_Cluster(){
 	
 }
 
 MG_Cluster::MG_Cluster(): Cluster(){
 	type = Tomography::MG;
-	mg_n_in_tree = -1;
 }
 MG_Cluster::MG_Cluster(const MG_Cluster& other): Cluster(other){
 	type = Tomography::MG;
-	mg_n_in_tree = other.mg_n_in_tree;
 }
 MG_Cluster& MG_Cluster::operator=(const MG_Cluster& other){
 	Cluster::operator=(other);
 	type = Tomography::MG;
-	mg_n_in_tree = other.mg_n_in_tree;
 	return *this;
 }
-MG_Cluster::MG_Cluster(Tanalyse_R * treeObject,int number_,MG_Detector * det, long entry): Cluster(treeObject,entry){
+MG_Cluster::MG_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry): Cluster(treeObject,number_,det,entry){
+	if(det->get_type() != Tomography::MG){
+		*this = MG_Cluster();
+		return;
+	}
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
 	}
-	number = number_;
-	mg_n_in_tree = det->get_mg_n_in_tree();
-	z = det->get_z();
-	is_X = det->get_is_X();
-	is_up = det->get_is_up();
-	offset = det->get_offset();
-	direction = det->get_direction();
-	angle_x = det->get_angle_x();
-	angle_y = det->get_angle_y();
-	angle_z = det->get_angle_z();
-	ampl = treeObject->MG_ClusAmpl[mg_n_in_tree][number];
-	size = treeObject->MG_ClusSize[mg_n_in_tree][number];
-	pos = treeObject->MG_ClusPos[mg_n_in_tree][number];
-	maxStripAmpl = treeObject->MG_ClusMaxStripAmpl[mg_n_in_tree][number];
-	maxSample = treeObject->MG_ClusMaxSample[mg_n_in_tree][number];
-	TOT = treeObject->MG_ClusTOT[mg_n_in_tree][number];
-	t = treeObject->MG_ClusT[mg_n_in_tree][number];
-	maxStrip = treeObject->MG_ClusMaxStrip[mg_n_in_tree][number];
+	ampl = treeObject->MG_ClusAmpl[n_in_tree][number];
+	size = treeObject->MG_ClusSize[n_in_tree][number];
+	pos = treeObject->MG_ClusPos[n_in_tree][number];
+	maxStripAmpl = treeObject->MG_ClusMaxStripAmpl[n_in_tree][number];
+	maxSample = treeObject->MG_ClusMaxSample[n_in_tree][number];
+	TOT = treeObject->MG_ClusTOT[n_in_tree][number];
+	t = treeObject->MG_ClusT[n_in_tree][number];
+	maxStrip = treeObject->MG_ClusMaxStrip[n_in_tree][number];
 	type = Tomography::MG;
 }
-MG_Cluster::MG_Cluster(MG_Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(pos_,size_,ampl_,maxSample_, maxStripAmpl_,TOT_,t_,maxStrip_){
-	number = number_;
-	mg_n_in_tree = det->get_mg_n_in_tree();
-	z = det->get_z();
-	is_X = det->get_is_X();
-	is_up = det->get_is_up();
-	offset = det->get_offset();
-	direction = det->get_direction();
-	angle_x = det->get_angle_x();
-	angle_y = det->get_angle_y();
-	angle_z = det->get_angle_z();
+MG_Cluster::MG_Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(det, number_, pos_, size_, ampl_, maxSample_, maxStripAmpl_, TOT_, t_, maxStrip_){
+	if(det->get_type() != Tomography::MG){
+		*this = MG_Cluster();
+		return;
+	}
 	type = Tomography::MG;
 }
-
+Cluster * MG_Cluster::Clone() const{
+	return new MG_Cluster(*this);
+}
 MG_Cluster::~MG_Cluster(){
 	
-}
-bool MG_Cluster::is_suitable(Tanalyse_R * treeObject,int number_,MG_Detector * detector, long entry){
-	if(entry>-1){
-		treeObject->LoadTree(entry);
-		treeObject->GetEntry(entry);
-	}
-	int n_in_tree = detector->get_mg_n_in_tree();
-	if(treeObject->MG_ClusPos[n_in_tree][number_]>1023 || treeObject->MG_ClusPos[n_in_tree][number_]<0) return false;
-	if(!(detector->test_ClusTOT(treeObject->MG_ClusTOT[n_in_tree][number_]))) return false;
-	if(!(detector->test_ClusMaxSample(treeObject->MG_ClusMaxSample[n_in_tree][number_]))) return false;
-	if(!(detector->test_ClusSize(treeObject->MG_ClusSize[n_in_tree][number_]))) return false;
-	return true;
-}
-bool MG_Cluster::is_suitable(MG_Detector * detector){
-	if(!is_in_det(detector)) return false;
-	if(pos>1023 || pos<0) return false;
-	if(!(detector->test_ClusTOT(TOT))) return false;
-	if(!(detector->test_ClusMaxSample(maxSample))) return false;
-	if(!(detector->test_ClusSize(size))) return false;
-	return true;
-}
-bool MG_Cluster::is_suitable_hough(MG_Detector * detector){
-	if(!is_in_det(detector)) return false;
-	if(pos>1023 || pos<0) return false;
-	if(!(detector->test_ClusTOT(TOT))) return false;
-	if(!(detector->test_ClusMaxSample(maxSample))) return false;
-	return true;
-}
-bool MG_Cluster::is_in_det(Detector * det) const{
-	if(det->get_type() != Tomography::MG) return false;
-	return ((dynamic_cast<MG_Detector*>(det))->get_mg_n_in_tree() == mg_n_in_tree);
 }
 double MG_Cluster::get_pos_mm() const{
 	double pos_mm = 0;
@@ -584,7 +498,4 @@ double MG_Cluster::get_z() const{
 	if(is_X) real_z += (pos_mm)*((Sin(angle_y)/Cos(angle_x)) - Tan(angle_x)*Tan(angle_z)*Cos(angle_y)) + (perp_pos_mm)*(Tan(angle_x)/Cos(angle_z));
 	else real_z += (pos_mm*(Cos(angle_z)*Sin(angle_x)*Cos(angle_y) + Sin(angle_z)*Sin(angle_y)) + perp_pos_mm*Cos(angle_x)*Sin(angle_y))/(Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y));
 	return real_z;
-}
-int MG_Cluster::get_n_in_tree() const{
-	return mg_n_in_tree;
 }

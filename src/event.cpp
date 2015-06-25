@@ -93,55 +93,70 @@ vector<map<T,int> > CosmicBenchEvent::combinaisons(map<T,int> sizes, bool allow_
 	return result;
 }
 
-Event::Event(){
-	n_in_tree = -1;
+Event::Event(int evn_){
+	evn = evn_;
 	has_spark = true;
-	is_ref = false;
-	z = -1;
 	NClus = -1;
-	use_srf = false;
-	is_X = false;
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
+	if(detector) delete detector;
+	detector = NULL;
 }
 Event::Event(const Event& other){
 	evn = other.evn;
 	type = other.type;
-	n_in_tree = other.n_in_tree;
 	has_spark = other.has_spark;
-	is_ref = other.is_ref;
-	z = other.z;
 	NClus = other.NClus;
-	use_srf = other.use_srf;
 	strip_ampl = other.strip_ampl;
-	is_X = other.is_X;
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
+	clusters.clear();
+	for(vector<Cluster*>::iterator clus_it = other.clusters.begin();clus_it != other.clusters.end();++clus_it){
+		clusters.push_back(clus_it->Clone());
+	}
+	if(detector) delete detector;
+	detector = (other.detector)->Clone();
 }
 Event& Event::operator=(const Event& other){
 	evn = other.evn;
 	type = other.type;
-	n_in_tree = other.n_in_tree;
 	has_spark = other.has_spark;
-	is_ref = other.is_ref;
-	z = other.z;
 	NClus = other.NClus;
-	use_srf = other.use_srf;
 	strip_ampl = other.strip_ampl;
-	is_X = other.is_X;
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
+	clusters.clear();
+	for(vector<Cluster*>::iterator clus_it = other.clusters.begin();clus_it != other.clusters.end();++clus_it){
+		clusters.push_back(clus_it->Clone());
+	}
+	if(detector) delete detector;
+	detector = (other.detector)->Clone();
 	return *this;
 }
-Event::Event(Tanalyse_R * treeObject, bool use_srf_,long entry){
+Event::Event(Tanalyse_R * treeObject, Detector * det,long entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
 	}
 	evn = treeObject->evn;
 	has_spark = true;
-	is_ref = false;
-	z = -1;
 	NClus = -1;
 	use_srf = use_srf_;
-	is_X = false;
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
+	clusters.clear();
+	if(detector) delete detector;
+	detector = det->Clone();
 }
 Event::~Event(){
-
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
+	if(detector) delete detector;
 }
 int Event::get_evn() const{
 	return evn;
@@ -150,73 +165,71 @@ Tomography::det_type Event::get_type() const{
 	return type;
 }
 int Event::get_n_in_tree() const{
-	return n_in_tree;
+	return detector->get_n_in_tree();
 }
 bool Event::get_is_ref() const{
-	return is_ref;
+	return detector->get_is_ref();
 }
 bool Event::get_is_X() const{
-	return is_X;
+	return detector->get_is_X();
 }
 double Event::get_z() const{
-	return z;
+	return detector->get_z();
 }
 int Event::get_NClus() const{
 	return NClus;
 }
+void Event::do_cuts(){
+	vector<Cluster*>::iterator clus_it = clusters.begin();
+	while(clus_it!= clusters.end()){
+		if(detector->is_suitable(*clus_it)) ++clus_it;
+		else{
+			delete *clus_it;
+			clus_it = clusters.erase(clus_it);
+		}
+	}
+}
+vector<Cluster*> Event::get_clusters(){
+	vector<Cluster*> return_vector;
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		return_vector.push_back(clus_it->Clone());
+	}
+	return return_vector;
+}
 
 CM_Event::CM_Event(): Event(){
 	type = Tomography::CM;
-	detector = CM_Detector();
+	detector = new CM_Detector();
 }
 CM_Event::CM_Event(const CM_Event& other): Event(other){
-	clusters.clear();
-	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = Tomography::CM;
-	detector = other.detector;
 }
 CM_Event& CM_Event::operator=(const CM_Event& other){
 	Event::operator=(other);
-	clusters.clear();
-	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = Tomography::CM;
-	detector = other.detector;
 	return *this;
 }
-CM_Event::CM_Event(Tanalyse_R * treeObject,CM_Detector * det, bool use_srf_,long entry): Event(treeObject,use_srf_,entry){
+CM_Event::CM_Event(Tanalyse_R * treeObject,Detector * det,long entry): Event(treeObject,det,entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
 	}
-	clusters.clear();
-	for(int i=0;i<treeObject->CM_NClus[det->get_cm_n_in_tree()];i++){
-		if(CM_Cluster::is_suitable(treeObject,i,det,-1)){
-			clusters.push_back(CM_Cluster(treeObject,i,det,-1));
+	for(int i=0;i<treeObject->CM_NClus[detector->get_n_in_tree()];i++){
+		clusters.push_back(new CM_Cluster(treeObject,i,det,-1));
+		if(!(det->is_suitable(clusters.back()))){
+			delete clusters.back();
+			clusters.pop_back();
 		}
 	}
-	n_in_tree = det->get_cm_n_in_tree();
-	use_thin_strip = det->get_use_thin_strip();
-	z = det->get_z();
-	is_X = det->get_is_X();
-	has_spark = (treeObject->CM_Spark[n_in_tree]==1) ? true : false;
-	is_ref = det->get_is_ref();
-	detector = *det;
+	has_spark = (treeObject->CM_Spark[detector->get_n_in_tree()]==1) ? true : false;
 	type = Tomography::CM;
 }
-CM_Event::CM_Event(CM_Detector detector_, vector<vector<double> > strip_ampl_, bool use_srf_, int evn_): Event(){
+CM_Event::CM_Event(Detector * detector_, vector<vector<double> > strip_ampl_, int evn_): Event(detector_,evn_){
 	if(strip_ampl_.size()!=64){
 		cout << "problem in size" << endl;
-		detector = CM_Detector();
 		return;
 	}
-	n_in_tree = detector_.get_cm_n_in_tree();
-	is_ref = detector_.get_is_ref();
-	z = detector_.get_z();
-	is_X = detector_.get_is_X();
 	strip_ampl = strip_ampl_;
-	detector = detector_;
-	use_srf = use_srf_;
-	evn = evn_;
 	type = Tomography::CM;
 }
 void CM_Event::MultiCluster(){
@@ -229,65 +242,47 @@ void CM_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
 	}
 	strip_ampl = strip_ampl_;
 }
-vector<CM_Cluster> CM_Event::get_clusters() const{
-	return clusters;
-}
-void CM_Event::do_cuts(){
-	vector<CM_Cluster>::iterator clus_it = clusters.begin();
-	while(clus_it!= clusters.end()){
-		if(clus_it->is_suitable(&detector)) ++clus_it;
-		else clus_it = clusters.erase(clus_it);
-	}
-}
 CM_Event::~CM_Event(){
-	clusters.clear();
+
 }
 
 CM_Demux_Event::CM_Demux_Event(): Event(){
 	type = Tomography::CM_Demux;
 }
 CM_Demux_Event::CM_Demux_Event(const CM_Demux_Event& other): Event(other){
-	clusters.clear();
-	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = Tomography::CM_Demux;
 }
 CM_Demux_Event& CM_Demux_Event::operator=(const CM_Demux_Event& other){
 	Event::operator=(other);
-	clusters.clear();
-	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = Tomography::CM_Demux;
 	return *this;
 }
-CM_Demux_Event::CM_Demux_Event(const CM_Event& rawEvent){
+CM_Demux_Event::CM_Demux_Event(const CM_Event& rawEvent): Event(rawEvent.detector,rawEvent.evn){
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
 	clusters.clear();
-	if(rawEvent.use_thin_strip){
-		for(vector<CM_Cluster>::const_iterator it = rawEvent.clusters.begin();it!=rawEvent.clusters.end();++it){
-			if(it->get_strip_type() == Tomography::Wide){
-				for(vector<CM_Cluster>::const_iterator jt = rawEvent.clusters.begin();jt!=rawEvent.clusters.end();++jt){
-					if(jt->get_strip_type() == Tomography::Thin){
-						clusters.push_back(CM_Demux_Cluster(*jt,*it));
+	if((rawEvent.detector)->get_use_thin_strip()){
+		for(vector<Cluster*>::const_iterator it = rawEvent.clusters.begin();it!=rawEvent.clusters.end();++it){
+			if((*it)->get_strip_type() == Tomography::Wide){
+				for(vector<Cluster*>::const_iterator jt = rawEvent.clusters.begin();jt!=rawEvent.clusters.end();++jt){
+					if((*jt)->get_strip_type() == Tomography::Thin){
+						clusters.push_back(new CM_Demux_Cluster(*jt,*it));
 					}
 				}
 			}
 		}
 	}
 	else{
-		for(vector<CM_Cluster>::const_iterator it = rawEvent.clusters.begin();it!=rawEvent.clusters.end();++it){
-			if(it->get_strip_type() == Tomography::Wide){
-				clusters.push_back(CM_Demux_Cluster(*it));
+		for(vector<Cluster*>::const_iterator it = rawEvent.clusters.begin();it!=rawEvent.clusters.end();++it){
+			if((*it)->get_strip_type() == Tomography::Wide){
+				clusters.push_back(new CM_Demux_Cluster(*it));
 			}
 		}
 	}
-	n_in_tree = rawEvent.n_in_tree;
 	has_spark = rawEvent.has_spark;
-	is_ref = rawEvent.is_ref;
-	z = rawEvent.z;
-	is_X = rawEvent.is_X;
 	strip_ampl = rawEvent.strip_ampl;
 	type = Tomography::CM_Demux;
-}
-vector<CM_Demux_Cluster> CM_Demux_Event::get_clusters() const{
-	return clusters;
 }
 void CM_Demux_Event::MultiCluster(){
 	// TODO : implement multicluster for CM
@@ -303,65 +298,53 @@ void CM_Demux_Event::do_cuts(){
 	cout << "you shouldn't call this function" << endl;
 }
 CM_Demux_Event::~CM_Demux_Event(){
-	clusters.clear();
+
 }
 
 MG_Event::MG_Event(): Event(){
 	type = Tomography::MG;
-	detector = MG_Detector();
+	detector = new MG_Detector();
+	use_srf = false;
 }
 MG_Event::MG_Event(const MG_Event& other): Event(other){
-	clusters.clear();
-	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = Tomography::MG;
-	detector = other.detector;
+	use_srf = false;
 }
 MG_Event& MG_Event::operator=(const MG_Event& other){
 	Event::operator=(other);
-	clusters.clear();
-	clusters.assign(other.clusters.begin(),other.clusters.end());
 	type = Tomography::MG;
-	detector = other.detector;
+	use_srf = other.use_srf;
 	return *this;
 }
-MG_Event::MG_Event(Tanalyse_R * treeObject,MG_Detector * det, bool use_srf_,long entry): Event(treeObject,use_srf_,entry){
+MG_Event::MG_Event(Tanalyse_R * treeObject,Detector * det, bool use_srf_,long entry): Event(treeObject,det,entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
 	}
-	clusters.clear();
-	for(int i=0;i<treeObject->MG_NClus[det->get_mg_n_in_tree()];i++){
-		if(MG_Cluster::is_suitable(treeObject,i,det,-1)) clusters.push_back(MG_Cluster(treeObject,i,det,-1));
+	for(int i=0;i<treeObject->MG_NClus[detector->get_n_in_tree()];i++){
+		clusters.push_back(new MG_Cluster(treeObject,i,det,-1));
+		if(!(det->is_suitable(clusters.back()))){
+			delete clusters.back();
+			clusters.pop_back();
+		}
 	}
-	n_in_tree = det->get_mg_n_in_tree();
-	has_spark = (treeObject->MG_Spark[n_in_tree]==1) ? true : false;
-	is_ref = det->get_is_ref();
-	z = det->get_z();
-	is_X = det->get_is_X();
-	detector = *det;
+	use_srf = use_srf_;
+	has_spark = (treeObject->MG_Spark[detector->get_n_in_tree()]==1) ? true : false;
 	type = Tomography::MG;
 }
-MG_Event::MG_Event(MG_Detector detector_, vector<vector<double> > strip_ampl_, bool use_srf_, int evn_): Event(){
+MG_Event::MG_Event(Detector * detector_, vector<vector<double> > strip_ampl_, bool use_srf_, int evn_): Event(detector_,evn_){
 	if(strip_ampl_.size()!=61){
 		cout << "problem in size" << endl;
-		detector = MG_Detector();
 		return;
 	}
-	n_in_tree = detector_.get_mg_n_in_tree();
-	is_ref = detector_.get_is_ref();
-	z = detector_.get_z();
-	is_X = detector_.get_is_X();
 	strip_ampl = strip_ampl_;
-	detector = detector_;
 	use_srf = use_srf_;
-	evn = evn_;
 	type = Tomography::MG;
 }
-vector<MG_Cluster> MG_Event::get_clusters() const{
-	return clusters;
-}
-
 void MG_Event::MultiCluster(){
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
 	clusters.clear();
 	//first loop : find channels with signal and store them with their caracteristics
 	double sigma = Tomography::sigma;
@@ -564,11 +547,14 @@ void MG_Event::MultiCluster(){
 			//ClusSize = SRFfit->GetParameter(1);
 		}
 		delete SRFfit; delete SRFgraph;
-		clusters.push_back(MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
+		clusters.push_back(new MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 		//clusters.push_back(MG_Cluster(&detector,i,pos_TPC,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 	}
 }
 void MG_Event::HoughCluster(){
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
 	clusters.clear();
 	//first loop : find channels with signal and store them with their caracteristics
 	double sigma = Tomography::sigma;
@@ -705,7 +691,7 @@ void MG_Event::HoughCluster(){
 			ClusSize = SRFfit->GetParameter(1);
 		}
 		delete SRFfit; delete SRFgraph;
-		clusters.push_back(MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
+		clusters.push_back(new MG_Cluster(&detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 	}
 }
 void MG_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
@@ -717,11 +703,11 @@ void MG_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
 }
 TH1D * MG_Event::get_ampl_hist() const{
 	ostringstream name;
-	name << "ampl_MG_det_" << n_in_tree << "_evn_" << evn;
+	name << "ampl_MG_det_" << detector->get_n_in_tree() << "_evn_" << evn;
 	TH1D * histo = new TH1D(name.str().c_str(),name.str().c_str(),1024,-MG_Detector::size/2.,MG_Detector::size/2.);
 	vector<pair<int,int> > cluster_edges;
-	for(vector<MG_Cluster>::const_iterator it=clusters.begin();it!=clusters.end();++it){
-		cluster_edges.push_back(pair<int,int>(FloorNint(it->get_pos()-it->get_size()),CeilNint(it->get_pos()+it->get_size())));
+	for(vector<Cluster*>::const_iterator it=clusters.begin();it!=clusters.end();++it){
+		cluster_edges.push_back(pair<int,int>(FloorNint((*it)->get_pos()-(*it)->get_size()),CeilNint((*it)->get_pos()+(*it)->get_size())));
 	}
 	vector<bool> is_used(1024,false);
 	for(vector<pair<int,int> >::iterator it = cluster_edges.begin();it!=cluster_edges.end();++it){
@@ -738,41 +724,39 @@ TH1D * MG_Event::get_ampl_hist() const{
 	}
 	return histo;
 }
-void MG_Event::do_cuts(){
-	vector<MG_Cluster>::iterator clus_it = clusters.begin();
-	while(clus_it!= clusters.end()){
-		if(clus_it->is_suitable(&detector)) ++clus_it;
-		else clus_it = clusters.erase(clus_it);
-	}
-}
 MG_Event::~MG_Event(){
-	clusters.clear();
+
 }
 
 CosmicBenchEvent::CosmicBenchEvent(){
 	rayPairs.clear();
+	for(unsigned int i=0;i<events.size();i++){
+		delete events[i];
+	}
 	events.clear();
 }
 CosmicBenchEvent::CosmicBenchEvent(const CosmicBenchEvent& other){
 	evn = other.evn;
 	rayPairs.clear();
 	rayPairs.assign(other.rayPairs.begin(),other.rayPairs.end());
+	for(unsigned int i=0;i<events.size();i++){
+		delete events[i];
+	}
 	events.clear();
 	for(vector<Event*>::const_iterator it = other.events.begin();it!= other.events.end();++it){
-		if((*it)->get_type() == Tomography::CM) events.push_back(new CM_Event(*(dynamic_cast<CM_Event*>(*it))));
-		else if((*it)->get_type() == Tomography::CM_Demux) events.push_back(new CM_Demux_Event(*(dynamic_cast<CM_Demux_Event*>(*it))));
-		else if((*it)->get_type() == Tomography::MG) events.push_back(new MG_Event(*(dynamic_cast<MG_Event*>(*it))));
+		events.push_back((*it)->Clone());
 	}
 }
 CosmicBenchEvent& CosmicBenchEvent::operator=(const CosmicBenchEvent& other){
 	evn = other.evn;
 	rayPairs.clear();
 	rayPairs.assign(other.rayPairs.begin(),other.rayPairs.end());
+	for(unsigned int i=0;i<events.size();i++){
+		delete events[i];
+	}
 	events.clear();
 	for(vector<Event*>::const_iterator it = other.events.begin();it!= other.events.end();++it){
-		if((*it)->get_type() == Tomography::CM) events.push_back(new CM_Event(*(dynamic_cast<CM_Event*>(*it))));
-		else if((*it)->get_type() == Tomography::CM_Demux) events.push_back(new CM_Demux_Event(*(dynamic_cast<CM_Demux_Event*>(*it))));
-		else if((*it)->get_type() == Tomography::MG) events.push_back(new MG_Event(*(dynamic_cast<MG_Event*>(*it))));
+		events.push_back((*it)->Clone());
 	}
 	return *this;
 }
@@ -783,6 +767,9 @@ CosmicBenchEvent::CosmicBenchEvent(CosmicBench * detectors, Tanalyse_R * treeObj
 	}
 	evn = treeObject->evn;
 	rayPairs.clear();
+	for(unsigned int i=0;i<events.size();i++){
+		delete events[i];
+	}
 	events.clear();
 	int det_N = detectors->get_CM_N() + detectors->get_MG_N();
 	for(int i=0;i<det_N;i++){
