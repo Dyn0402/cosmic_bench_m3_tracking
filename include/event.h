@@ -7,7 +7,7 @@
 #include "ray.h"
 #include "Tanalyse_R.h"
 #include "detector.h"
-#include "analyse.h"
+//#include "analyse.h"
 #include <TH1D.h>
 #include <TCanvas.h>
 #include "tomography.h"
@@ -27,6 +27,7 @@ class CM_Detector;
 class MG_Detector;
 class CosmicBench;
 class Tanalyse_R;
+class Analyse;
 
 class Event{
 	public:
@@ -41,9 +42,11 @@ class Event{
 		virtual void MultiCluster() = 0;
 		void do_cuts();
 		virtual void set_strip_ampl(vector<vector<double> > strip_ampl_) = 0;
-		virtual void MultiCluster() = 0;
 		vector<Cluster*> get_clusters() const;
+		Detector * get_det() const;
+		double get_StripPitch() const;
 		virtual TH1D * get_ampl_hist() const = 0;
+		virtual Event * Clone() const = 0;
 	protected:
 		struct StripInfo {
 			double MaxAmpl;
@@ -55,12 +58,11 @@ class Event{
 		Event(int evn_ = -1);
 		Event(const Event& other);
 		Event& operator=(const Event& other);
-		Event(Tanalyse_R * treeObject, Detector * det,long entry = -1);
-		Event(Detector * detector_,int evn_);
+		Event(Tanalyse_R * treeObject,const Detector * const det,long entry = -1);
+		Event(const Detector * const detector_,int evn_);
 		int evn;
 		Tomography::det_type type;
 		bool has_spark;
-		int NClus;
 		vector<vector<double> > strip_ampl;
 		vector<Cluster*> clusters;
 		Detector * detector;
@@ -72,12 +74,13 @@ class CM_Event: public Event{
 		CM_Event();
 		CM_Event(const CM_Event& other);
 		CM_Event& operator=(const CM_Event& other);
-		CM_Event(Tanalyse_R * treeObject,Detector * det, long entry = -1);
-		CM_Event(Detector * detector_, vector<vector<double> > strip_ampl_, int evn_);
+		CM_Event(Tanalyse_R * treeObject,const CM_Detector * const det, long entry = -1);
+		CM_Event(const CM_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_);
 		~CM_Event();
 		void MultiCluster();
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		TH1D * get_ampl_hist() const;
+		Event * Clone() const;
 };
 
 class CM_Demux_Event: public Event{
@@ -91,6 +94,7 @@ class CM_Demux_Event: public Event{
 		~CM_Demux_Event();
 		void MultiCluster();
 		TH1D * get_ampl_hist() const;
+		Event * Clone() const;
 };
 
 class MG_Event: public Event{
@@ -99,13 +103,14 @@ class MG_Event: public Event{
 		MG_Event();
 		MG_Event(const MG_Event& other);
 		MG_Event& operator=(const MG_Event& other);
-		MG_Event(Tanalyse_R * treeObject,MG_Detector * det, bool use_srf_, long entry = -1);
-		MG_Event(MG_Detector detector_, vector<vector<double> > strip_ampl_, bool use_srf_, int evn_);
+		MG_Event(Tanalyse_R * treeObject,const MG_Detector * const det, long entry = -1, bool use_srf_ = false);
+		MG_Event(const MG_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, bool use_srf_ = false);
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		~MG_Event();
 		void MultiCluster();
 		void HoughCluster();
 		TH1D * get_ampl_hist() const;
+		Event * Clone() const;
 	protected:
 		bool use_srf;
 };
@@ -118,8 +123,8 @@ class CosmicBenchEvent{
 		CosmicBenchEvent();
 		CosmicBenchEvent(const CosmicBenchEvent& other);
 		CosmicBenchEvent& operator=(const CosmicBenchEvent& other);
-		CosmicBenchEvent(CosmicBench * detectors, Tanalyse_R * treeObject, bool use_srf_, long entry = -1);
-		CosmicBenchEvent(CosmicBench * detectors, vector<Event*> events_);
+		CosmicBenchEvent(const CosmicBench * const detectors, Tanalyse_R * treeObject, long entry = -1);
+		CosmicBenchEvent(const CosmicBench * const detectors, vector<Event*> events_);
 		~CosmicBenchEvent();
 		void createPairs();
 		void EventDisplay(TCanvas * c1 = 0);

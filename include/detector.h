@@ -2,9 +2,12 @@
 #define detector_h
 #include <string>
 #include <vector>
+#include <map>
 
 #include "tomography.h"
 #include "cluster.h"
+#include "event.h"
+#include "Tanalyse_R.h"
 
 //Boost
 #include <boost/property_tree/ptree.hpp>
@@ -12,8 +15,11 @@ using boost::property_tree::ptree;
 
 using std::string;
 using std::vector;
+using std::map;
 
 class Cluster;
+class Event;
+class Tanalyse_R;
 
 class Detector{
 	public:
@@ -39,6 +45,7 @@ class Detector{
 		virtual bool is_suitable(Cluster * clus) const = 0;
 		virtual ~Detector();
 		virtual Detector * Clone() const = 0;
+		virtual Event * build_event(Tanalyse_R * treeObject, int entry = -1) const = 0;
 	protected:
 		Detector();	
 		Detector(const Detector& other);
@@ -88,6 +95,7 @@ class CM_Detector: public Detector{
 		void set_RMS(vector<double> RMS_);
 		bool is_suitable(Cluster * clus) const;
 		Detector * Clone() const;
+		Event * build_event(Tanalyse_R * treeObject, int entry = -1) const;
 	protected:
 		bool use_thin_strip;
 		//Detector dependent Cuts
@@ -119,6 +127,7 @@ class MG_Detector: public Detector{
 		void set_ClusTOTCut_Min(double cut);
 		void set_ClusMaxSampleCut_Min(double cut);
 		void set_ClusMaxSampleCut_Max(double cut);
+		double get_ClusSizeCut_Min() const;
 		//---
 		Tomography::det_type get_type() const;
 		void set_RMS(vector<double> RMS_);
@@ -126,6 +135,7 @@ class MG_Detector: public Detector{
 		double SRF_fit(double * x, double * p);
 		bool is_suitable(Cluster * clus) const;
 		Detector * Clone() const;
+		Event * build_event(Tanalyse_R * treeObject, int entry = -1) const;
 	protected:
 		//Detector dependant cuts
 		double ClusSizeCut_Min;
@@ -147,14 +157,13 @@ class CosmicBench{
 		CosmicBench& operator=(const CosmicBench& other);
 		~CosmicBench();
 		//void add_MM(Detector * det);
-		int get_CM_N() const;
-		int get_MG_N() const;
+		int get_det_N(Tomography::det_type det_t) const;
+		int get_det_N_tot() const;
 		Detector * get_detector(unsigned int i) const;
 	protected:
 		void Init(ptree config_tree);
 		vector<Detector*> detectors;
-		int CM_N;
-		int MG_N;
+		map<Tomography::det_type,unsigned short> det_N;
 };
 
 bool operator==(Detector const &det1, Detector const &det2);

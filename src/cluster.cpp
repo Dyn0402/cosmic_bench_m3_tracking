@@ -84,7 +84,7 @@ Cluster& Cluster::operator=(const Cluster& other){
 	n_in_tree = other.n_in_tree;
 	return *this;
 }
-Cluster::Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry){
+Cluster::Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry){
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
@@ -110,7 +110,7 @@ Cluster::Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry)
 	angle_z = det->get_angle_z();
 	n_in_tree = det->get_n_in_tree();
 }
-Cluster::Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_){
+Cluster::Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_){
 	evn = -1;
 	number = number_;
 	ampl = ampl_;
@@ -214,7 +214,7 @@ CM_Cluster& CM_Cluster::operator=(const CM_Cluster& other){
 	strip_type = other.strip_type;
 	return *this;
 }
-CM_Cluster::CM_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry): Cluster(treeObject,number_,det,entry){
+CM_Cluster::CM_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry): Cluster(treeObject,number_,det,entry){
 	if(det->get_type() != Tomography::CM){
 		*this = CM_Cluster();
 		return;
@@ -234,7 +234,7 @@ CM_Cluster::CM_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long 
 	type = Tomography::CM;
 	(pos>31) ? strip_type = Tomography::Wide : strip_type = Tomography::Thin;
 }
-CM_Cluster::CM_Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(det, number_, pos_, size_, ampl_, maxSample_, maxStripAmpl_, TOT_, t_, maxStrip_){
+CM_Cluster::CM_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(det, number_, pos_, size_, ampl_, maxSample_, maxStripAmpl_, TOT_, t_, maxStrip_){
 	if(det->get_type() != Tomography::CM){
 		*this = CM_Cluster();
 		return;
@@ -425,7 +425,7 @@ MG_Cluster& MG_Cluster::operator=(const MG_Cluster& other){
 	type = Tomography::MG;
 	return *this;
 }
-MG_Cluster::MG_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry): Cluster(treeObject,number_,det,entry){
+MG_Cluster::MG_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry): Cluster(treeObject,number_,det,entry){
 	if(det->get_type() != Tomography::MG){
 		*this = MG_Cluster();
 		return;
@@ -444,7 +444,7 @@ MG_Cluster::MG_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long 
 	maxStrip = treeObject->MG_ClusMaxStrip[n_in_tree][number];
 	type = Tomography::MG;
 }
-MG_Cluster::MG_Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(det, number_, pos_, size_, ampl_, maxSample_, maxStripAmpl_, TOT_, t_, maxStrip_){
+MG_Cluster::MG_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(det, number_, pos_, size_, ampl_, maxSample_, maxStripAmpl_, TOT_, t_, maxStrip_){
 	if(det->get_type() != Tomography::MG){
 		*this = MG_Cluster();
 		return;

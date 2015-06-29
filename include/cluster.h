@@ -48,8 +48,8 @@ class Cluster{
 		Cluster();
 		Cluster(const Cluster& other);
 		Cluster& operator=(const Cluster& other);
-		Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry = -1);
-		Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
+		Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry = -1);
+		Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		int evn;
 		double evttime;
 		int number;
@@ -80,8 +80,8 @@ class CM_Cluster: public Cluster{
 		CM_Cluster();
 		CM_Cluster(const CM_Cluster& other);
 		CM_Cluster& operator=(const CM_Cluster& other);
-		CM_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry = -1);
-		CM_Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
+		CM_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry = -1);
+		CM_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~CM_Cluster();
 		Tomography::strip_type get_strip_type() const;
 		virtual double get_pos_mm() const;
@@ -111,8 +111,8 @@ class MG_Cluster: public Cluster{
 		MG_Cluster();
 		MG_Cluster(const MG_Cluster& other);
 		MG_Cluster& operator=(const MG_Cluster& other);
-		MG_Cluster(Tanalyse_R * treeObject,int number_,Detector * det, long entry = -1);
-		MG_Cluster(Detector * det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
+		MG_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry = -1);
+		MG_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~MG_Cluster();
 		double get_pos_mm() const;
 		double correct_strip_nb(int strip_nb) const;

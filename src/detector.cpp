@@ -168,6 +168,9 @@ CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_
 Detector * CM_Detector::Clone() const{
 	return new CM_Detector(*this);
 }
+Event * CM_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
+	return new CM_Event(treeObject, this, entry);
+}
 CM_Detector::~CM_Detector(){
 
 }
@@ -248,6 +251,9 @@ MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_r
 Detector * MG_Detector::Clone() const{
 	return new MG_Detector(*this);
 }
+Event * MG_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
+	return new MG_Event(treeObject, this, entry);
+}
 MG_Detector::~MG_Detector(){
 
 }
@@ -296,6 +302,9 @@ void MG_Detector::set_ClusMaxSampleCut_Min(double cut){
 void MG_Detector::set_ClusMaxSampleCut_Max(double cut){
 	ClusMaxSampleCut_Max = cut;
 }
+double MG_Detector::get_ClusSizeCut_Min() const{
+	return ClusSizeCut_Min;
+}
 Tomography::det_type MG_Detector::get_type() const{
 	return Tomography::MG;
 }
@@ -343,28 +352,25 @@ CosmicBench::CosmicBench(){
 		delete detectors[i];
 	}
 	detectors.clear();
-	CM_N = 0;
-	MG_N = 0;
+	det_N.clear();
 }
-CosmicBench(const CosmicBench& other){
+CosmicBench::CosmicBench(const CosmicBench& other){
 	for(unsigned int i=0;i<detectors.size();i++){
 		delete detectors[i];
 	}
 	detectors.clear();
-	MG_N = other.MG_N;
-	CM_N = other.CM_N;
-	for(vector<Detector*>::iterator it = other.detectors.begin();it!=other.detectors.end();++it){
+	det_N = other.det_N;
+	for(vector<Detector*>::const_iterator it = other.detectors.begin();it!=other.detectors.end();++it){
 		detectors.push_back((*it)->Clone());
 	}
 }
-CosmicBench& operator=(const CosmicBench& other){
+CosmicBench& CosmicBench::operator=(const CosmicBench& other){
 	for(unsigned int i=0;i<detectors.size();i++){
 		delete detectors[i];
 	}
 	detectors.clear();
-	MG_N = other.MG_N;
-	CM_N = other.CM_N;
-	for(vector<Detector*>::iterator it = other.detectors.begin();it!=other.detectors.end();++it){
+	det_N = other.det_N;
+	for(vector<Detector*>::const_iterator it = other.detectors.begin();it!=other.detectors.end();++it){
 		detectors.push_back((*it)->Clone());
 	}
 	return *this;
@@ -374,15 +380,12 @@ CosmicBench::~CosmicBench(){
 		delete detectors[i];
 	}
 	detectors.clear();
-	CM_N = 0;
-	MG_N = 0;
+	det_N.clear();
 }
 CosmicBench::CosmicBench(ptree config_tree){
 	Init(config_tree);
 }
 void CosmicBench::Init(ptree config_tree){
-	CM_N = 0;
-	MG_N = 0;
 	int total_CM_N = config_tree.get<int>("total_CM_N");
 	int total_MG_N = config_tree.get<int>("total_MG_N");
 	string RMSName = config_tree.get<string>("RMSPed");
@@ -423,7 +426,7 @@ void CosmicBench::Init(ptree config_tree){
 		current_det->set_ClusMaxStripAmplCut_Min_Wide(child.second.get<double>("ClusMaxStripAmplCut_Min_Wide"));
 		current_det->set_ClusSizeCut_Max_Wide(child.second.get<double>("ClusSizeCut_Max_Wide"));
 		detectors.back()->set_RMS(RMS[child.second.get<int>("cm_n")]);
-		CM_N++;
+		det_N[Tomography::CM]++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
 		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes")));
@@ -433,25 +436,22 @@ void CosmicBench::Init(ptree config_tree){
 		current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
 		current_det->set_ClusSizeCut_Min(child.second.get<double>("ClusSizeCut_Min"));
 		detectors.back()->set_RMS(RMS[total_CM_N+child.second.get<int>("mg_n")]);
-		MG_N++;
+		det_N[Tomography::MG]++;
 	}
-	if((total_CM_N!=CM_N) || (total_MG_N!=MG_N)){
+	if((total_CM_N!=det_N[Tomography::CM]) || (total_MG_N!=det_N[Tomography::MG])){
 		cout << "problem in detectors number" << endl;
 		return;
 	}
 }
-/*
-void CosmicBench::add_MM(Detector * det){
-	if(det->get_type() == "MG") MG_N++;
-	else if(det->get_type() == "CM") CM_N++;
-	detectors.push_back(det);
+int CosmicBench::get_det_N(Tomography::det_type det_t) const{
+	return (det_N.find(det_t))->second;
 }
-*/
-int CosmicBench::get_CM_N() const{
-	return CM_N;
-}
-int CosmicBench::get_MG_N() const{
-	return MG_N;
+int CosmicBench::get_det_N_tot() const{
+	int tot = 0;
+	for(map<Tomography::det_type,unsigned short>::const_iterator it=det_N.begin();it!=det_N.end();++it){
+		tot += it->second;
+	}
+	return tot;
 }
 Detector * CosmicBench::get_detector(unsigned int i) const{
 	return detectors[i];
