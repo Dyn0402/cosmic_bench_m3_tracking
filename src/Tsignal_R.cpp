@@ -15,19 +15,19 @@ Tsignal_R::Tsignal_R(){
    
 }
 
-Tsignal_R::Tsignal_R(TTree *tree, int CMN_, int MGN_) : fChain(0) 
+Tsignal_R::Tsignal_R(TTree *tree, map<Tomography::det_type,unsigned short> det_N_) : fChain(0) 
 {
-   Init(tree, CMN_, MGN_);
+   Init(tree, det_N_);
 }
 
 Tsignal_R::~Tsignal_R()
 {
-   if(MGN>0){
+   if(det_N[Tomography::MG]>0){
       delete StripAmpl_MG;
       delete StripAmpl_MG_ped;
       delete StripAmpl_MG_corr;
    }
-   if(CMN>0){
+   if(det_N[Tomography::CM]>0){
       delete StripAmpl_CM;
       delete StripAmpl_CM_ped;
       delete StripAmpl_CM_corr;
@@ -55,7 +55,7 @@ Long64_t Tsignal_R::LoadTree(Long64_t entry)
    return centry;
 }
 
-void Tsignal_R::Init(TTree *tree, int CMN_, int MGN_)
+void Tsignal_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N_)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -64,17 +64,16 @@ void Tsignal_R::Init(TTree *tree, int CMN_, int MGN_)
    // code, but the routine can be extended by the user if needed.
    // Init() will be called many times when running on PROOF
    // (once per file to be processed).
-   MGN = MGN_;
-   CMN = CMN_;
-   if(MGN>0){
-      StripAmpl_MG = new Float_t[MGN][61][Tomography::Nsample];
-      StripAmpl_MG_ped = new Float_t[MGN][61][Tomography::Nsample];
-      StripAmpl_MG_corr = new Float_t[MGN][61][Tomography::Nsample];
+   det_N = det_N_;
+   if(det_N[Tomography::MG]>0){
+      StripAmpl_MG = new Float_t[det_N[Tomography::MG]][61][Tomography::Nsample];
+      StripAmpl_MG_ped = new Float_t[det_N[Tomography::MG]][61][Tomography::Nsample];
+      StripAmpl_MG_corr = new Float_t[det_N[Tomography::MG]][61][Tomography::Nsample];
    }
-   if(CMN>0){
-      StripAmpl_CM = new Float_t[CMN][64][Tomography::Nsample];
-      StripAmpl_CM_ped = new Float_t[CMN][64][Tomography::Nsample];
-      StripAmpl_CM_corr = new Float_t[CMN][64][Tomography::Nsample];
+   if(det_N[Tomography::CM]>0){
+      StripAmpl_CM = new Float_t[det_N[Tomography::MG]][64][Tomography::Nsample];
+      StripAmpl_CM_ped = new Float_t[det_N[Tomography::MG]][64][Tomography::Nsample];
+      StripAmpl_CM_corr = new Float_t[det_N[Tomography::MG]][64][Tomography::Nsample];
    }
 
    // Set branch addresses and branch pointers
@@ -85,12 +84,12 @@ void Tsignal_R::Init(TTree *tree, int CMN_, int MGN_)
 
    fChain->SetBranchAddress("Nevent", &Nevent, &b_Nevent);
    fChain->SetBranchAddress("evttime",&evttime, &b_evttime);
-   if(MGN>0){
+   if(det_N[Tomography::MG]>0){
 	   fChain->SetBranchAddress("StripAmpl_MG", StripAmpl_MG, &b_StripAmpl_MG);
 	   fChain->SetBranchAddress("StripAmpl_MG_ped", StripAmpl_MG_ped, &b_StripAmpl_MG_ped);
 	   fChain->SetBranchAddress("StripAmpl_MG_corr", StripAmpl_MG_corr, &b_StripAmpl_MG_corr);
 	}
-	if(CMN>0){
+	if(det_N[Tomography::MG]>0){
 	   fChain->SetBranchAddress("StripAmpl_CM", StripAmpl_MG, &b_StripAmpl_MG);
 	   fChain->SetBranchAddress("StripAmpl_CM_ped", StripAmpl_MG_ped, &b_StripAmpl_MG_ped);
 	   fChain->SetBranchAddress("StripAmpl_CM_corr", StripAmpl_MG_corr, &b_StripAmpl_MG_corr);
@@ -124,21 +123,26 @@ Int_t Tsignal_R::Cut(Long64_t /*entry*/)
    return 1;
 }
 
-vector<vector<double> > Tsignal_R::get_mg_ampl(int mg_n){
-	vector<vector<double> > return_array(61,vector<double>(Tomography::Nsample,0));
-	for(int i=0;i<61;i++){
-		for(int j=0;j<Tomography::Nsample;j++){
-			return_array[i][j] = StripAmpl_MG_corr[mg_n][i][j];
-		}
-	}
-	return return_array;
-}
-vector<vector<double> > Tsignal_R::get_cm_ampl(int cm_n){
-	vector<vector<double> > return_array(64,vector<double>(Tomography::Nsample,0));
-	for(int i=0;i<64;i++){
-		for(int j=0;j<Tomography::Nsample;j++){
-			return_array[i][j] = StripAmpl_MG_corr[cm_n][i][j];
-		}
-	}
-	return return_array;
+vector<vector<double> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned short det_n_){
+   vector<vector<double> > return_array;
+   if(type_ == Tomography::MG){
+      return_array = vector<vector<double> >(61,vector<double>(Tomography::Nsample,0));
+      for(int i=0;i<61;i++){
+         for(int j=0;j<Tomography::Nsample;j++){
+            return_array[i][j] = StripAmpl_MG_corr[det_n_][i][j];
+         }
+      }
+   }
+   else if(type_ == Tomography::CM){
+      return_array = vector<vector<double> >(64,vector<double>(Tomography::Nsample,0));
+         for(int i=0;i<64;i++){
+            for(int j=0;j<Tomography::Nsample;j++){
+               return_array[i][j] = StripAmpl_CM_corr[det_n_][i][j];
+            }
+         }
+   }
+   else{
+
+   }
+   return return_array;
 }

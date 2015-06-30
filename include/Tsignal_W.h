@@ -28,8 +28,7 @@ public :
    TFile          *saveFile;
 
    // Declaration of leaf types
-   int CMN;
-   int MGN;
+   map<Tomography::det_type,unsigned short> det_N;
    Int_t           Nevent;
    Double_t        evttime;
    Float_t         (*StripAmpl_MG)[61][Tomography::Nsample];
@@ -40,7 +39,7 @@ public :
    Float_t         (*StripAmpl_CM_corr)[64][Tomography::Nsample];
 
 
-   Tsignal_W(string saveFileName, int CM_n, int MG_n);
+   Tsignal_W(string saveFileName, map<Tomography::det_type,unsigned short> det_N_);
    ~Tsignal_W();
    void Init();
    TTree * getTree() const;
@@ -49,9 +48,9 @@ public :
    void Reset_raw();
    void Reset_ped();
    void Reset_corr();
-   void fillTree_raw(int evn_, double evttime_, vector<vector<vector<float> > > mg_ampl, vector<vector<vector<float> > > cm_ampl);
-   void fillTree_ped(vector<vector<vector<float> > > mg_ampl, vector<vector<vector<float> > > cm_ampl);
-   void fillTree_corr(vector<vector<vector<float> > > mg_ampl, vector<vector<vector<float> > > cm_ampl);
+   void fillTree_raw(int evn_, double evttime_, map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
+   void fillTree_ped(map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
+   void fillTree_corr(map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
    map<Tomography::det_type,vector<vector<vector<float> > > > read_raw(long entry);
    map<Tomography::det_type,vector<vector<vector<float> > > > read_ped(long entry);
    map<Tomography::det_type,vector<vector<vector<float> > > > read_corr(long entry);

@@ -9,7 +9,7 @@ Tanalyse_R::Tanalyse_R(){
    
 }
 
-Tanalyse_R::Tanalyse_R(TTree *tree, int CM_n_, int MG_n_)
+Tanalyse_R::Tanalyse_R(TTree *tree, map<Tomography::det_type,unsigned short> det_N_)
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
@@ -21,12 +21,12 @@ Tanalyse_R::Tanalyse_R(TTree *tree, int CM_n_, int MG_n_)
       tree = (TTree*)gDirectory->Get("T");
 
    }*/
-   Init(tree, CM_n_, MG_n_);
+   Init(tree, det_N_);
 }
 
 Tanalyse_R::~Tanalyse_R()
 {
-   if(CM_n>0){
+   if(det_N[Tomography::CM]>0){
       delete[] CM_NClus;
       delete[] CM_Spark;
       delete[] CM_ClusAmpl;
@@ -39,7 +39,7 @@ Tanalyse_R::~Tanalyse_R()
       delete[] CM_ClusMaxStripAmpl;
       delete[] CM_StripMaxAmpl;
    }
-   if(MG_n>0){
+   if(det_N[Tomography::MG]>0){
       delete[] MG_NClus;
       delete[] MG_Spark;
       delete[] MG_ClusAmpl;
@@ -77,7 +77,7 @@ Long64_t Tanalyse_R::LoadTree(Long64_t entry)
    return centry;
 }
 
-void Tanalyse_R::Init(TTree *tree, int CM_n_, int MG_n_)
+void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N_)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -88,8 +88,7 @@ void Tanalyse_R::Init(TTree *tree, int CM_n_, int MG_n_)
    // (once per file to be processed).
 
    // Set branch addresses and branch pointers
-   CM_n = CM_n_;
-   MG_n = MG_n_;
+   det_N = det_N_;
    if (!tree) return;
    fChain = tree;
    fCurrent = -1;
@@ -98,58 +97,58 @@ void Tanalyse_R::Init(TTree *tree, int CM_n_, int MG_n_)
    fChain->SetBranchAddress("evn", &evn, &b_evn);
    evttime = 0;
    //fChain->SetBranchAddress("evttime", &evttime, &b_evttime);
-   if(CM_n>0){
-      CM_NClus = new int[CM_n];
+   if(det_N[Tomography::CM]>0){
+      CM_NClus = new int[det_N[Tomography::CM]];
       fChain->SetBranchAddress("CM_NClus", CM_NClus, &b_CM_NClus);
-      CM_Spark = new int[CM_n];
-      for(int i = 0;i<CM_n;i++){
+      CM_Spark = new int[det_N[Tomography::CM]];
+      for(int i = 0;i<det_N[Tomography::CM];i++){
          CM_Spark[i] = 0;
       }
       //fChain->SetBranchAddress("CM_Spark", CM_Spark, &b_CM_Spark);
-      CM_ClusAmpl = new Double_t[CM_n][600];
+      CM_ClusAmpl = new Double_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusAmpl", CM_ClusAmpl, &b_CM_ClusAmpl);
-      CM_ClusSize = new Double_t[CM_n][600];
+      CM_ClusSize = new Double_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusSize", CM_ClusSize, &b_CM_ClusSize);
-      CM_ClusPos = new Double_t[CM_n][600];
+      CM_ClusPos = new Double_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusPos", CM_ClusPos, &b_CM_ClusPos);
-      CM_ClusMaxStripAmpl = new Double_t[CM_n][600];
+      CM_ClusMaxStripAmpl = new Double_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusMaxStripAmpl", CM_ClusMaxStripAmpl, &b_CM_ClusMaxStripAmpl);
-      CM_ClusMaxStrip = new Int_t[CM_n][600];
+      CM_ClusMaxStrip = new Int_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusMaxStrip", CM_ClusMaxStrip, &b_CM_ClusMaxStrip);
-      CM_ClusMaxSample = new Double_t[CM_n][600];
+      CM_ClusMaxSample = new Double_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusMaxSample", CM_ClusMaxSample, &b_CM_ClusMaxSample);
-      CM_ClusTOT = new Double_t[CM_n][600];
+      CM_ClusTOT = new Double_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusTOT", CM_ClusTOT, &b_CM_ClusTOT);
-      CM_ClusT = new Double_t[CM_n][600];
+      CM_ClusT = new Double_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusT", CM_ClusT, &b_CM_ClusT);
-      CM_StripMaxAmpl = new Double_t[CM_n][32];
+      CM_StripMaxAmpl = new Double_t[det_N[Tomography::CM]][32];
       fChain->SetBranchAddress("CM_StripMaxAmpl", CM_StripMaxAmpl, &b_CM_StripMaxAmpl);
    }
-   if(MG_n>0){
-      MG_NClus = new int[MG_n];
+   if(det_N[Tomography::MG]>0){
+      MG_NClus = new int[det_N[Tomography::MG]];
       fChain->SetBranchAddress("MG_NClus", MG_NClus, &b_MG_NClus);
-      MG_Spark = new int[MG_n];
-      for(int i = 0;i<MG_n;i++){
+      MG_Spark = new int[det_N[Tomography::MG]];
+      for(int i = 0;i<det_N[Tomography::MG];i++){
          MG_Spark[i] = 0;
       }
       //fChain->SetBranchAddress("MG_Spark", MG_Spark, &b_MG_Spark);
-      MG_ClusAmpl = new Double_t[MG_n][300];
+      MG_ClusAmpl = new Double_t[det_N[Tomography::MG]][300];
       fChain->SetBranchAddress("MG_ClusAmpl", MG_ClusAmpl, &b_MG_ClusAmpl);
-      MG_ClusSize = new Double_t[MG_n][300];
-      MG_ClusPos = new Double_t[MG_n][300];
+      MG_ClusSize = new Double_t[det_N[Tomography::MG]][300];
+      MG_ClusPos = new Double_t[det_N[Tomography::MG]][300];
       fChain->SetBranchAddress("MG_ClusPos", MG_ClusPos, &b_MG_ClusPos);
       fChain->SetBranchAddress("MG_ClusSize", MG_ClusSize, &b_MG_ClusSize);
-      MG_ClusMaxStripAmpl = new Double_t[MG_n][300];
+      MG_ClusMaxStripAmpl = new Double_t[det_N[Tomography::MG]][300];
       fChain->SetBranchAddress("MG_ClusMaxStripAmpl", MG_ClusMaxStripAmpl, &b_MG_ClusMaxStripAmpl);
-      MG_ClusMaxSample = new Double_t[MG_n][300];
+      MG_ClusMaxSample = new Double_t[det_N[Tomography::MG]][300];
       fChain->SetBranchAddress("MG_ClusMaxSample", MG_ClusMaxSample, &b_MG_ClusMaxSample);
-      MG_ClusTOT = new Double_t[MG_n][300];
+      MG_ClusTOT = new Double_t[det_N[Tomography::MG]][300];
       fChain->SetBranchAddress("MG_ClusTOT", MG_ClusTOT, &b_MG_ClusTOT);
-      MG_ClusT = new Double_t[MG_n][300];
+      MG_ClusT = new Double_t[det_N[Tomography::MG]][300];
       fChain->SetBranchAddress("MG_ClusT", MG_ClusT, &b_MG_ClusT);
-      MG_ClusMaxStrip = new Int_t[MG_n][300];
+      MG_ClusMaxStrip = new Int_t[det_N[Tomography::MG]][300];
       fChain->SetBranchAddress("MG_ClusMaxStrip", MG_ClusMaxStrip, &b_MG_ClusMaxStrip);
-      MG_StripMaxAmpl = new Double_t[MG_n][61];
+      MG_StripMaxAmpl = new Double_t[det_N[Tomography::MG]][61];
       fChain->SetBranchAddress("MG_StripMaxAmpl", MG_StripMaxAmpl, &b_MG_StripMaxAmpl);
    }
    Notify();

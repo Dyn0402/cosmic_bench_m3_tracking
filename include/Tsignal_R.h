@@ -12,9 +12,11 @@
 #include <TChain.h>
 #include <TFile.h>
 #include <vector>
+#include <map>
 #include "tomography.h"
 
 using std::vector;
+using std::map;
 
 // Header file for the classes stored in the TTree if any.
 
@@ -26,8 +28,7 @@ public :
    Int_t           fCurrent; //!current Tree number in a TChain
 
    // Declaration of leaf types
-   int CMN;
-   int MGN;
+   map<Tomography::det_type,unsigned short> det_N;
    Int_t           Nevent;
    Double_t        evttime;
    Float_t         (*StripAmpl_MG)[61][Tomography::Nsample];
@@ -47,17 +48,16 @@ public :
    TBranch        *b_StripAmpl_CM_ped;   //!
    TBranch        *b_StripAmpl_CM_corr;   //!
 
-   Tsignal_R(TTree *tree, int CMN_, int MGN_);
+   Tsignal_R(TTree *tree, map<Tomography::det_type,unsigned short> det_N_);
    Tsignal_R();
    virtual ~Tsignal_R();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
-   virtual void     Init(TTree *tree, int CMN_, int MGN_);
+   virtual void     Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N_);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
-   vector<vector<double> > get_mg_ampl(int mg_n);
-   vector<vector<double> > get_cm_ampl(int cm_n);
+   vector<vector<double> > get_ampl(Tomography::det_type type_, unsigned short det_n_);
 
 };
 

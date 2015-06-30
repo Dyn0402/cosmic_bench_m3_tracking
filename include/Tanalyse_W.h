@@ -7,6 +7,9 @@
 #include "event.h"
 #include <string>
 #include <vector>
+#include <map>
+
+#include "tomography.h"
 
 using std::string;
 using std::vector;
@@ -20,8 +23,7 @@ class Tanalyse_W{
       TFile          *saveFile;
 
       // Declaration of leaf types
-      int MGN;
-      int CMN;
+      map<Tomography::det_type,unsigned short> det_N;
 
       Int_t           evn;
       Double_t        evttime;
@@ -49,13 +51,13 @@ class Tanalyse_W{
       Double_t        (*MG_StripMaxAmpl)[61];
 
       //Tanalyse(string saveFileName);
-      Tanalyse_W(string saveFileName, int CM_n, int MG_n);
+      Tanalyse_W(string saveFileName, map<Tomography::det_type,unsigned short> det_N_);
       ~Tanalyse_W();
       void Init();
       TTree * getTree() const;
       void Write();
       void CloseFile();
-      void fillTree(int evn_, double evttime_, vector<MG_Event> mg_events, vector<CM_Event> cm_events);
+      void fillTree(int evn_, double evttime_, map<Tomography::det_type,vector<Event*> > events);
 };
 
 #endif
