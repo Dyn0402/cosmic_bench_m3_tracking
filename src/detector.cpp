@@ -352,14 +352,14 @@ CosmicBench::CosmicBench(){
 		delete detectors[i];
 	}
 	detectors.clear();
-	det_N.clear();
+	det_n.clear();
 }
 CosmicBench::CosmicBench(const CosmicBench& other){
 	for(unsigned int i=0;i<detectors.size();i++){
 		delete detectors[i];
 	}
 	detectors.clear();
-	det_N = other.det_N;
+	det_n = other.det_n;
 	for(vector<Detector*>::const_iterator it = other.detectors.begin();it!=other.detectors.end();++it){
 		detectors.push_back((*it)->Clone());
 	}
@@ -369,7 +369,7 @@ CosmicBench& CosmicBench::operator=(const CosmicBench& other){
 		delete detectors[i];
 	}
 	detectors.clear();
-	det_N = other.det_N;
+	det_n = other.det_n;
 	for(vector<Detector*>::const_iterator it = other.detectors.begin();it!=other.detectors.end();++it){
 		detectors.push_back((*it)->Clone());
 	}
@@ -380,7 +380,7 @@ CosmicBench::~CosmicBench(){
 		delete detectors[i];
 	}
 	detectors.clear();
-	det_N.clear();
+	det_n.clear();
 }
 CosmicBench::CosmicBench(ptree config_tree){
 	Init(config_tree);
@@ -426,7 +426,7 @@ void CosmicBench::Init(ptree config_tree){
 		current_det->set_ClusMaxStripAmplCut_Min_Wide(child.second.get<double>("ClusMaxStripAmplCut_Min_Wide"));
 		current_det->set_ClusSizeCut_Max_Wide(child.second.get<double>("ClusSizeCut_Max_Wide"));
 		detectors.back()->set_RMS(RMS[child.second.get<int>("cm_n")]);
-		det_N[Tomography::CM]++;
+		det_n[Tomography::CM]++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
 		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes")));
@@ -436,19 +436,19 @@ void CosmicBench::Init(ptree config_tree){
 		current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
 		current_det->set_ClusSizeCut_Min(child.second.get<double>("ClusSizeCut_Min"));
 		detectors.back()->set_RMS(RMS[total_CM_N+child.second.get<int>("mg_n")]);
-		det_N[Tomography::MG]++;
+		det_n[Tomography::MG]++;
 	}
-	if((total_CM_N!=det_N[Tomography::CM]) || (total_MG_N!=det_N[Tomography::MG])){
+	if((total_CM_N!=det_n[Tomography::CM]) || (total_MG_N!=det_n[Tomography::MG])){
 		cout << "problem in detectors number" << endl;
 		return;
 	}
 }
 int CosmicBench::get_det_N(Tomography::det_type det_t) const{
-	return (det_N.find(det_t))->second;
+	return (det_n.find(det_t))->second;
 }
 int CosmicBench::get_det_N_tot() const{
 	int tot = 0;
-	for(map<Tomography::det_type,unsigned short>::const_iterator it=det_N.begin();it!=det_N.end();++it){
+	for(map<Tomography::det_type,unsigned short>::const_iterator it=det_n.begin();it!=det_n.end();++it){
 		tot += it->second;
 	}
 	return tot;

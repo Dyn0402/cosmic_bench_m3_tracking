@@ -46,8 +46,7 @@ Ray_2D::Ray_2D(const Ray_2D& other){
 	Z_intercept = other.Z_intercept;
 	clusters.clear();
 	for(vector<Cluster*>::const_iterator it = other.clusters.begin();it!=other.clusters.end();++it){
-		if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
-		else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
+		clusters.push_back((*it)->Clone());
 	}
 }
 Ray_2D& Ray_2D::operator=(const Ray_2D& other){
@@ -57,8 +56,7 @@ Ray_2D& Ray_2D::operator=(const Ray_2D& other){
 	Z_intercept = other.Z_intercept;
 	clear();
 	for(vector<Cluster*>::const_iterator it = other.clusters.begin();it!=other.clusters.end();++it){
-		if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
-		else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
+		clusters.push_back((*it)->Clone());
 	}
 	return *this;
 }
@@ -78,8 +76,7 @@ Ray_2D::Ray_2D(const Ray& other, char coord_){
 	clusters.clear();
 	for(vector<Cluster*>::const_iterator it = other.clusters.begin(); it!=other.clusters.end();++it){
 		if(((*it)->get_is_X() && coord == 'X')||(coord == 'Y' && !(*it)->get_is_X())){
-			if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
-			else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
+			clusters.push_back((*it)->Clone());
 		}
 	}
 }
@@ -94,18 +91,12 @@ Ray_2D::~Ray_2D(){
 	clusters.clear();
 }
 void Ray_2D::add_cluster(Cluster * clus){
-	if(clus->get_type() != Tomography::MG && clus->get_type() != Tomography::CM_Demux) return;
+	if(clus->get_type() == Tomography::CM) return;
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
-		if(clus->get_type() == Tomography::MG && (*it)->get_type() == Tomography::MG){
-			if(clus->get_n_in_tree() == (*it)->get_n_in_tree()) return;
-		}
-		else if(clus->get_type() == Tomography::CM_Demux && (*it)->get_type() == Tomography::CM_Demux){
-			if(clus->get_n_in_tree() == (*it)->get_n_in_tree()) return;
-		}
+		if((clus->get_type() == (*it)->get_type()) && (clus->get_n_in_tree() == (*it)->get_n_in_tree())) return;
 	}
 	if((clus->get_is_X() && coord == 'X')||(coord == 'Y' && !clus->get_is_X())){
-		if(clus->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(clus)));
-		else if(clus->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(clus)));
+		clusters.push_back(clus->Clone());
 	}
 }
 
@@ -283,8 +274,7 @@ Ray::Ray(const Ray& other){
 	Z_intercept_Y = other.Z_intercept_Y;
 	clusters.clear();
 	for(vector<Cluster*>::const_iterator it = other.clusters.begin(); it!=other.clusters.end();++it){
-		if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
-		else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
+		clusters.push_back((*it)->Clone());
 	}
 }
 Ray& Ray::operator=(const Ray& other){
@@ -296,8 +286,7 @@ Ray& Ray::operator=(const Ray& other){
 	Z_intercept_Y = other.Z_intercept_Y;
 	clear();
 	for(vector<Cluster*>::const_iterator it = other.clusters.begin(); it!=other.clusters.end();++it){
-		if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
-		else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
+		clusters.push_back((*it)->Clone());
 	}
 	return *this;
 }
@@ -313,12 +302,10 @@ Ray::Ray(const Ray_2D& ray1, const Ray_2D& ray2){
 	Z_intercept_Y = rayY->get_Z_intercept();
 	clusters.clear();
 	for(vector<Cluster*>::const_iterator it = ray1.clusters.begin(); it!=ray1.clusters.end();++it){
-		if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
-		else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
+		clusters.push_back((*it)->Clone());
     }
     for(vector<Cluster*>::const_iterator it = ray2.clusters.begin(); it!=ray2.clusters.end();++it){
-		if((*it)->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
-		else if((*it)->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
+    	clusters.push_back((*it)->Clone());
     }
 	delete rayX; delete rayY;
 }
@@ -333,17 +320,11 @@ Ray::~Ray(){
 	clusters.clear();
 }
 void Ray::add_cluster(Cluster * clus){
-	if(clus->get_type() != Tomography::MG && clus->get_type() != Tomography::CM_Demux) return;
+	if(clus->get_type() == Tomography::CM) return;
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
-		if(clus->get_type() == Tomography::MG && (*it)->get_type() == Tomography::MG){
-			if(clus->get_n_in_tree() == (*it)->get_n_in_tree()) return;
-		}
-		else if(clus->get_type() == Tomography::CM_Demux && (*it)->get_type() == Tomography::CM_Demux){
-			if(clus->get_n_in_tree() == (*it)->get_n_in_tree()) return;
-		}
+		if((clus->get_type() == (*it)->get_type()) && (clus->get_n_in_tree() == (*it)->get_n_in_tree())) return;
 	}
-	if(clus->get_type() == Tomography::CM_Demux) clusters.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(clus)));
-	else if(clus->get_type() == Tomography::MG) clusters.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(clus)));
+	clusters.push_back(clus->Clone());
 }
 void Ray::process(){
 	if(clusters.size()<4) return;
@@ -493,9 +474,7 @@ unsigned int Ray::get_clus_y_n() const{
 vector<Cluster*> Ray::get_clus() const{
 	vector<Cluster*> return_vector;
 	for(vector<Cluster*>::const_iterator it = clusters.begin();it != clusters.end(); ++it){
-		if((*it)->get_type() == Tomography::MG) return_vector.push_back(new MG_Cluster(*dynamic_cast<MG_Cluster*>(*it)));
-		else if((*it)->get_type() == Tomography::CM) return_vector.push_back(new CM_Cluster(*dynamic_cast<CM_Cluster*>(*it)));
-		else if((*it)->get_type() == Tomography::CM_Demux) return_vector.push_back(new CM_Demux_Cluster(*dynamic_cast<CM_Demux_Cluster*>(*it)));
+		return_vector.push_back((*it)->Clone());
 	}
 	return return_vector;
 }

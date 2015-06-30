@@ -163,7 +163,7 @@ class CosmicBench{
 	protected:
 		void Init(ptree config_tree);
 		vector<Detector*> detectors;
-		map<Tomography::det_type,unsigned short> det_N;
+		map<Tomography::det_type,unsigned short> det_n;
 };
 
 bool operator==(Detector const &det1, Detector const &det2);
