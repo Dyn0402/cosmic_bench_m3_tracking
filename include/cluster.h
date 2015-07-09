@@ -1,7 +1,6 @@
 #ifndef cluster_h
 #define cluster_h
 #include <string>
-#include "Tanalyse_R.h"
 #include "cluster.h"
 #include "detector.h"
 #include "tomography.h"

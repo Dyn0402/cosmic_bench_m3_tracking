@@ -1,4 +1,16 @@
-#Ajouter un nouveau type de détecteur :
+#Utiliser le soft
+
+* Datareader :
+
+Datareader <config_file> {ped,data,analyse}
+
+* Multicluster
+
+Multicluster <config_file> {multicluster,SoB,dispersion,display,hough}
+
+#Etendre le soft :
+
+Ajouter un détecteur :
 
 * Ajouter votre type de detecteur à l'enum Tomogrphy::det_type
 * Mettre à jour Tomography::operator<<(ostream,det_type)

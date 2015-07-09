@@ -7,7 +7,6 @@
 #include "tomography.h"
 #include "cluster.h"
 #include "event.h"
-#include "Tanalyse_R.h"
 
 //Boost
 #include <boost/property_tree/ptree.hpp>

@@ -67,7 +67,7 @@ void Tanalyse_W::Init()
       MG_ClusMaxSample = new Double_t[det_N[Tomography::MG]][300];
       MG_ClusTOT = new Double_t[det_N[Tomography::MG]][300];
       MG_ClusT = new Double_t[det_N[Tomography::MG]][300];
-      MG_StripMaxAmpl = new Double_t[det_N[Tomography::MG]][61];
+      MG_StripMaxAmpl = new Double_t[det_N[Tomography::MG]][MG_Detector::Nchannel];
 
       int MG_MaxNClus = 300;
 
@@ -126,7 +126,7 @@ void Tanalyse_W::Init()
       CM_ClusMaxSample = new Double_t[det_N[Tomography::CM]][600];
       CM_ClusTOT = new Double_t[det_N[Tomography::CM]][600];
       CM_ClusT = new Double_t[det_N[Tomography::CM]][600];
-      CM_StripMaxAmpl = new Double_t[det_N[Tomography::CM]][32];
+      CM_StripMaxAmpl = new Double_t[det_N[Tomography::CM]][CM_Detector::Nchannel/2];
 
       int CM_MaxNClus = 600;
 

@@ -1,5 +1,6 @@
 #define detector_cpp
 #include "detector.h"
+#include "Tanalyse_R.h"
 
 #include <string>
 #include <vector>
@@ -190,7 +191,7 @@ CM_Detector::~CM_Detector(){
 
 }
 Detector * CM_Detector::build_det(const ptree::value_type& child) const{
-	CM_Detector * current_det  = new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<double>("asic_n"));
+	CM_Detector * current_det  = new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("asic_n"));
 	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -220,7 +221,7 @@ Tomography::det_type CM_Detector::get_type() const{
 	return Tomography::CM;
 }
 void CM_Detector::set_RMS(vector<double> RMS_){
-	if(RMS_.size()!=64) return;
+	if(RMS_.size()!=Nchannel) return;
 	RMS = RMS_;
 }
 double CM_Detector::get_size() const{
@@ -300,7 +301,7 @@ MG_Detector::~MG_Detector(){
 
 }
 Detector * MG_Detector::build_det(const ptree::value_type& child) const{
-	MG_Detector * current_det = new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<double>("angle_z"));
+	MG_Detector * current_det = new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<int>("asic_n"));
 	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -362,7 +363,7 @@ Tomography::det_type MG_Detector::get_type() const{
 	return Tomography::MG;
 }
 void MG_Detector::set_RMS(vector<double> RMS_){
-	if(RMS_.size()!=61) return;
+	if(RMS_.size()!=Nchannel) return;
 	RMS = RMS_;
 }
 void MG_Detector::set_SRF(double offset_, double gauss, double lorentz, double ratio){
@@ -463,20 +464,20 @@ map<Tomography::det_type,vector<vector<double> > > CosmicBench::read_pedfile(str
 	for(map<Tomography::det_type,unsigned short>::const_iterator type_it=det_n_.begin();type_it!=det_n_.end();++type_it){
 		RMS[type_it->first] = vector<vector<double> >(type_it->second,vector<double>(Tomography::Static_Detector[type_it->first]->get_Nchannel()));
 	}
-	map<const Tomography::det_type,const Detector* const>::iterator det_it = Tomography::Static_Detector.begin();
-	while(in.good() && det_it!=Tomography::Static_Detector.end()){
+	map<Tomography::det_type,unsigned short>::iterator det_it = det_n_.begin();
+	while(in.good() && det_it!=det_n_.end()){
 		in >> current_det >> current_strip >> current_rms;
 		if(current_det<0 || current_strip<0){
 			cout << "problem reading pedfile" << endl;
 		}
 		if(current_det < last_det && current_strip == 0){
 			++det_it;
-			if(det_it==Tomography::Static_Detector.end()) break;
+			if(det_it==det_n_.end()) break;
 		}
-		if(current_det >= det_n_[det_it->first]){
+		if(current_det >= det_it->second){
 			cout << "too much " << det_it->first << " detectors" << endl;
 		}
-		if(current_strip > det_it->second->get_Nchannel()){
+		if(current_strip > Tomography::Static_Detector[det_it->first]->get_Nchannel()){
 			cout << "too much strip for " << det_it->first << "_" << current_det << endl;
 		}
 		RMS[det_it->first][current_det][current_strip] = current_rms;

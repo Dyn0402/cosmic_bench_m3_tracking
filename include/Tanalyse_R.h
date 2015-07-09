@@ -13,9 +13,13 @@
 #include <TFile.h>
 
 #include "tomography.h"
+#include "detector.h"
 #include <map>
 
 using std::map;
+
+class CM_Detector;
+class MG_Detector;
 
 class Tanalyse_R{
 public :
@@ -36,7 +40,7 @@ public :
    Double_t        (*CM_ClusMaxSample)[600];
    Double_t        (*CM_ClusTOT)[600];
    Double_t        (*CM_ClusT)[600];
-   Double_t        (*CM_StripMaxAmpl)[32];
+   Double_t        (*CM_StripMaxAmpl)[CM_Detector::Nchannel/2];
    Int_t           *MG_NClus;
    Int_t           *MG_Spark;
    Double_t        (*MG_ClusAmpl)[300];
@@ -47,7 +51,7 @@ public :
    Double_t        (*MG_ClusTOT)[300];
    Double_t        (*MG_ClusT)[300];
    Int_t           (*MG_ClusMaxStrip)[300];
-   Double_t        (*MG_StripMaxAmpl)[61];
+   Double_t        (*MG_StripMaxAmpl)[MG_Detector::Nchannel];
 
    // List of branches
    TBranch        *b_evn;   //!

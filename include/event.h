@@ -5,7 +5,6 @@
 #include <map>
 #include "cluster.h"
 #include "ray.h"
-#include "Tanalyse_R.h"
 #include "detector.h"
 //#include "analyse.h"
 #include <TH1D.h>

@@ -455,10 +455,10 @@ void Signal::SignalOverNoiseDisplay(){
 			TFitResultPtr res_noise = global_noise[it->first][jt->first]->Fit("gaus","SQ");
 			global_noise[it->first][jt->first]->Draw();
 			jt->second->cd(3);
-			TLine * average_SoN = new TLine(0,(res_signal->Parameter(1))/(res_noise->Parameter(1)),61,(res_signal->Parameter(1))/(res_noise->Parameter(1)));
+			TLine * average_SoN = new TLine(0,(res_signal->Parameter(1))/(res_noise->Parameter(1)),Tomography::Static_Detector[it->first]->get_Nchannel(),(res_signal->Parameter(1))/(res_noise->Parameter(1)));
 			average_SoN->SetLineStyle(2);
 			average_SoN->SetLineColor(2);
-			TLine * mean_SoN = new TLine(0,(global_signal[it->first][jt->first]->GetMean())/(global_noise[it->first][jt->first]->GetMean()),61,(global_signal[it->first][jt->first]->GetMean())/(global_noise[it->first][jt->first]->GetMean()));
+			TLine * mean_SoN = new TLine(0,(global_signal[it->first][jt->first]->GetMean())/(global_noise[it->first][jt->first]->GetMean()),Tomography::Static_Detector[it->first]->get_Nchannel(),(global_signal[it->first][jt->first]->GetMean())/(global_noise[it->first][jt->first]->GetMean()));
 			mean_SoN->SetLineStyle(2);
 			mean_SoN->SetLineColor(4);
 			global_signal_over_noise[it->first][jt->first]->Draw();
@@ -493,7 +493,7 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 		int det_id = 1;
 		for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
 			vector<vector<double> > current_ampl = get_ampl((*det_it)->get_type(),(*det_it)->get_n_in_tree());
-			for(int j=0;i<(*det_it)->get_Nchannel();j++){
+			for(int j=0;j<(*det_it)->get_Nchannel();j++){
 				for(int k=0;k<Tomography::Nsample;k++){
 					signal_shape[(*det_it)->get_type()][j]->SetPoint(k,k,current_ampl[j][k]);
 				}

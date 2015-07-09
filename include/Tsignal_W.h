@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 #include "tomography.h"
+#include "detector.h"
 
 using std::vector;
 using std::map;
@@ -31,12 +32,12 @@ public :
    map<Tomography::det_type,unsigned short> det_N;
    Int_t           Nevent;
    Double_t        evttime;
-   Float_t         (*StripAmpl_MG)[61][Tomography::Nsample];
-   Float_t         (*StripAmpl_MG_ped)[61][Tomography::Nsample];
-   Float_t         (*StripAmpl_MG_corr)[61][Tomography::Nsample];
-   Float_t         (*StripAmpl_CM)[64][Tomography::Nsample];
-   Float_t         (*StripAmpl_CM_ped)[64][Tomography::Nsample];
-   Float_t         (*StripAmpl_CM_corr)[64][Tomography::Nsample];
+   Float_t         (*StripAmpl_MG)[MG_Detector::Nchannel][Tomography::Nsample];
+   Float_t         (*StripAmpl_MG_ped)[MG_Detector::Nchannel][Tomography::Nsample];
+   Float_t         (*StripAmpl_MG_corr)[MG_Detector::Nchannel][Tomography::Nsample];
+   Float_t         (*StripAmpl_CM)[CM_Detector::Nchannel][Tomography::Nsample];
+   Float_t         (*StripAmpl_CM_ped)[CM_Detector::Nchannel][Tomography::Nsample];
+   Float_t         (*StripAmpl_CM_corr)[CM_Detector::Nchannel][Tomography::Nsample];
 
 
    Tsignal_W(string saveFileName, map<Tomography::det_type,unsigned short> det_N_);

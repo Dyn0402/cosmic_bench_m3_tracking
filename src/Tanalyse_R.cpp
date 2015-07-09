@@ -121,7 +121,7 @@ void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_
       fChain->SetBranchAddress("CM_ClusTOT", CM_ClusTOT, &b_CM_ClusTOT);
       CM_ClusT = new Double_t[det_N[Tomography::CM]][600];
       fChain->SetBranchAddress("CM_ClusT", CM_ClusT, &b_CM_ClusT);
-      CM_StripMaxAmpl = new Double_t[det_N[Tomography::CM]][32];
+      CM_StripMaxAmpl = new Double_t[det_N[Tomography::CM]][CM_Detector::Nchannel/2];
       fChain->SetBranchAddress("CM_StripMaxAmpl", CM_StripMaxAmpl, &b_CM_StripMaxAmpl);
    }
    if(det_N[Tomography::MG]>0){
@@ -148,7 +148,7 @@ void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_
       fChain->SetBranchAddress("MG_ClusT", MG_ClusT, &b_MG_ClusT);
       MG_ClusMaxStrip = new Int_t[det_N[Tomography::MG]][300];
       fChain->SetBranchAddress("MG_ClusMaxStrip", MG_ClusMaxStrip, &b_MG_ClusMaxStrip);
-      MG_StripMaxAmpl = new Double_t[det_N[Tomography::MG]][61];
+      MG_StripMaxAmpl = new Double_t[det_N[Tomography::MG]][MG_Detector::Nchannel];
       fChain->SetBranchAddress("MG_StripMaxAmpl", MG_StripMaxAmpl, &b_MG_StripMaxAmpl);
    }
    Notify();

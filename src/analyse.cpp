@@ -2547,13 +2547,13 @@ void Analyse::SignalOverNoise(){
 		name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
 		cDisplay[name.str()] = new TCanvas(name.str().c_str());
 		cDisplay[name.str()]->Divide(3);
-		name << "_";
-		global_signal[name.str()] = new TH1D((name.str() + "signal").c_str(),(name.str() + "signal").c_str(),500,0,4000);
-		global_noise[name.str()] = new TH1D((name.str() + "noise").c_str(),(name.str() + "noise").c_str(),100,0,100);
+		//name << "_";
+		global_signal[name.str()] = new TH1D((name.str() + "_signal").c_str(),(name.str() + "_signal").c_str(),500,0,4000);
+		global_noise[name.str()] = new TH1D((name.str() + "_noise").c_str(),(name.str() + "_noise").c_str(),100,0,100);
 		for(int i=0;i<(*it)->get_Nchannel();i++){
 			global_noise[name.str()]->Fill((*it)->get_RMS(i));
 		}
-		global_signal_over_noise[name.str()] = new TProfile((name.str() + "SoB").c_str(),(name.str() + "SoB").c_str(),(*it)->get_Nchannel(),0,(*it)->get_Nchannel());
+		global_signal_over_noise[name.str()] = new TProfile((name.str() + "_SoB").c_str(),(name.str() + "_SoB").c_str(),(*it)->get_Nchannel(),0,(*it)->get_Nchannel());
 	}
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	for(long i=0;i<nentries && Tomography::can_continue;i++){
@@ -2610,7 +2610,7 @@ void Analyse::SignalOverNoise(){
 		mean_SoN->Draw();
 		it->second->Modified();
 		it->second->Update();
-		cout << "MG" << it->first << endl;
+		cout << it->first << endl;
 		cout << "    mean S/B : " << global_signal_over_noise[it->first]->GetMean(2) << endl;
 		cout << "    mean S/mean B : " << (global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()) << endl;
 		cout << "    sigma S/B : " << global_signal_over_noise[it->first]->GetRMS(2) << endl;

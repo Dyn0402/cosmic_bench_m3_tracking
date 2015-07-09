@@ -48,37 +48,37 @@ void Tsignal_W::Init()
    T->Branch("Nevent", &Nevent, "Nevent/I");
    T->Branch("evttime", &evttime, "evttime/D");
    if(det_N[Tomography::MG]>0){
-      StripAmpl_MG = new Float_t[det_N[Tomography::MG]][61][Tomography::Nsample];
-      StripAmpl_MG_ped = new Float_t[det_N[Tomography::MG]][61][Tomography::Nsample];
-      StripAmpl_MG_corr = new Float_t[det_N[Tomography::MG]][61][Tomography::Nsample];
+      StripAmpl_MG = new Float_t[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::Nsample];
+      StripAmpl_MG_ped = new Float_t[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::Nsample];
+      StripAmpl_MG_corr = new Float_t[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::Nsample];
 
       char leefStripAmpl_MG[100];
-      sprintf(leefStripAmpl_MG,"StripAmpl_MG[%d][%d][%d]/F",det_N[Tomography::MG],61,Tomography::Nsample);
+      sprintf(leefStripAmpl_MG,"StripAmpl_MG[%d][%d][%d]/F",det_N[Tomography::MG],MG_Detector::Nchannel,Tomography::Nsample);
       T->Branch("StripAmpl_MG", StripAmpl_MG, leefStripAmpl_MG);
 
       char leefStripAmpl_MG_ped[100];
-      sprintf(leefStripAmpl_MG_ped,"StripAmpl_MG_ped[%d][%d][%d]/F",det_N[Tomography::MG],61,Tomography::Nsample);
+      sprintf(leefStripAmpl_MG_ped,"StripAmpl_MG_ped[%d][%d][%d]/F",det_N[Tomography::MG],MG_Detector::Nchannel,Tomography::Nsample);
       T->Branch("StripAmpl_MG_ped", StripAmpl_MG_ped, leefStripAmpl_MG_ped);
 
       char leefStripAmpl_MG_corr[100];
-      sprintf(leefStripAmpl_MG_corr,"StripAmpl_MG_corr[%d][%d][%d]/F",det_N[Tomography::MG],61,Tomography::Nsample);
+      sprintf(leefStripAmpl_MG_corr,"StripAmpl_MG_corr[%d][%d][%d]/F",det_N[Tomography::MG],MG_Detector::Nchannel,Tomography::Nsample);
       T->Branch("StripAmpl_MG_corr", StripAmpl_MG_corr, leefStripAmpl_MG_corr);
    }
    if(det_N[Tomography::CM]>0){
-      StripAmpl_CM = new Float_t[det_N[Tomography::CM]][64][Tomography::Nsample];
-      StripAmpl_CM_ped = new Float_t[det_N[Tomography::CM]][64][Tomography::Nsample];
-      StripAmpl_CM_corr = new Float_t[det_N[Tomography::CM]][64][Tomography::Nsample];
+      StripAmpl_CM = new Float_t[det_N[Tomography::CM]][CM_Detector::Nchannel][Tomography::Nsample];
+      StripAmpl_CM_ped = new Float_t[det_N[Tomography::CM]][CM_Detector::Nchannel][Tomography::Nsample];
+      StripAmpl_CM_corr = new Float_t[det_N[Tomography::CM]][CM_Detector::Nchannel][Tomography::Nsample];
 
       char leefStripAmpl_CM[100];
-      sprintf(leefStripAmpl_CM,"StripAmpl_CM[%d][%d][%d]/F",det_N[Tomography::CM],64,Tomography::Nsample);
+      sprintf(leefStripAmpl_CM,"StripAmpl_CM[%d][%d][%d]/F",det_N[Tomography::CM],CM_Detector::Nchannel,Tomography::Nsample);
       T->Branch("StripAmpl_CM", StripAmpl_CM, leefStripAmpl_CM);
 
       char leefStripAmpl_CM_ped[100];
-      sprintf(leefStripAmpl_CM_ped,"StripAmpl_CM_ped[%d][%d][%d]/F",det_N[Tomography::CM],64,Tomography::Nsample);
+      sprintf(leefStripAmpl_CM_ped,"StripAmpl_CM_ped[%d][%d][%d]/F",det_N[Tomography::CM],CM_Detector::Nchannel,Tomography::Nsample);
       T->Branch("StripAmpl_CM_ped", StripAmpl_CM_ped, leefStripAmpl_CM_ped);
 
       char leefStripAmpl_CM_corr[100];
-      sprintf(leefStripAmpl_CM_corr,"StripAmpl_CM_corr[%d][%d][%d]/F",det_N[Tomography::CM],64,Tomography::Nsample);
+      sprintf(leefStripAmpl_CM_corr,"StripAmpl_CM_corr[%d][%d][%d]/F",det_N[Tomography::CM],CM_Detector::Nchannel,Tomography::Nsample);
       T->Branch("StripAmpl_CM_corr", StripAmpl_CM_corr, leefStripAmpl_CM_corr);
    }
 
@@ -122,12 +122,12 @@ void Tsignal_W::fillTree_raw(int evn_, double evttime_, map<Tomography::det_type
       }
       if(type_it->first == Tomography::MG){
          for(int i=0;i<det_N[type_it->first];i++){
-            if((type_it->second).size() != 61){
+            if((type_it->second)[i].size() != MG_Detector::Nchannel){
                cout << "problem in " << type_it->first << " strip number" << endl;
                return;
             }
-            for(int j=0;j<61;j++){
-               if((type_it->second)[i].size() != static_cast<unsigned int>(Tomography::Nsample)){
+            for(int j=0;j<MG_Detector::Nchannel;j++){
+               if((type_it->second)[i][j].size() != static_cast<unsigned int>(Tomography::Nsample)){
                   cout << "problem in sample number" << endl;
                   return;
                }
@@ -139,12 +139,12 @@ void Tsignal_W::fillTree_raw(int evn_, double evttime_, map<Tomography::det_type
       }
       if(type_it->first == Tomography::CM){
          for(int i=0;i<det_N[type_it->first];i++){
-            if((type_it->second).size() != 64){
+            if((type_it->second)[i].size() != CM_Detector::Nchannel){
                cout << "problem in " << type_it->first << " strip number" << endl;
                return;
             }
-            for(int j=0;j<64;j++){
-               if((type_it->second)[i].size() != static_cast<unsigned int>(Tomography::Nsample)){
+            for(int j=0;j<CM_Detector::Nchannel;j++){
+               if((type_it->second)[i][j].size() != static_cast<unsigned int>(Tomography::Nsample)){
                   cout << "problem in sample number" << endl;
                   return;
                }
@@ -167,12 +167,12 @@ void Tsignal_W::fillTree_ped(map<Tomography::det_type,vector<vector<vector<float
       }
       if(type_it->first == Tomography::MG){
          for(int i=0;i<det_N[type_it->first];i++){
-            if((type_it->second).size() != 61){
+            if((type_it->second)[i].size() != MG_Detector::Nchannel){
                cout << "problem in " << type_it->first << " strip number" << endl;
                return;
             }
-            for(int j=0;j<61;j++){
-               if((type_it->second)[i].size() != static_cast<unsigned int>(Tomography::Nsample)){
+            for(int j=0;j<MG_Detector::Nchannel;j++){
+               if((type_it->second)[i][j].size() != static_cast<unsigned int>(Tomography::Nsample)){
                   cout << "problem in sample number" << endl;
                   return;
                }
@@ -184,12 +184,12 @@ void Tsignal_W::fillTree_ped(map<Tomography::det_type,vector<vector<vector<float
       }
       if(type_it->first == Tomography::CM){
          for(int i=0;i<det_N[type_it->first];i++){
-            if((type_it->second).size() != 64){
+            if((type_it->second)[i].size() != CM_Detector::Nchannel){
                cout << "problem in " << type_it->first << " strip number" << endl;
                return;
             }
-            for(int j=0;j<64;j++){
-               if((type_it->second)[i].size() != static_cast<unsigned int>(Tomography::Nsample)){
+            for(int j=0;j<CM_Detector::Nchannel;j++){
+               if((type_it->second)[i][j].size() != static_cast<unsigned int>(Tomography::Nsample)){
                   cout << "problem in sample number" << endl;
                   return;
                }
@@ -211,12 +211,12 @@ void Tsignal_W::fillTree_corr(map<Tomography::det_type,vector<vector<vector<floa
       }
       if(type_it->first == Tomography::MG){
          for(int i=0;i<det_N[type_it->first];i++){
-            if((type_it->second).size() != 61){
+            if((type_it->second)[i].size() != MG_Detector::Nchannel){
                cout << "problem in " << type_it->first << " strip number" << endl;
                return;
             }
-            for(int j=0;j<61;j++){
-               if((type_it->second)[i].size() != static_cast<unsigned int>(Tomography::Nsample)){
+            for(int j=0;j<MG_Detector::Nchannel;j++){
+               if((type_it->second)[i][j].size() != static_cast<unsigned int>(Tomography::Nsample)){
                   cout << "problem in sample number" << endl;
                   return;
                }
@@ -228,12 +228,12 @@ void Tsignal_W::fillTree_corr(map<Tomography::det_type,vector<vector<vector<floa
       }
       if(type_it->first == Tomography::CM){
          for(int i=0;i<det_N[type_it->first];i++){
-            if((type_it->second).size() != 64){
+            if((type_it->second)[i].size() != CM_Detector::Nchannel){
                cout << "problem in " << type_it->first << " strip number" << endl;
                return;
             }
-            for(int j=0;j<64;j++){
-               if((type_it->second)[i].size() != static_cast<unsigned int>(Tomography::Nsample)){
+            for(int j=0;j<CM_Detector::Nchannel;j++){
+               if((type_it->second)[i][j].size() != static_cast<unsigned int>(Tomography::Nsample)){
                   cout << "problem in sample number" << endl;
                   return;
                }
@@ -266,17 +266,17 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_raw(l
    }
    T->LoadTree(entry);
    T->GetEntry(entry);
-   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(61,vector<float>(Tomography::Nsample,0)));
+   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(MG_Detector::Nchannel,vector<float>(Tomography::Nsample,0)));
    for(int i=0;i<det_N[Tomography::MG];i++){
-      for(int j=0;j<61;j++){
+      for(int j=0;j<MG_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::Nsample;k++){
             return_map[Tomography::MG][i][j][k] = StripAmpl_MG[i][j][k];
          }
       }
    }
-   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(64,vector<float>(Tomography::Nsample,0)));
+   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(CM_Detector::Nchannel,vector<float>(Tomography::Nsample,0)));
    for(int i=0;i<det_N[Tomography::CM];i++){
-      for(int j=0;j<64;j++){
+      for(int j=0;j<CM_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::Nsample;k++){
             return_map[Tomography::CM][i][j][k] = StripAmpl_CM[i][j][k];
          }
@@ -291,17 +291,17 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_ped(l
    }
    T->LoadTree(entry);
    T->GetEntry(entry);
-   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(61,vector<float>(Tomography::Nsample,0)));
+   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(MG_Detector::Nchannel,vector<float>(Tomography::Nsample,0)));
    for(int i=0;i<det_N[Tomography::MG];i++){
-      for(int j=0;j<61;j++){
+      for(int j=0;j<MG_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::Nsample;k++){
             return_map[Tomography::MG][i][j][k] = StripAmpl_MG_ped[i][j][k];
          }
       }
    }
-   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(64,vector<float>(Tomography::Nsample,0)));
+   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(CM_Detector::Nchannel,vector<float>(Tomography::Nsample,0)));
    for(int i=0;i<det_N[Tomography::CM];i++){
-      for(int j=0;j<64;j++){
+      for(int j=0;j<CM_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::Nsample;k++){
             return_map[Tomography::CM][i][j][k] = StripAmpl_CM_ped[i][j][k];
          }
@@ -316,17 +316,17 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_corr(
    }
    T->LoadTree(entry);
    T->GetEntry(entry);
-   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(61,vector<float>(Tomography::Nsample,0)));
+   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(MG_Detector::Nchannel,vector<float>(Tomography::Nsample,0)));
    for(int i=0;i<det_N[Tomography::MG];i++){
-      for(int j=0;j<61;j++){
+      for(int j=0;j<MG_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::Nsample;k++){
             return_map[Tomography::MG][i][j][k] = StripAmpl_MG_corr[i][j][k];
          }
       }
    }
-   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(64,vector<float>(Tomography::Nsample,0)));
+   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(CM_Detector::Nchannel,vector<float>(Tomography::Nsample,0)));
    for(int i=0;i<det_N[Tomography::CM];i++){
-      for(int j=0;j<64;j++){
+      for(int j=0;j<CM_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::Nsample;k++){
             return_map[Tomography::CM][i][j][k] = StripAmpl_CM_corr[i][j][k];
          }

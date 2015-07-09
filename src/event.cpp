@@ -101,7 +101,7 @@ Event::Event(int evn_){
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
 	}
-	if(detector) delete detector;
+	//if(detector) delete detector;
 	detector = NULL;
 }
 Event::Event(const Event& other){
@@ -116,7 +116,7 @@ Event::Event(const Event& other){
 	for(vector<Cluster*>::const_iterator clus_it = other.clusters.begin();clus_it != other.clusters.end();++clus_it){
 		clusters.push_back((*clus_it)->Clone());
 	}
-	if(detector) delete detector;
+	//if(detector != NULL) delete detector;
 	detector = (other.detector)->Clone();
 }
 Event& Event::operator=(const Event& other){
@@ -131,7 +131,7 @@ Event& Event::operator=(const Event& other){
 	for(vector<Cluster*>::const_iterator clus_it = other.clusters.begin();clus_it != other.clusters.end();++clus_it){
 		clusters.push_back((*clus_it)->Clone());
 	}
-	if(detector) delete detector;
+	if(detector != NULL) delete detector;
 	detector = (other.detector)->Clone();
 	return *this;
 }
@@ -146,7 +146,7 @@ Event::Event(Tanalyse_R * treeObject, const Detector * const det,long entry){
 		delete *clus_it;
 	}
 	clusters.clear();
-	if(detector) delete detector;
+	//if(detector != NULL) delete detector;
 	detector = det->Clone();
 }
 Event::Event(const Detector * const detector_,int evn_){
@@ -156,14 +156,14 @@ Event::Event(const Detector * const detector_,int evn_){
 		delete *clus_it;
 	}
 	clusters.clear();
-	if(detector) delete detector;
+	//if(detector != NULL) delete detector;
 	detector = detector_->Clone();
 }
 Event::~Event(){
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
 	}
-	if(detector) delete detector;
+	if(detector != NULL) delete detector;
 }
 int Event::get_evn() const{
 	return evn;
@@ -238,7 +238,7 @@ CM_Event::CM_Event(Tanalyse_R * treeObject, const CM_Detector * const det,long e
 	type = Tomography::CM;
 }
 CM_Event::CM_Event(const CM_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_): Event(detector_,evn_){
-	if(strip_ampl_.size()!=64){
+	if(strip_ampl_.size()!=CM_Detector::Nchannel){
 		cout << "problem in size" << endl;
 		return;
 	}
@@ -252,7 +252,7 @@ void CM_Event::HoughCluster(){
 	// TODO : implement houghcluster for CM
 }
 void CM_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
-	if(strip_ampl_.size()!=64){
+	if(strip_ampl_.size()!=CM_Detector::Nchannel){
 		cout << "problem in size" << endl;
 		return;
 	}
@@ -365,7 +365,7 @@ MG_Event::MG_Event(Tanalyse_R * treeObject, const MG_Detector * const det,long e
 	type = Tomography::MG;
 }
 MG_Event::MG_Event(const MG_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, bool use_srf_): Event(detector_,evn_){
-	if(strip_ampl_.size()!=61){
+	if(strip_ampl_.size()!=MG_Detector::Nchannel){
 		cout << "problem in size" << endl;
 		return;
 	}
@@ -725,7 +725,7 @@ void MG_Event::HoughCluster(){
 	}
 }
 void MG_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
-	if(strip_ampl_.size()!=61){
+	if(strip_ampl_.size()!=MG_Detector::Nchannel){
 		cout << "problem in size" << endl;
 		return;
 	}
