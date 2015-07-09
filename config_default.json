@@ -14,11 +14,11 @@
 	"total_CM_N" : 0, // total number of CosMultis used for the run (used to crosscheck)
 	"total_MG_N" : 8, // total number of Multigens used for the run (used to crosscheck)
 	"CosmicBench":{
-		"CosMultis": // Cosmultis caracs
+		"CM": // Cosmultis caracs
 		[
 
 		],
-		"MultiGens": // Multigen caracs
+		"MG": // Multigen caracs
 		[
 			{
 				"mg_n": 0, // number of the detector in signal and analysis tree

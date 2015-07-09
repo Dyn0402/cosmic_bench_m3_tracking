@@ -304,20 +304,21 @@ double CM_Cluster::get_z() const{
 }
 
 CM_Demux_Cluster::CM_Demux_Cluster(): CM_Cluster(){
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
+	strip_type = Tomography::Demux;
 }
 CM_Demux_Cluster::CM_Demux_Cluster(const CM_Demux_Cluster& other): CM_Cluster(other){
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
 	strip_type = Tomography::Demux;
 }
 CM_Demux_Cluster& CM_Demux_Cluster::operator=(const CM_Demux_Cluster& other){
 	CM_Cluster::operator=(other);
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
 	strip_type = Tomography::Demux;
 	return *this;
 }
 CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& thinStrip_clus, const CM_Cluster& wideStrip_clus){
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
 	strip_type = Tomography::Demux;
 	if(thinStrip_clus.pos>31 || wideStrip_clus.pos<32) return;
 	if(thinStrip_clus.evn != wideStrip_clus.evn) return;
@@ -343,7 +344,7 @@ CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& thinStrip_clus, const CM_Cl
 	maxStrip = (thinStrip_clus.maxStripAmpl>wideStrip_clus.maxStripAmpl) ? thinStrip_clus.maxStrip : wideStrip_clus.maxStrip;
 }
 CM_Demux_Cluster::CM_Demux_Cluster(const CM_Cluster& wideStrip_clus){
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
 	strip_type = Tomography::Demux;
 	if(wideStrip_clus.pos<32) return;
 	n_in_tree = wideStrip_clus.n_in_tree;

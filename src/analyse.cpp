@@ -78,7 +78,7 @@ Analyse::Analyse(string configFilePath){
 	TTree * tree = (TTree*)(f->Get("T"));
 	max_event = config_tree.get<long>("max_event");
 	CosmicBench::Init(config_tree);
-	Tanalyse_R::Init(tree,CM_N,MG_N);
+	Tanalyse_R::Init(tree,det_n);
 	signal_file_name = config_tree.get<string>("signal_file");
 }
 Analyse::Analyse(ptree config_tree){
@@ -87,33 +87,27 @@ Analyse::Analyse(ptree config_tree){
 	TTree * tree = (TTree*)(f->Get("T"));
 	max_event = config_tree.get<long>("max_event");
 	CosmicBench::Init(config_tree);
-	Tanalyse_R::Init(tree,CM_N,MG_N);
+	Tanalyse_R::Init(tree,det_n);
 	signal_file_name = config_tree.get<string>("signal_file");
 }
 Analyse::~Analyse(){
 	//delete f;
 }
 void Analyse::Residus(){
-	TCanvas * c_CM[CM_N];
-	TCanvas * c_MG[MG_N];
-	TH1D * CM_residus[CM_N];
-	TH1D * MG_residus[MG_N];
+	map<Tomography::det_type,vector<TCanvas*> > c_MM;
+	map<Tomography::det_type,vector<TH1D*> > hist_residus;
 	int nbins = 200;
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
-	for(int i=0;i<CM_N;i++){
-		ostringstream name;
-		name << "Cosmulti_" << i;
-		c_CM[i] = new TCanvas(name.str().c_str(),name.str().c_str());
-		name << "_residu";
-		CM_residus[i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-Tomography::XY_size,Tomography::XY_size);
-	}
-	for(int i=0;i<MG_N;i++){
-		ostringstream name;
-		name << "MultiGen_" << i;
-		c_MG[i] = new TCanvas(name.str().c_str(),name.str().c_str());
-		name << "_residu";
-		MG_residus[i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-Tomography::XY_size,Tomography::XY_size);
+	for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
+		if(type_it->second > 0) c_MM[type_it->first] = vector<TCanvas*>(type_it->second,NULL);
+		for(int i=0;i<type_it->second;i++){
+			ostringstream name;
+			name << type_it->first << "_" << i;
+			c_MM[type_it->first][i] = new TCanvas(name.str().c_str(),name.str().c_str());
+			name << "_residu";
+			hist_residus[type_it->first][i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-Tomography::XY_size,Tomography::XY_size);
+		}
 	}
 	TCanvas * c0 = new TCanvas("chiSquare","chiSquare");
 	TH1D * chiSquareH = new TH1D("chiSquares","chiSquares",nbins,0,3*Tomography::XY_size);
@@ -125,46 +119,31 @@ void Analyse::Residus(){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays();
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		delete currentCBEvent;
 		for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
 			if(it->get_chiSquare_X()>-1 && it->get_chiSquare_Y()>-1){
 				chiSquareH->Fill(it->get_chiSquare_X()+it->get_chiSquare_Y());
 			}
-			int i_MG = 0;
-			int i_CM = 0;
 			for(vector<Detector*>::iterator jt=detectors.begin();jt!=detectors.end();++jt){
 				double residu = it->get_residu(*jt);
 				if(residu != numeric_limits<double>::min()){
-					if((*jt)->get_type() == Tomography::CM){
-						CM_Detector * currentDet = dynamic_cast<CM_Detector*>(*jt);
-						CM_residus[i_CM]->Fill(it->get_residu(currentDet));
-						i_CM++;
-					}
-					if((*jt)->get_type() == Tomography::MG){
-						MG_Detector * currentDet = dynamic_cast<MG_Detector*>(*jt);
-						MG_residus[i_MG]->Fill(it->get_residu(currentDet));
-						i_MG++;
-					}
+					hist_residus[(*jt)->get_type()][(*jt)->get_n_in_tree()]->Fill(residu);
 				}
 			}
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
 		if(jentry%5000 == 0 && Tomography::live_graphic_display){
-			for(int i=0;i<CM_N;i++){
-				c_CM[i]->cd();
-				CM_residus[i]->Draw();
-				c_CM[i]->Modified();
-				c_CM[i]->Update();
-			}
-			for(int i=0;i<MG_N;i++){
-				c_MG[i]->cd();
-				MG_residus[i]->Draw();
-				c_MG[i]->Modified();
-				c_MG[i]->Update();
+			for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
+				for(int i=0;i<type_it->second;i++){
+					c_MM[type_it->first][i]->cd();
+					hist_residus[type_it->first][i]->Draw();
+					c_MM[type_it->first][i]->Modified();
+					c_MM[type_it->first][i]->Update();
+				}
 			}
 			c0->cd();
 			chiSquareH->Draw();
@@ -173,17 +152,13 @@ void Analyse::Residus(){
 		}
 	}
 	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
-	for(int i=0;i<CM_N;i++){
-		c_CM[i]->cd();
-		CM_residus[i]->Draw();
-		c_CM[i]->Modified();
-		c_CM[i]->Update();
-	}
-	for(int i=0;i<MG_N;i++){
-		c_MG[i]->cd();
-		MG_residus[i]->Draw();
-		c_MG[i]->Modified();
-		c_MG[i]->Update();
+	for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
+		for(int i=0;i<type_it->second;i++){
+			c_MM[type_it->first][i]->cd();
+			hist_residus[type_it->first][i]->Draw();
+			c_MM[type_it->first][i]->Modified();
+			c_MM[type_it->first][i]->Update();
+		}
 	}
 	c0->cd();
 	chiSquareH->Draw();
@@ -227,7 +202,7 @@ void Analyse::Residus_ref(){
 	int nbins_2D = 100*(1+2*marge);
 	long eventReconstructed = 0;
 	double eventSuitable = 0;
-	map<int,int> perp_pairs;
+	map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> > perp_pairs;
 	//map<string, unsigned int> det_in_nref_dir;
 	//map<string, bool> nref_is_X;
 	//unsigned int det_x_n = 0;
@@ -236,13 +211,8 @@ void Analyse::Residus_ref(){
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())){
 			ostringstream name;
-			if((*it)->get_type() == Tomography::CM){
-				name << "Cosmulti_" << (dynamic_cast<CM_Detector*>(*it))->get_cm_n_in_tree();
-			}
-			else if((*it)->get_type() == Tomography::MG){
-				name << "Multigen_" << (dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree();
-				if((*it)->get_perp_n()>-1) perp_pairs[(dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree()] = (*it)->get_perp_n();
-			}
+			name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+			if((*it)->get_perp_n()>-1) perp_pairs[pair<Tomography::det_type,int>((*it)->get_type(),(*it)->get_n_in_tree())] = pair<Tomography::det_type,int>((*it)->get_perp_type(),(*it)->get_perp_n());
 			c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
 			c_MM[name.str()]->Divide(4,4);
 			MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
@@ -293,22 +263,16 @@ void Analyse::Residus_ref(){
 		else det_in_nref_dir[it->first] = (MG_N + CM_N - det_x_n) - (nref_is_X.size() - nref_x_n);
 	}
 	*/
-	for(map<int,int>::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
+	for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
 		if(perp_pairs.count(map_it->second)==0){
 			cout << "2D detectors must be set to non ref in both direction" << endl;
 			return;
 		}
 	}
-	if(non_ref_n>2){
-		cout << "too many non ref det" << endl;
-	}
-	if(nref_x_n>1){
-		cout << "too many non ref det" << endl;
-	}
 	TCanvas * c0 = new TCanvas("stats","stats");
 	c0->Divide(2,2);
 	TH1D * chisquares = new TH1D("chiSquares","chiSquares",nbins,0,chisquare_threshold);
-	TH1D * ray_clus_n = new TH1D("clus_n","clus_n",MG_N + CM_N + 2,0,MG_N + CM_N + 2);
+	TH1D * ray_clus_n = new TH1D("clus_n","clus_n",get_det_N_tot() + 2,0,get_det_N_tot() + 2);
 	TH1D * ray_slope = new TH1D("slope","slope",100,0,1);
 	TH1D * ray_phi = new TH1D("phi","phi",100,-Pi(),Pi());
 	TH1D * ray_slope_X = new TH1D("slope_X","slope_X",100,0,1);
@@ -322,7 +286,7 @@ void Analyse::Residus_ref(){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 		vector<Ray>::iterator ray_it = currentRays.begin();
 		while(ray_it!= currentRays.end()){
@@ -341,121 +305,67 @@ void Analyse::Residus_ref(){
 			else ray_it = currentRays.erase(ray_it);
 		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()*1./(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()*1./(get_det_N_tot());
 		
 		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
 			if(!((*it)->get_is_ref())){
-				if((*it)->get_type() == Tomography::CM_Demux){
-					ostringstream name;
-					name << "Cosmulti_" << (*it)->get_n_in_tree();
-					vector<CM_Demux_Cluster> current_clusters = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
-					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
-						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
-						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
-						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
-						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
-						if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
-						double residu = numeric_limits<double>::max();
-						vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
-						for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-							kt->set_perp_pos_mm(*jt);
-							double current_residu = jt->get_residu_ref(&(*kt));
-							if(current_residu<residu){
-								residu = current_residu;
-								matching_cluster = kt;
-							}
+				ostringstream name;
+				name <<(*it)->get_type() << "_" << (*it)->get_n_in_tree();
+				vector<Cluster*> current_clusters = (*it)->get_clusters();
+				for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
+					//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
+					//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
+					//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
+					//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+					if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
+					if(jt->get_clus_n()<static_cast<unsigned int>(get_det_N_tot()-non_ref_n)) continue;
+					double residu = numeric_limits<double>::max();
+					vector<Cluster*>::iterator matching_cluster = current_clusters.end();
+					for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+						(*kt)->set_perp_pos_mm(*jt);
+						double current_residu = jt->get_residu_ref(*kt);
+						if(current_residu<residu){
+							residu = current_residu;
+							matching_cluster = kt;
 						}
-						muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
-						if(matching_cluster == current_clusters.end()) continue;
-						matching_cluster->set_perp_pos_mm(*jt);
-						if(matching_cluster->get_is_X()){
-							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),matching_cluster->get_pos_mm());
-							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-							resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
-							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_X()),Abs(residu));
-							resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
-						}
-						else{
-							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),matching_cluster->get_pos_mm());
-							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-							resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
-							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_Y()),Abs(residu));
-							resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
-						}
-						point_nb[name.str()]++;
-						current_clusters.erase(matching_cluster);
-						MM_residus[name.str()]->Fill(residu);
-						resVStime[name.str()]->Fill(matching_cluster->get_t(),residu);
-						resVSampl[name.str()]->Fill(matching_cluster->get_ampl(),residu);
-						resVStot[name.str()]->Fill(matching_cluster->get_TOT(),residu);
-						resVSsize[name.str()]->Fill(matching_cluster->get_size(),residu);
-						absResVStime[name.str()]->Fill(matching_cluster->get_t(),Abs(residu));
-						absResVSampl[name.str()]->Fill(matching_cluster->get_ampl(),Abs(residu));
-						absResVStot[name.str()]->Fill(matching_cluster->get_TOT(),Abs(residu));
-						absResVSsize[name.str()]->Fill(matching_cluster->get_size(),Abs(residu));
-						if(residu<chisquare_threshold){
-							muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
-						}
+					}
+					muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
+					if(matching_cluster == current_clusters.end()) continue;
+					(*matching_cluster)->set_perp_pos_mm(*jt);
+					if((*matching_cluster)->get_is_X()){
+						correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster)->get_pos_mm());
+						angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+						resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+						resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
+						absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_X()),Abs(residu));
+						resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
+					}
+					else{
+						correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster)->get_pos_mm());
+						angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+						resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+						resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
+						absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_Y()),Abs(residu));
+						resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
+					}
+					point_nb[name.str()]++;
+					delete *matching_cluster;
+					current_clusters.erase(matching_cluster);
+					MM_residus[name.str()]->Fill(residu);
+					resVStime[name.str()]->Fill((*matching_cluster)->get_t(),residu);
+					resVSampl[name.str()]->Fill((*matching_cluster)->get_ampl(),residu);
+					resVStot[name.str()]->Fill((*matching_cluster)->get_TOT(),residu);
+					resVSsize[name.str()]->Fill((*matching_cluster)->get_size(),residu);
+					absResVStime[name.str()]->Fill((*matching_cluster)->get_t(),Abs(residu));
+					absResVSampl[name.str()]->Fill((*matching_cluster)->get_ampl(),Abs(residu));
+					absResVStot[name.str()]->Fill((*matching_cluster)->get_TOT(),Abs(residu));
+					absResVSsize[name.str()]->Fill((*matching_cluster)->get_size(),Abs(residu));
+					if(residu<chisquare_threshold){
+						muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 					}
 				}
-				else if((*it)->get_type() == Tomography::MG){
-					ostringstream name;
-					name << "Multigen_" << (*it)->get_n_in_tree();
-					vector<MG_Cluster> current_clusters = (dynamic_cast<MG_Event*>(*it))->get_clusters();
-					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
-						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
-						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
-						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
-						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
-						if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
-						double residu = numeric_limits<double>::max();
-						vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
-						for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-							kt->set_perp_pos_mm(*jt);
-							double current_residu = jt->get_residu_ref(&(*kt));
-							if(current_residu<residu){
-								residu = current_residu;
-								matching_cluster = kt;
-							}
-						}
-						muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
-						if(matching_cluster == current_clusters.end()) continue;
-						matching_cluster->set_perp_pos_mm(*jt);
-						if(matching_cluster->get_is_X()){
-							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),matching_cluster->get_pos_mm());
-							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-							resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
-							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_X()),Abs(residu));
-							resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
-						}
-						else{
-							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),matching_cluster->get_pos_mm());
-							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-							resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
-							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_Y()),Abs(residu));
-							resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
-						}
-						point_nb[name.str()]++;
-						current_clusters.erase(matching_cluster);
-						MM_residus[name.str()]->Fill(residu);
-						resVStime[name.str()]->Fill(matching_cluster->get_t(),residu);
-						resVSampl[name.str()]->Fill(matching_cluster->get_ampl(),residu);
-						resVStot[name.str()]->Fill(matching_cluster->get_TOT(),residu);
-						resVSsize[name.str()]->Fill(matching_cluster->get_size(),residu);
-						absResVStime[name.str()]->Fill(matching_cluster->get_t(),Abs(residu));
-						absResVSampl[name.str()]->Fill(matching_cluster->get_ampl(),Abs(residu));
-						absResVStot[name.str()]->Fill(matching_cluster->get_TOT(),Abs(residu));
-						absResVSsize[name.str()]->Fill(matching_cluster->get_size(),Abs(residu));
-						if(residu<chisquare_threshold){
-							muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
-						}
-					}
+				for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+					delete *kt;
 				}
 			}
 		}
@@ -613,7 +523,7 @@ double Analyse::Residus_ref_cost(){
 	double marge = 1./10.;
 	long eventReconstructed = 0;
 	double eventSuitable = 0;
-	map<int,int> perp_pairs;
+	map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> > perp_pairs;
 	//map<string, unsigned int> det_in_nref_dir;
 	//map<string, bool> nref_is_X;
 	//unsigned int det_x_n = 0;
@@ -622,13 +532,8 @@ double Analyse::Residus_ref_cost(){
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())){
 			ostringstream name;
-			if((*it)->get_type() == Tomography::CM){
-				name << "Cosmulti_" << (dynamic_cast<CM_Detector*>(*it))->get_cm_n_in_tree();
-			}
-			else if((*it)->get_type() == Tomography::MG){
-				name << "Multigen_" << (dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree();
-				if((*it)->get_perp_n()>-1) perp_pairs[(dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree()] = (*it)->get_perp_n();
-			}
+			name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+			if((*it)->get_perp_n()>-1) perp_pairs[pair<Tomography::det_type,int>((*it)->get_type(),(*it)->get_n_in_tree())] = pair<Tomography::det_type,int>((*it)->get_perp_type(),(*it)->get_perp_n());
 			MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
 			angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
 			resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
@@ -659,7 +564,7 @@ double Analyse::Residus_ref_cost(){
 		else det_in_nref_dir[it->first] = (MG_N + CM_N - det_x_n) - (nref_is_X.size() - nref_x_n);
 	}
 	*/
-	for(map<int,int>::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
+	for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
 		if(perp_pairs.count(map_it->second)==0){
 			cout << "2D detectors must be set to non ref in both direction" << endl;
 			return 0;
@@ -678,7 +583,7 @@ double Analyse::Residus_ref_cost(){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 		vector<Ray>::iterator ray_it = currentRays.begin();
 		while(ray_it!= currentRays.end()){
@@ -688,79 +593,46 @@ double Analyse::Residus_ref_cost(){
 			else ray_it = currentRays.erase(ray_it);
 		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()*1./(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()*1./(get_det_N_tot());
 		
 		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
 			if(!((*it)->get_is_ref())){
-				if((*it)->get_type() == Tomography::CM_Demux){
-					ostringstream name;
-					name << "Cosmulti_" << (*it)->get_n_in_tree();
-					vector<CM_Demux_Cluster> current_clusters = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
-					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
-						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
-						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
-						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
-						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
-						if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
-						double residu = numeric_limits<double>::max();
-						vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
-						for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-							kt->set_perp_pos_mm(*jt);
-							double current_residu = jt->get_residu_ref(&(*kt));
-							if(current_residu<residu){
-								residu = current_residu;
-								matching_cluster = kt;
-							}
+				ostringstream name;
+				name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+				vector<Cluster*> current_clusters = (*it)->get_clusters();
+				for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
+					//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
+					//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
+					//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
+					//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+					if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
+					if(jt->get_clus_n()<static_cast<unsigned int>(get_det_N_tot()-non_ref_n)) continue;
+					double residu = numeric_limits<double>::max();
+					vector<Cluster*>::iterator matching_cluster = current_clusters.end();
+					for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+						(*kt)->set_perp_pos_mm(*jt);
+						double current_residu = jt->get_residu_ref(*kt);
+						if(current_residu<residu){
+							residu = current_residu;
+							matching_cluster = kt;
 						}
-						if(matching_cluster == current_clusters.end()) continue;
-						matching_cluster->set_perp_pos_mm(*jt);
-						if(matching_cluster->get_is_X()){
-							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
-						}
-						else{
-							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
-						}
-						current_clusters.erase(matching_cluster);
-						MM_residus[name.str()]->Fill(residu);
 					}
+					if(matching_cluster == current_clusters.end()) continue;
+					(*matching_cluster)->set_perp_pos_mm(*jt);
+					if((*matching_cluster)->get_is_X()){
+						angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+						resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
+					}
+					else{
+						angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+						resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
+					}
+					delete *matching_cluster;
+					current_clusters.erase(matching_cluster);
+					MM_residus[name.str()]->Fill(residu);
 				}
-				else if((*it)->get_type() == Tomography::MG){
-					ostringstream name;
-					name << "Multigen_" << (*it)->get_n_in_tree();
-					vector<MG_Cluster> current_clusters = (dynamic_cast<MG_Event*>(*it))->get_clusters();
-					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
-						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
-						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
-						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
-						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
-						if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
-						double residu = numeric_limits<double>::max();
-						vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
-						for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-							kt->set_perp_pos_mm(*jt);
-							double current_residu = jt->get_residu_ref(&(*kt));
-							if(current_residu<residu){
-								residu = current_residu;
-								matching_cluster = kt;
-							}
-						}
-						if(matching_cluster == current_clusters.end()) continue;
-						matching_cluster->set_perp_pos_mm(*jt);
-						if(matching_cluster->get_is_X()){
-							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
-						}
-						else{
-							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
-						}
-						current_clusters.erase(matching_cluster);
-						MM_residus[name.str()]->Fill(residu);
-					}
+				for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+					delete *kt;
 				}
 			}
 		}
@@ -793,14 +665,6 @@ void Analyse::Residus_ref_2D(){
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())) non_ref_n++;
 	}
-	if(non_ref_n>2){
-		cout << "too much non ref det" << endl;
-		return;
-	}
-	if(non_ref_n<2){
-		cout << "can't do 2D efficacity without at least 2 non ref det" << endl;
-		return;
-	}
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
 	TCanvas* c_MM;
@@ -815,43 +679,25 @@ void Analyse::Residus_ref_2D(){
 	double eventSuitable = 0;
 	unsigned int nref_x_n = 0;
 	unsigned int det_x_n = 0;
-	unsigned int det_n = CM_N + MG_N;
+	unsigned int det_num = get_det_N_tot();
 	vector<double> det_z;
-	map<int,int> perp_pairs;
+	map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> > perp_pairs;
 	ostringstream name;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())){
-			if((*it)->get_type() == Tomography::CM){
-				if(name.str().size()>0) name << "_";
-				name << "Cosmulti_" << (dynamic_cast<CM_Detector*>(*it))->get_cm_n_in_tree();
-			}
-			else if((*it)->get_type() == Tomography::MG){
-				if(name.str().size()>0) name << "_";
-				name << "Multigen_" << (dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree();
-				if((*it)->get_perp_n()>-1) perp_pairs[(dynamic_cast<MG_Detector*>(*it))->get_mg_n_in_tree()] = (*it)->get_perp_n();
-			}
+			if(name.str().size()>0) name << "_";
+			name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+			if((*it)->get_perp_n()>-1) perp_pairs[pair<Tomography::det_type,int>((*it)->get_type(),(*it)->get_n_in_tree())] = pair<Tomography::det_type,int>((*it)->get_perp_type(),(*it)->get_perp_n());
 			if((*it)->get_is_X()) nref_x_n++;
 			det_z.push_back((*it)->get_z());
 		}
 		if((*it)->get_is_X()) det_x_n++;
 	}
-	if(det_z.size()!=2){
-		cout << "problem in nref det number" << endl;
-		return;
-	}
-	if(det_z[0]!=det_z[1]){
-		cout << "you can only calculate 2D efficacity for 2D detector (which have same z)" << endl;
-		return;
-	}
-	for(map<int,int>::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
+	for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
 		if(perp_pairs.count(map_it->second)==0){
 			cout << "you can only calculate 2D efficacity for 2D detector" << endl;
 			return;
 		}
-	}
-	if(nref_x_n!=1){
-		cout << "2D efficacity can only be done with one det in each direction" << endl;
-		return;
 	}
 
 	c_MM = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
@@ -863,7 +709,7 @@ void Analyse::Residus_ref_2D(){
 	TCanvas * c0 = new TCanvas("stats","stats");
 	c0->Divide(2);
 	TH1D * chisquares = new TH1D("chiSquares","chiSquares",nbins,0,chisquare_threshold);
-	TH1D * ray_clus_n = new TH1D("clus_n","clus_n",MG_N + CM_N + 2,0,MG_N + CM_N + 2);
+	TH1D * ray_clus_n = new TH1D("clus_n","clus_n",get_det_N_tot() + 2,0,get_det_N_tot() + 2);
 
 	if (fChain == 0) return;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
@@ -872,7 +718,7 @@ void Analyse::Residus_ref_2D(){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 		for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
 			if((jt->get_chiSquare_X()+jt->get_chiSquare_Y()) < chisquare_threshold){
@@ -881,17 +727,12 @@ void Analyse::Residus_ref_2D(){
 			}
 		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()*1./(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()*1./(get_det_N_tot());
 		
 		vector<Event*> nref_event;
 		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
 			if(!((*it)->get_is_ref())){
-				if((*it)->get_type() == Tomography::CM_Demux){
-					nref_event.push_back(new CM_Demux_Event(*dynamic_cast<CM_Demux_Event*>(*it)));
-				}
-				else if((*it)->get_type() == Tomography::MG){
-					nref_event.push_back(new MG_Event(*dynamic_cast<MG_Event*>(*it)));
-				}
+				nref_event.push_back((*it)->Clone());
 			}
 		}
 		if(nref_event.size()!=2){
@@ -900,65 +741,44 @@ void Analyse::Residus_ref_2D(){
 		}
 		delete currentCBEvent;
 		for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-			if(jt->get_clus_n()<(det_n-2)){
+			if(jt->get_clus_n()<(det_num-2)){
 				continue;
 			}
-			if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(det_n-2)){
+			if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(det_num-2)){
 				continue;
 			}
 			vector<unsigned int> seen_clus_in_array;
 			for(vector<Event*>::iterator it = nref_event.begin();it!=nref_event.end();++it){
-				if((*it)->get_type() == Tomography::CM_Demux){
-					vector<CM_Demux_Cluster> current_clusters = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
-					double residu = numeric_limits<double>::max();
-					vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
-					for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-						kt->set_perp_pos_mm(*jt);
-						double current_residu = jt->get_residu_ref(&(*kt));
-						if(current_residu<residu){
-							residu = current_residu;
-							matching_cluster = kt;
-						}
-					}
-					if(matching_cluster == current_clusters.end()) continue;
-					matching_cluster->set_perp_pos_mm(*jt);
-					if(residu<chisquare_threshold){
-						seen_clus_in_array.push_back(matching_cluster - current_clusters.begin());
+				vector<Cluster*> current_clusters = (*it)->get_clusters();
+				double residu = numeric_limits<double>::max();
+				vector<Cluster*>::iterator matching_cluster = current_clusters.end();
+				for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+					(*kt)->set_perp_pos_mm(*jt);
+					double current_residu = jt->get_residu_ref(*kt);
+					if(current_residu<residu){
+						residu = current_residu;
+						matching_cluster = kt;
 					}
 				}
-				else if((*it)->get_type() == Tomography::MG){
-					vector<MG_Cluster> current_clusters = (dynamic_cast<MG_Event*>(*it))->get_clusters();
-					double residu = numeric_limits<double>::max();
-					vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
-					for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-						kt->set_perp_pos_mm(*jt);
-						double current_residu = jt->get_residu_ref(&(*kt));
-						if(current_residu<residu){
-							residu = current_residu;
-							matching_cluster = kt;
-						}
-					}
-					if(matching_cluster == current_clusters.end()) continue;
-					matching_cluster->set_perp_pos_mm(*jt);
-					if(residu<chisquare_threshold){
-						seen_clus_in_array.push_back(matching_cluster - current_clusters.begin());
+				if(matching_cluster == current_clusters.end()) continue;
+				(*matching_cluster)->set_perp_pos_mm(*jt);
+				if(residu<chisquare_threshold){
+					seen_clus_in_array.push_back(matching_cluster - current_clusters.begin());
+				}
+				for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+					delete *kt;
+				}
+				muon_total->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
+				if(seen_clus_in_array.size()==2){
+					muon_seen->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
+					for(int i_event=0;i_event<2;i_event++){
+						(nref_event[i_event]->clusters).erase((nref_event[i_event]->clusters).begin()+seen_clus_in_array[i_event]);
 					}
 				}
 			}
-			muon_total->Fill(jt->eval_X(det_z[0]),jt->eval_Y(det_z[0]));
-			if(seen_clus_in_array.size()==2){
-				muon_seen->Fill(jt->eval_X(det_z[0]),jt->eval_Y(det_z[0]));
-				for(int i_event=0;i_event<2;i_event++){
-					if(nref_event[i_event]->get_type() == Tomography::CM_Demux){
-						CM_Demux_Event * current_event = static_cast<CM_Demux_Event*>(nref_event[i_event]);
-						(current_event->clusters).erase((current_event->clusters).begin()+seen_clus_in_array[i_event]);
-					}
-					else if(nref_event[i_event]->get_type() == Tomography::MG){
-						MG_Event * current_event = static_cast<MG_Event*>(nref_event[i_event]);
-						(current_event->clusters).erase((current_event->clusters).begin()+seen_clus_in_array[i_event]);
-					}
-				}
-			}
+		}
+		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
+			delete *it;
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << jentry << flush;
 		if(jentry%5000 == 0 && Tomography::live_graphic_display){
@@ -1013,12 +833,9 @@ void Analyse::Residus_ref_2D(){
 	c0->Update();
 }
 void Analyse::Efficacity(){
-	TCanvas * c_CM[CM_N];
-	TCanvas * c_MG[MG_N];
-	TProfile * CM_residus[CM_N];
-	TProfile * CM_spark_h[CM_N];
-	TProfile * MG_residus[MG_N];
-	TProfile * MG_spark_h[MG_N];
+	map<Tomography::det_type,vector<TCanvas*> > c_MM;
+	map<Tomography::det_type,vector<TProfile*> > hist_residus;
+	map<Tomography::det_type,vector<TProfile*> > hist_spark;
 	int nbins = 200;
 	//int lim = 100;
 	long eventReconstructed = 0;
@@ -1032,23 +849,21 @@ void Analyse::Efficacity(){
 	fChain->GetEntry(nentries-1);
 	double endTime = evttime;
 
-	for(int i=0;i<CM_N;i++){
-		ostringstream name;
-		name << "Cosmulti_" << i;
-		c_CM[i] = new TCanvas(name.str().c_str(),name.str().c_str());
-		CM_residus[i] = new TProfile((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,beginTime,endTime,0,2);
-		CM_residus[i]->SetLineColor(4);
-		CM_spark_h[i] = new TProfile((name.str()+"_spark").c_str(),(name.str()+"_spark").c_str(),nbins,beginTime,endTime,0,2);
-		CM_spark_h[i]->SetLineColor(2);
-	}
-	for(int i=0;i<MG_N;i++){
-		ostringstream name;
-		name << "MultiGen_" << i;
-		c_MG[i] = new TCanvas(name.str().c_str(),name.str().c_str());
-		MG_residus[i] = new TProfile((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,beginTime,endTime,0,2);
-		MG_residus[i]->SetLineColor(4);
-		MG_spark_h[i] = new TProfile((name.str()+"_spark").c_str(),(name.str()+"_spark").c_str(),nbins,beginTime,endTime,0,2);
-		MG_spark_h[i]->SetLineColor(2);
+	for(map<Tomography::det_type,unsigned short>::const_iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
+		if((type_it->second) > 0){
+			c_MM[type_it->first] = vector<TCanvas*>(type_it->second,NULL);
+			hist_residus[type_it->first] = vector<TProfile*>(type_it->second,NULL);
+			hist_spark[type_it->first] = vector<TProfile*>(type_it->second,NULL);
+		}
+		for(unsigned short i=0;i<type_it->second;i++){
+			ostringstream name;
+			name << type_it->first << "_" << i;
+			c_MM[type_it->first][i] = new TCanvas(name.str().c_str(),name.str().c_str());
+			hist_residus[type_it->first][i] = new TProfile((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,beginTime,endTime,0,2);
+			hist_residus[type_it->first][i]->SetLineColor(4);
+			hist_spark[type_it->first][i] = new TProfile((name.str()+"_spark").c_str(),(name.str()+"_spark").c_str(),nbins,beginTime,endTime,0,2);
+			hist_spark[type_it->first][i]->SetLineColor(2);
+		}
 	}
 	TCanvas * c0 = new TCanvas("chiSquare","chiSquare");
 	TProfile * chiSquareH = new TProfile("chiSquares","chiSquares",nbins,0,nentries,-10,200);
@@ -1072,10 +887,10 @@ void Analyse::Efficacity(){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays();
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		if(currentRays.size()>0){
 			Ray first = currentRays[0];
 			for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
@@ -1109,33 +924,25 @@ void Analyse::Efficacity(){
 			}
 		}
 		for(vector<Detector*>::iterator jt=detectors.begin();jt!=detectors.end();++jt){
+			hist_residus[(*jt)->get_type()][(*jt)->get_n_in_tree()]->Fill(evttime,currentCBEvent->get_clus_N_by_det(*jt));
 			if((*jt)->get_type() == Tomography::CM){
-				CM_Detector * currentDet = dynamic_cast<CM_Detector*>(*jt);
-				CM_residus[currentDet->get_cm_n_in_tree()]->Fill(evttime,currentCBEvent->get_clus_N_by_det(currentDet));
-				CM_spark_h[currentDet->get_cm_n_in_tree()]->Fill(evttime,CM_Spark[currentDet->get_cm_n_in_tree()]);
+				hist_spark[(*jt)->get_type()][(*jt)->get_n_in_tree()]->Fill(evttime,CM_Spark[(*jt)->get_n_in_tree()]);
 			}
 			if((*jt)->get_type() == Tomography::MG){
-				MG_Detector * currentDet = dynamic_cast<MG_Detector*>(*jt);
-				MG_residus[currentDet->get_mg_n_in_tree()]->Fill(evttime,currentCBEvent->get_clus_N_by_det(currentDet));
-				MG_spark_h[currentDet->get_mg_n_in_tree()]->Fill(evttime,MG_Spark[currentDet->get_mg_n_in_tree()]);
+				hist_spark[(*jt)->get_type()][(*jt)->get_n_in_tree()]->Fill(evttime,MG_Spark[(*jt)->get_n_in_tree()]);
 			}
 		}
 		delete currentCBEvent;
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
 		if(jentry%5000 == 0 && Tomography::live_graphic_display){
-			for(int i=0;i<CM_N;i++){
-				c_CM[i]->cd();
-				CM_residus[i]->Draw();
-				CM_spark_h[i]->Draw("SAME");
-				c_CM[i]->Modified();
-				c_CM[i]->Update();
-			}
-			for(int i=0;i<MG_N;i++){
-				c_MG[i]->cd();
-				MG_residus[i]->Draw();
-				MG_spark_h[i]->Draw("SAME");
-				c_MG[i]->Modified();
-				c_MG[i]->Update();
+			for(map<Tomography::det_type,vector<TCanvas*> >::iterator type_it = c_MM.begin();type_it!=c_MM.end();++type_it){
+				for(unsigned int i=0;i<(type_it->second).size();i++){
+					(type_it->second)[i]->cd();
+					hist_residus[type_it->first][i]->Draw();
+					hist_spark[type_it->first][i]->Draw("SAME");
+					(type_it->second)[i]->Modified();
+					(type_it->second)[i]->Update();
+				}
 			}
 			c0->cd();
 			chiSquareH->Draw();
@@ -1160,19 +967,14 @@ void Analyse::Efficacity(){
 		}
 	}
 	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
-	for(int i=0;i<CM_N;i++){
-		c_CM[i]->cd();
-		CM_residus[i]->Draw();
-		CM_spark_h[i]->Draw("SAME");
-		c_CM[i]->Modified();
-		c_CM[i]->Update();
-	}
-	for(int i=0;i<MG_N;i++){
-		c_MG[i]->cd();
-		MG_residus[i]->Draw();
-		MG_spark_h[i]->Draw("SAME");
-		c_MG[i]->Modified();
-		c_MG[i]->Update();
+	for(map<Tomography::det_type,vector<TCanvas*> >::iterator type_it = c_MM.begin();type_it!=c_MM.end();++type_it){
+		for(unsigned int i=0;i<(type_it->second).size();i++){
+			(type_it->second)[i]->cd();
+			hist_residus[type_it->first][i]->Draw();
+			hist_spark[type_it->first][i]->Draw("SAME");
+			(type_it->second)[i]->Modified();
+			(type_it->second)[i]->Update();
+		}
 	}
 	c0->cd();
 	chiSquareH->Draw();
@@ -1218,7 +1020,7 @@ void Analyse::ExportAbsorptionRays(string outFileName){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 		vector<Ray>::iterator ray_it = currentRays.begin();
 		while(ray_it!= currentRays.end()){
@@ -1226,7 +1028,7 @@ void Analyse::ExportAbsorptionRays(string outFileName){
 			else ray_it = currentRays.erase(ray_it);
 		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		delete currentCBEvent;
 		rayTree->fillTree(evn,evttime,currentRays,Z_Up,Z_Down);
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
@@ -1296,7 +1098,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1, double y_angle){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 		vector<Ray>::iterator ray_it = currentRays.begin();
 		while(ray_it!= currentRays.end()){
@@ -1304,7 +1106,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1, double y_angle){
 			else ray_it = currentRays.erase(ray_it);
 		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		delete currentCBEvent;
 		for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
 			Point current_point = it->eval_plane(proj);
@@ -1403,7 +1205,7 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 		vector<Ray>::iterator ray_it = currentRays.begin();
 		while(ray_it!= currentRays.end()){
@@ -1411,7 +1213,7 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 			else ray_it = currentRays.erase(ray_it);
 		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		delete currentCBEvent;
 		for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
 			Point current_point = it->eval_plane(proj);
@@ -1525,7 +1327,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 		vector<Ray>::iterator ray_it = currentRays.begin();
 		while(ray_it!= currentRays.end()){
@@ -1533,7 +1335,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 			else ray_it = currentRays.erase(ray_it);
 		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		delete currentCBEvent;
 		for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
 			fluxMapZ->Fill(it->eval_X(z),it->eval_Y(z));
@@ -1620,10 +1422,10 @@ void Analyse::AbsorptionFluxMapNorm(double z,TH2D * background, int nbins, TCanv
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		vector<Ray> currentRays = currentCBEvent->get_absorption_rays();
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		delete currentCBEvent;
 		for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
 			if(it->get_chiSquare_X()>-1 && it->get_chiSquare_Y()>-1){
@@ -1752,9 +1554,9 @@ void Analyse::StoreRayPairs(string outFileName){
 		if(multi) continue;
 		*/
 
-		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		currentCBEvent->createPairs();
-		eventSuitable+=currentCBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		eventReconstructed+=currentCBEvent->get_rayPairs_N();
 		for(unsigned int i=0;i<currentCBEvent->get_rayPairs_N();i++){
 			RayPair currentRayPair = currentCBEvent->get_rayPair(i);
@@ -1892,20 +1694,23 @@ void Analyse::bugtest(){
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
 		cout << evn << " : " << endl;
-		CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,this,-1);
 		for(vector<Event*>::iterator it = (CBEvent->events).begin();it!=(CBEvent->events).end();++it){
 			if((*it)->get_type() == Tomography::MG){
-				vector<MG_Cluster> current_clusters = dynamic_cast<MG_Event*>(*it)->get_clusters();
-				if(current_clusters.size()>0) cout << setw(10) << current_clusters.front().get_pos() << " | ";
+				vector<Cluster*> current_clusters = (*it)->get_clusters();
+				if(current_clusters.size()>0) cout << setw(10) << (current_clusters.front())->get_pos() << " | ";
 				else cout << "No Cluster" << " | ";
+				for(vector<Cluster*>::iterator clus_it = current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
+					delete *clus_it;
+				}
 			}
 		}
 		cout << endl;
 		delete CBEvent;
-		for(int i=0;i<MG_N-1;i++){
+		for(int i=0;i<det_N[Tomography::MG]-1;i++){
 			cout << setw(10) << MG_ClusPos[i][0] << " | ";
 		}
-		cout << setw(10) << MG_ClusPos[MG_N-1][0] << endl;
+		cout << setw(10) << MG_ClusPos[det_N[Tomography::MG]-1][0] << endl;
 	}
 }
 
@@ -1915,7 +1720,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 	gStyle->SetNumberContours(512);
 	gStyle->SetOptFit(0111);
 
-	int det_N = CM_N + MG_N;
+	int det_num = get_det_N_tot();
 	cout << setw(20) << "detector proccessed" << "|" << setw(20) << "event processed" << endl;
 	TProfile * SRH;
 	//TGraph * SRH2D[det_N];
@@ -1944,17 +1749,17 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 
-	float StripAmpl_MG_corr[MG_N][MG_Detector::Nstrip][Tomography::Nsample];
-	float StripAmpl_CM_corr[CM_N][CM_Detector::Nstrip][Tomography::Nsample];
+	float StripAmpl_MG_corr[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::Nsample];
+	float StripAmpl_CM_corr[det_N[Tomography::CM]][CM_Detector::Nchannel][Tomography::Nsample];
 	int signal_evn;
 	signal_tree->SetBranchAddress("Nevent",&signal_evn);
-	if(CM_N>0) signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
-	if(MG_N>0) signal_tree->SetBranchAddress("StripAmpl_MG_corr",StripAmpl_MG_corr);
+	if(det_N[Tomography::CM]>0) signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
+	if(det_N[Tomography::MG]>0) signal_tree->SetBranchAddress("StripAmpl_MG_corr",StripAmpl_MG_corr);
 
 	int det_x_n = 0;
 	int det_y_n = 0;
 	int nref_nb = 0;
-	for(int j=0;j<det_N;j++){
+	for(int j=0;j<det_num;j++){
 		if(detectors[j]->get_is_X()) det_x_n++;
 		else det_y_n++;
 		if(!(detectors[j]->get_is_ref())) nref_nb++;
@@ -1964,7 +1769,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 		return;
 	}
 
-	for(int i=0;i<det_N;i++){
+	for(int i=0;i<det_num;i++){
 		if(detectors[i]->get_is_ref()) continue;
 		int det_in_nref_dir = (detectors[i]->get_is_X()) ? det_x_n : det_y_n;
 
@@ -2032,16 +1837,13 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 				cout << "event numbers are different in analyse and signal trees" << endl;
 				return;
 			}
-			CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,false,-1);
+			CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 			vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 
 			for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
 				if(!((*it)->get_is_ref())){
-					if((*it)->get_type() == Tomography::CM_Demux){
-						continue;
-					}
-					else if((*it)->get_type() == Tomography::MG){
-						vector<MG_Cluster> current_clusters = (dynamic_cast<MG_Event*>(*it))->get_clusters();
+					if((*it)->get_type() == Tomography::MG){
+						vector<Cluster*> current_clusters = (*it)->get_clusters();
 						for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
 
 							double chiSquare_in_nref_dir = (detectors[i]->get_is_X()) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
@@ -2051,10 +1853,10 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 
 							if((jt->get_chiSquare_X()+jt->get_chiSquare_Y()) > chisquare_threshold) continue;
 							double residu = numeric_limits<double>::max();
-							vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
-							for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-								kt->set_perp_pos_mm(*jt);
-								double current_residu = jt->get_residu_ref(&(*kt));
+							vector<Cluster*>::iterator matching_cluster = current_clusters.end();
+							for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+								(*kt)->set_perp_pos_mm(*jt);
+								double current_residu = jt->get_residu_ref(*kt);
 								if(current_residu<residu){
 									residu = current_residu;
 									matching_cluster = kt;
@@ -2062,28 +1864,24 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 							}
 							if(matching_cluster == current_clusters.end()) continue;
 							
-							double normalization = matching_cluster->get_ampl()/matching_cluster->get_size();
-							double matching_position = (matching_cluster->get_is_X()) ? jt->eval_X((*it)->get_z()) : jt->eval_Y((*it)->get_z());
-							double matching_position_perp = (matching_cluster->get_is_X()) ? jt->eval_Y((*it)->get_z()) : jt->eval_X((*it)->get_z());
-							//double matching_position = matching_cluster->get_pos_mm();
-							/*
-							for(int strip_nb = matching_cluster->get_pos()-1;strip_nb<(matching_cluster->get_pos()+2);strip_nb++){
-								int channel = MG_Detector::StripToChannel[strip_nb];
-								double current_max_ampl = *max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample);
-								if(current_max_ampl>normalization) normalization = current_max_ampl;
-							}
-							*/
+							double normalization = (*matching_cluster)->get_ampl()/(*matching_cluster)->get_size();
+							double matching_position = ((*matching_cluster)->get_is_X()) ? jt->eval_X((*it)->get_z()) : jt->eval_Y((*it)->get_z());
+							double matching_position_perp = ((*matching_cluster)->get_is_X()) ? jt->eval_Y((*it)->get_z()) : jt->eval_X((*it)->get_z());
 							for(int strip_nb=0;strip_nb<1024;strip_nb++){
-								int channel = MG_Detector::StripToChannel[strip_nb];
+								int channel = MG_Detector::StripToChannel_a[strip_nb];
 								if(Abs(residu)<50.){
-									SRH->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
-									if(bin_nb>0) SRH_coord[Min(Max(FloorNint((bin_nb/2.)+matching_position_perp*bin_nb/Tomography::XY_size),0),bin_nb-1)]->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
+									SRH->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
+									if(bin_nb>0) SRH_coord[Min(Max(FloorNint((bin_nb/2.)+matching_position_perp*bin_nb/Tomography::XY_size),0),bin_nb-1)]->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
 								}
 								//SRH2D[i]->SetPoint(graph_point_nb, matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
 								//graph_point_nb++;
-								SRH2D->Fill(matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
+								SRH2D->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
 							}
+							delete *matching_cluster;
 							current_clusters.erase(matching_cluster);
+						}
+						for(vector<Cluster*>::iterator clus_it=current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
+							delete *clus_it;
 						}
 					}
 				}
@@ -2202,7 +2000,7 @@ void Analyse::EventDisplay(long event_nb, TCanvas * c1){
 	}
 	TFile * signal_file = new TFile(signal_file_name.c_str(),"READ");
 	TTree * signal_tree = (TTree*)(signal_file->Get("T"));
-	Tsignal_R * signalT = new Tsignal_R(signal_tree,CM_N,MG_N);
+	Tsignal_R * signalT = new Tsignal_R(signal_tree,det_N);
 
 	if(nentries != signal_tree->GetEntriesFast()){
 		cout << "total number of event in signal and analyse tree does not match" << endl;
@@ -2210,12 +2008,11 @@ void Analyse::EventDisplay(long event_nb, TCanvas * c1){
 	}
 	LoadTree(event_nb);
 	GetEntry(event_nb);
-	CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,this,false,-1);
+	CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,this,-1);
 	signalT->LoadTree(event_nb);
 	signalT->GetEntry(event_nb);
 	for(vector<Event*>::iterator ev_it = (CBEvent->events).begin();ev_it!=(CBEvent->events).end();++ev_it){
-		if((*ev_it)->get_type() == Tomography::MG) (*ev_it)->set_strip_ampl(signalT->get_mg_ampl((*ev_it)->get_n_in_tree()));
-		else if((*ev_it)->get_type() == Tomography::CM || (*ev_it)->get_type() == Tomography::CM_Demux) (*ev_it)->set_strip_ampl(signalT->get_cm_ampl((*ev_it)->get_n_in_tree()));
+		(*ev_it)->set_strip_ampl(signalT->get_ampl((*ev_it)->get_type(),(*ev_it)->get_n_in_tree()));
 	}
 	CBEvent->EventDisplay(c1);
 	delete CBEvent;
@@ -2235,8 +2032,8 @@ void Analyse::EventDisplay(long event_nb, TCanvas * c1){
 		return;
 	}
 
-	float StripAmpl_MG_corr[MG_N][MG_Detector::Nstrip][Tomography::Nsample];
-	float StripAmpl_CM_corr[CM_N][CM_Detector::Nstrip][Tomography::Nsample];
+	float StripAmpl_MG_corr[MG_N][MG_Detector::Nchannel][Tomography::Nsample];
+	float StripAmpl_CM_corr[CM_N][CM_Detector::Nchannel][Tomography::Nsample];
 	int signal_evn;
 	signal_tree->SetBranchAddress("Nevent",&signal_evn);
 	if(CM_N>0) signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
@@ -2434,9 +2231,9 @@ void Analyse::Correlation(){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,this,false,-1);
+		CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,this,-1);
 		CBEvent->do_cuts();
-		eventSuitable+=CBEvent->get_clus_N()/(CM_N+MG_N);
+		eventSuitable+=CBEvent->get_clus_N()/(get_det_N_tot());
 		/*
 		bool is_single_event = true;
 		for(vector<Detector*>::iterator it=detectors.begin();it!=detectors.end();++it){
@@ -2578,10 +2375,7 @@ void Analyse::Correlation(){
 			for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
 				if((*det_it)->get_perp_n()<0) continue;
 				if((*det_it)->get_is_X()) continue;
-				int n = -1;
-				if((*det_it)->get_type() == Tomography::MG) n = dynamic_cast<MG_Detector*>(*det_it)->get_mg_n_in_tree();
-				else if((*det_it)->get_type() == Tomography::CM) n = dynamic_cast<CM_Detector*>(*det_it)->get_cm_n_in_tree();
-				else continue;
+				int n = (*det_it)->get_n_in_tree();
 				vector<Detector*>::iterator det_jt = detectors.begin();
 				while((*det_jt)->get_perp_n() != n && det_jt != detectors.end()){
 					++det_jt;
@@ -2744,29 +2538,22 @@ void Analyse::Correlation(){
 }
 
 void Analyse::SignalOverNoise(){
-	if(CM_N!=0){
-		cout << "not implemented with CM" << endl;
-		return;
-	}
-	map<int,TCanvas*> cDisplay;
-	map<int,TH1D*> global_signal;
-	map<int,TH1D*> global_noise;
-	map<int,TProfile*> global_signal_over_noise;
-	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-		if((*it)->get_type() == Tomography::MG){
-			MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-			ostringstream name;
-			name << "Multigen_" << current_det->get_mg_n_in_tree();
-			cDisplay[current_det->get_mg_n_in_tree()] = new TCanvas(name.str().c_str());
-			cDisplay[current_det->get_mg_n_in_tree()]->Divide(3);
-			name << "_";
-			global_signal[current_det->get_mg_n_in_tree()] = new TH1D((name.str() + "signal").c_str(),(name.str() + "signal").c_str(),500,0,4000);
-			global_noise[current_det->get_mg_n_in_tree()] = new TH1D((name.str() + "noise").c_str(),(name.str() + "noise").c_str(),100,0,100);
-			for(int i=0;i<MG_Detector::Nstrip;i++){
-				global_noise[current_det->get_mg_n_in_tree()]->Fill(current_det->get_RMS(i));
-			}
-			global_signal_over_noise[current_det->get_mg_n_in_tree()] = new TProfile((name.str() + "SoB").c_str(),(name.str() + "SoB").c_str(),MG_Detector::Nstrip,0,MG_Detector::Nstrip);
+	map<string,TCanvas*> cDisplay;
+	map<string,TH1D*> global_signal;
+	map<string,TH1D*> global_noise;
+	map<string,TProfile*> global_signal_over_noise;
+	for(vector<Detector*>::iterator it=detectors.begin();it!=detectors.end();++it){
+		ostringstream name;
+		name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+		cDisplay[name.str()] = new TCanvas(name.str().c_str());
+		cDisplay[name.str()]->Divide(3);
+		name << "_";
+		global_signal[name.str()] = new TH1D((name.str() + "signal").c_str(),(name.str() + "signal").c_str(),500,0,4000);
+		global_noise[name.str()] = new TH1D((name.str() + "noise").c_str(),(name.str() + "noise").c_str(),100,0,100);
+		for(int i=0;i<(*it)->get_Nchannel();i++){
+			global_noise[name.str()]->Fill((*it)->get_RMS(i));
 		}
+		global_signal_over_noise[name.str()] = new TProfile((name.str() + "SoB").c_str(),(name.str() + "SoB").c_str(),(*it)->get_Nchannel(),0,(*it)->get_Nchannel());
 	}
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	for(long i=0;i<nentries && Tomography::can_continue;i++){
@@ -2774,21 +2561,23 @@ void Analyse::SignalOverNoise(){
 		GetEntry(i);
 
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			if((*it)->get_type() == Tomography::MG){
-				MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-				MG_Event current_event(this,current_det,false,evn);
-				vector<MG_Cluster> current_cluster = current_event.get_clusters();
-				for(vector<MG_Cluster>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
-					double current_signal = jt->get_maxStripAmpl();
-					double current_noise = current_det->get_RMS(MG_Detector::StripToChannel[jt->get_maxStrip()]);
-					global_signal[current_det->get_mg_n_in_tree()]->Fill(current_signal);
-					global_signal_over_noise[current_det->get_mg_n_in_tree()]->Fill(MG_Detector::StripToChannel[jt->get_maxStrip()],current_signal/current_noise);
-				}
+			ostringstream name;
+			name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+			Event * current_event = (*it)->build_event(this,evn);
+			vector<Cluster*> current_cluster = current_event->get_clusters();
+			for(vector<Cluster*>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
+				double current_signal = (*jt)->get_maxStripAmpl();
+				global_signal[name.str()]->Fill(current_signal);
+				int channel = (*it)->StripToChannel((*jt)->get_maxStrip());
+				double current_noise = (*it)->get_RMS(channel);
+				global_signal_over_noise[name.str()]->Fill(channel,current_signal/current_noise);
+				delete *jt;
 			}
+			delete current_event;
 		}
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
 		if(i%5000 == 0 && Tomography::live_graphic_display){
-			for(map<int,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
+			for(map<string,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
 				it->second->cd(1);
 				global_signal[it->first]->Draw();
 				it->second->cd(2);
@@ -2802,7 +2591,7 @@ void Analyse::SignalOverNoise(){
 	}
 	cout << "\r" << nentries << "/" << nentries << endl;
 	
-	for(map<int,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
+	for(map<string,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
 		it->second->cd(1);
 		TFitResultPtr res_signal = global_signal[it->first]->Fit("landau","SQ");
 		global_signal[it->first]->Draw();
@@ -2810,10 +2599,10 @@ void Analyse::SignalOverNoise(){
 		TFitResultPtr res_noise = global_noise[it->first]->Fit("gaus","SQ");
 		global_noise[it->first]->Draw();
 		it->second->cd(3);
-		TLine * average_SoN = new TLine(0,(res_signal->Parameter(1))/(res_noise->Parameter(1)),MG_Detector::Nstrip,(res_signal->Parameter(1))/(res_noise->Parameter(1)));
+		TLine * average_SoN = new TLine(0,(res_signal->Parameter(1))/(res_noise->Parameter(1)),MG_Detector::Nchannel,(res_signal->Parameter(1))/(res_noise->Parameter(1)));
 		average_SoN->SetLineStyle(2);
 		average_SoN->SetLineColor(2);
-		TLine * mean_SoN = new TLine(0,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()),MG_Detector::Nstrip,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()));
+		TLine * mean_SoN = new TLine(0,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()),MG_Detector::Nchannel,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()));
 		mean_SoN->SetLineStyle(2);
 		mean_SoN->SetLineColor(4);
 		global_signal_over_noise[it->first]->Draw();

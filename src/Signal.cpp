@@ -76,22 +76,17 @@ Signal::Signal(string configFilePath){
 	exists = fIn_test.good();
 	fIn_test.close();
 	CosmicBench::Init(config_tree);
-	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
-		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::CM;
-		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("cm_n");
+	for(vector<Detector*>::const_iterator det_it=detectors.begin();det_it!=detectors.end();++det_it){
+		det_type_by_asic[(*det_it)->get_asic_n()] = (*det_it)->get_type();
+		det_n_by_asic[(*det_it)->get_asic_n()] = (*det_it)->get_n_in_tree();
 	}
-	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::MG;
-		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("mg_n");
-	}
-	if(CM_N!=0) cout << "warning, CosMultis are not fully supported !" << endl;
 	if(exists){
 		fIn = new TFile(signalName.c_str(),"READ");
 		TTree * treeIn = (TTree*)(fIn->Get("T"));
-		Tsignal_R::Init(treeIn,CM_N,MG_N);
+		Tsignal_R::Init(treeIn,det_n);
 	}
 	else{
-		Tsignal_R::Init(0,CM_N,MG_N);
+		Tsignal_R::Init(0,det_n);
 		cout << "Waring, signal file is missing !" << endl;
 	}
 	analyseTree = config_tree.get<string>("Tree");
@@ -113,22 +108,17 @@ Signal::Signal(ptree config_tree){
 	exists = fIn_test.good();
 	fIn_test.close();
 	CosmicBench::Init(config_tree);
-	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
-		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::CM;
-		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("cm_n");
+	for(vector<Detector*>::const_iterator det_it=detectors.begin();det_it!=detectors.end();++det_it){
+		det_type_by_asic[(*det_it)->get_asic_n()] = (*det_it)->get_type();
+		det_n_by_asic[(*det_it)->get_asic_n()] = (*det_it)->get_n_in_tree();
 	}
-	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::MG;
-		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("mg_n");
-	}
-	if(CM_N!=0) cout << "warning, CosMultis are not fully supported !" << endl;
 	if(exists){
 		fIn = new TFile(signalName.c_str(),"READ");
 		TTree * treeIn = (TTree*)(fIn->Get("T"));
-		Tsignal_R::Init(treeIn,CM_N,MG_N);
+		Tsignal_R::Init(treeIn,det_n);
 	}
 	else{
-		Tsignal_R::Init(0,CM_N,MG_N);
+		Tsignal_R::Init(0,det_n);
 		cout << "Waring, signal file is missing !" << endl;
 	}
 	analyseTree = config_tree.get<string>("Tree");
@@ -142,252 +132,33 @@ Signal::~Signal(){
 }
 void Signal::MultiCluster(){
 	cout << "destination file : " << analyseTree << endl;
-	Tanalyse_W * analyseFile = new Tanalyse_W(analyseTree,CM_N,MG_N);
+	Tanalyse_W * analyseFile = new Tanalyse_W(analyseTree,det_n);
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	for(long i=0;i<nentries && Tomography::can_continue;i++){
 		LoadTree(i);
 		GetEntry(i);
-		vector<MG_Event> mg_events;
-		vector<CM_Event> cm_events;
+		map<Tomography::det_type,vector<Event*> > events;
 
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			if((*it)->get_type() == Tomography::MG){
-				MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-				mg_events.push_back(MG_Event(*current_det,get_mg_ampl(current_det->get_mg_n_in_tree()),use_srf,Nevent));
-				mg_events.back().MultiCluster();
-			}
-			else if((*it)->get_type() == Tomography::CM){
-				CM_Detector * current_det = dynamic_cast<CM_Detector*>(*it);
-				cm_events.push_back(CM_Event(*current_det,get_cm_ampl(current_det->get_cm_n_in_tree()),use_srf,Nevent));
-				cm_events.back().MultiCluster();
-			}
+			events[(*it)->get_type()].push_back((*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent));
+			(events[(*it)->get_type()].back())->MultiCluster();
 		}
 		
-		analyseFile->fillTree(Nevent,evttime,mg_events,cm_events);
+		analyseFile->fillTree(Nevent,evttime,events);
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
+		for(map<Tomography::det_type,vector<Event*> >::iterator type_it = events.begin();type_it!=events.end();++type_it){
+			for(vector<Event*>::iterator ev_it = (type_it->second).begin();ev_it!=(type_it->second).end();++ev_it){
+				delete *ev_it;
+			}
+		}
 	}
 	cout << "\r" << nentries << "/" << nentries << endl;
 	analyseFile->Write();
 	analyseFile->CloseFile();
 	//delete analyseFile;
 }
-/*
-void Signal::ElecToAnalyse(){
-	cout << "Reading Pedestal : " << PedName << endl;
-	map<Tomography::det_type,vector<vector<float> > > Pedestal;
-	Pedestal[Tomography::CM] = vector<vector<float> >(CM_N,vector<float>(CM_Detector::Nstrip,0));
-	Pedestal[Tomography::MG] = vector<vector<float> >(MG_N,vector<float>(MG_Detector::Nstrip,0));
-	ifstream pedFile(PedName.c_str());
-	for(int i=0;i<CM_N;i++){
-		for(int j=0;j<CM_Detector::Nstrip;j++){
-			pedFile >> i >> j >> Pedestal[Tomography::CM][i][j];
-		}
-	}
-	for(int i=0;i<MG_N;i++){
-		for(int j=0;j<MG_Detector::Nstrip;j++){
-			pedFile >> i >> j >> Pedestal[Tomography::MG][i][j];
-		}
-	}
-	pedFile.close();
-	cout << "destination file : " << analyseTree << endl;
-	Tanalyse_W * analyseFile = new Tanalyse_W(analyseTree,CM_N,MG_N);
-	Nevent = 0;
-	long event_nb = 0;
-	string extension = "";
-	DataReader * current_data_reader;
-	if(electronic_type == Tomography::Feminos){
-		extension = ".aqs";
-		current_data_reader = new FeminosDataReader("tmp",det_type_by_asic,det_n_by_asic);
-		ostringstream name;
-		name << data_file_basename << setfill('0') << setw(3) << data_file_first << extension;
-		Nevent = dynamic_cast<FeminosDataReader*>(current_data_reader)->get_first_event_nb(name.str());
-	}
-	else if(electronic_type == Tomography::Dream){
-		extension = "_01.fdf";
-		current_data_reader = new DreamDataReader("tmp",det_type_by_asic,det_n_by_asic);
-	}
-	else return;
-	map<Tomography::det_type,int> detector_div;
-	detector_div[Tomography::CM] = 2;
-	detector_div[Tomography::MG] = 2;
-	map<Tomography::det_type,int> Nstrip;
-	Nstrip[Tomography::CM] = CM_Detector::Nstrip;
-	Nstrip[Tomography::MG] = MG_Detector::Nstrip;
-	for(int i=data_file_first;i<=data_file_last;i++){
-		int event_nb_file = 0;
-		ostringstream name;
-		name << data_file_basename << setfill('0') << setw(3) << i << extension;
-		ifstream data_file(name.str().c_str(),ifstream::binary);
-		while(data_file.good()){
-			map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,Nevent,evttime);
-			if(event_ampl.size()==0) break;
-			map<Tomography::det_type,vector<vector<float> > >::iterator ped_it = Pedestal.begin();
-			for(map<Tomography::det_type,vector<vector<vector<double> > > >::iterator it = event_ampl.begin();it!=event_ampl.end();++it){
-				vector<vector<float> >::iterator ped_jt = (ped_it->second).begin();
-				for(vector<vector<vector<double> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-					for(int k=0;k<Tomography::Nsample;k++){
-						for(int det_div=0;det_div<detector_div[it->first];det_div++){
-							int strip_nb = Nstrip[it->first]/detector_div[it->first] + Nstrip[it->first]%detector_div[it->first];
-							int strip_offset = det_div*strip_nb;
-							vector<float> current_sample(strip_nb,0);
-							for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
-								current_sample[j] = (*jt)[j+strip_offset][k] - (*ped_jt)[j+strip_offset];
-							}
-							sort(current_sample.begin(),current_sample.end());
-							float median = current_sample[strip_nb/2];
-							for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
-								(*jt)[j+strip_offset][k] -= median + (*ped_jt)[j+strip_offset];
-							}
-						}
-					}
-					++ped_jt;
-				}
-				++ped_it;
-			}
-			vector<MG_Event> mg_events;
-			vector<CM_Event> cm_events;
-			for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-				if((*it)->get_type() == Tomography::MG){
-					MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-					mg_events.push_back(MG_Event(*current_det,event_ampl[Tomography::MG][current_det->get_mg_n_in_tree()],use_srf,event_nb));
-					mg_events.back().MultiCluster();
-				}
-				else if((*it)->get_type() == Tomography::CM){
-					CM_Detector * current_det = dynamic_cast<CM_Detector*>(*it);
-					cm_events.push_back(CM_Event(*current_det,event_ampl[Tomography::CM][current_det->get_cm_n_in_tree()],use_srf,event_nb));
-					cm_events.back().MultiCluster();
-				}
-			}
-			analyseFile->fillTree(Nevent,evttime,mg_events,cm_events);
-			Nevent++;
-			event_nb++;
-			event_nb_file++;
-			if(event_nb_file%100 == 0) cout << "\r" << "processing " << name.str() << " : " << event_nb_file << " (total : " << event_nb << ")" << flush;
-		}
-		cout << "\r" << "processing " << name.str() << " : " << event_nb_file << " (total : " << event_nb << ")" << endl;
-	}
-	analyseFile->Write();
-	analyseFile->CloseFile();
-}
-void Signal::ElecToRays(string outFileName){
-	cout << "Reading Pedestal : " << PedName << endl;
-	map<Tomography::det_type,vector<vector<float> > > Pedestal;
-	Pedestal[Tomography::CM] = vector<vector<float> >(CM_N,vector<float>(CM_Detector::Nstrip,0));
-	Pedestal[Tomography::MG] = vector<vector<float> >(MG_N,vector<float>(MG_Detector::Nstrip,0));
-	ifstream pedFile(PedName.c_str());
-	for(int i=0;i<CM_N;i++){
-		for(int j=0;j<CM_Detector::Nstrip;j++){
-			pedFile >> i >> j >> Pedestal[Tomography::CM][i][j];
-		}
-	}
-	for(int i=0;i<MG_N;i++){
-		for(int j=0;j<MG_Detector::Nstrip;j++){
-			pedFile >> i >> j >> Pedestal[Tomography::MG][i][j];
-		}
-	}
 
-	double Z_Up = numeric_limits<double>::min();
-	double Z_Down = numeric_limits<double>::max();
-	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
-		double current_z = (*det_it)->get_z();
-		if(current_z>Z_Up) Z_Up = current_z;
-		if(current_z<Z_Down) Z_Down = current_z;
-	}
-
-	pedFile.close();
-	cout << "destination file : " << outFileName << endl;
-	Tray * rayFile = new Tray(outFileName);
-	Nevent = 0;
-	long event_nb = 0;
-	string extension = "";
-	DataReader * current_data_reader;
-	if(electronic_type == Tomography::Feminos){
-		extension = ".aqs";
-		current_data_reader = new FeminosDataReader("tmp",det_type_by_asic,det_n_by_asic);
-		ostringstream name;
-		name << data_file_basename << setfill('0') << setw(3) << data_file_first << extension;
-		Nevent = dynamic_cast<FeminosDataReader*>(current_data_reader)->get_first_event_nb(name.str());
-	}
-	else if(electronic_type == Tomography::Dream){
-		extension = "_01.fdf";
-		current_data_reader = new DreamDataReader("tmp",det_type_by_asic,det_n_by_asic);
-		ostringstream name;
-		name << data_file_basename << setfill('0') << setw(3) << data_file_first << extension;
-		Nevent = dynamic_cast<DreamDataReader*>(current_data_reader)->get_first_event_nb(name.str());
-	}
-	else return;
-	map<Tomography::det_type,int> detector_div;
-	detector_div[Tomography::CM] = 2;
-	detector_div[Tomography::MG] = 2;
-	map<Tomography::det_type,int> Nstrip;
-	Nstrip[Tomography::CM] = CM_Detector::Nstrip;
-	Nstrip[Tomography::MG] = MG_Detector::Nstrip;
-	for(int i=data_file_first;i<=data_file_last;i++){
-		int event_nb_file = 0;
-		ostringstream name;
-		name << data_file_basename << setfill('0') << setw(3) << i << extension;
-		ifstream data_file(name.str().c_str(),ifstream::binary);
-		while(data_file.good()){
-			map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,Nevent,evttime);
-			if(event_ampl.size()==0) break;
-			map<Tomography::det_type,vector<vector<float> > >::iterator ped_it = Pedestal.begin();
-			for(map<Tomography::det_type,vector<vector<vector<double> > > >::iterator it = event_ampl.begin();it!=event_ampl.end();++it){
-				vector<vector<float> >::iterator ped_jt = (ped_it->second).begin();
-				for(vector<vector<vector<double> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-					for(int k=0;k<Tomography::Nsample;k++){
-						for(int det_div=0;det_div<detector_div[it->first];det_div++){
-							int strip_nb = Nstrip[it->first]/detector_div[it->first] + Nstrip[it->first]%detector_div[it->first];
-							int strip_offset = det_div*strip_nb;
-							vector<float> current_sample(strip_nb,0);
-							for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
-								current_sample[j] = (*jt)[j+strip_offset][k] - (*ped_jt)[j+strip_offset];
-							}
-							sort(current_sample.begin(),current_sample.end());
-							float median = current_sample[strip_nb/2];
-							for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
-								(*jt)[j+strip_offset][k] -= median + (*ped_jt)[j+strip_offset];
-							}
-						}
-					}
-					++ped_jt;
-				}
-				++ped_it;
-			}
-			vector<Event*> events;
-			for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-				if((*it)->get_type() == Tomography::MG){
-					MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-					events.push_back(new MG_Event(*current_det,event_ampl[Tomography::MG][current_det->get_mg_n_in_tree()],use_srf,event_nb));
-					(events.back())->MultiCluster();
-				}
-				else if((*it)->get_type() == Tomography::CM){
-					CM_Detector * current_det = dynamic_cast<CM_Detector*>(*it);
-					events.push_back(new CM_Event(*current_det,event_ampl[Tomography::CM][current_det->get_cm_n_in_tree()],use_srf,event_nb));
-					(events.back())->MultiCluster();
-				}
-			}
-			CosmicBenchEvent CBEvent(this,events);
-			CBEvent.do_cuts();
-			rayFile->fillTree(Nevent,evttime,CBEvent.get_absorption_rays(),Z_Up,Z_Down);
-			for(vector<Event*>:: iterator event_it=events.begin();event_it!=events.end();++event_it){
-				delete (*event_it);
-			}
-			Nevent++;
-			event_nb++;
-			event_nb_file++;
-			if(event_nb_file%100 == 0) cout << "\r" << "processing " << name.str() << " : " << event_nb_file << " (total : " << event_nb << ")" << flush;
-		}
-		cout << "\r" << "processing " << name.str() << " : " << event_nb_file << " (total : " << event_nb << ")" << endl;
-	}
-	rayFile->Write();
-	rayFile->CloseFile();
-}
-*/
 void Signal::HoughTracking(long event_nb){
-	if(CM_N!=0){
-		cout << "not implemented with CM" << endl;
-		return;
-	}
 	long nentries = fChain->GetEntriesFast();
 	if(event_nb<0 || event_nb>=nentries){
 		cout << "invalid event number" << endl;
@@ -395,30 +166,27 @@ void Signal::HoughTracking(long event_nb){
 	}
 	LoadTree(event_nb);
 	GetEntry(event_nb);
-	map<bool,map<double,vector<MG_Cluster> > > all_cluster;
+	map<bool,map<double,vector<Cluster*> > > all_cluster;
 	vector<Event*> events;
 	double max_z = -10000;
 	double min_z = 10000;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-		if((*it)->get_type() == Tomography::MG){
-			MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-			MG_Event current_event = MG_Event(*current_det,get_mg_ampl(current_det->get_mg_n_in_tree()),use_srf,Nevent);
-			current_event.HoughCluster();
-			vector<MG_Cluster> current_cluster = current_event.get_clusters();
-			vector<MG_Cluster>::iterator clus_it = current_cluster.begin();
-			while(clus_it!=current_cluster.end()){
-				if(!(clus_it->is_suitable_hough(current_det))){
-					current_cluster.erase(clus_it);
-					clus_it = current_cluster.begin();
-				}
-				else ++clus_it;
+		Event * current_event = (*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent);
+		current_event->HoughCluster();
+		vector<Cluster*> current_cluster = current_event->get_clusters();
+		vector<Cluster*>::iterator clus_it = current_cluster.begin();
+		while(clus_it!=current_cluster.end()){
+			if(!((*it)->is_suitable(*clus_it))){
+				delete *clus_it;
+				clus_it = current_cluster.erase(clus_it);
 			}
-			cout << "number of suitable cluster for detector n°" << current_det->get_mg_n_in_tree() << " : " << current_cluster.size();
-			all_cluster[current_det->get_is_X()][current_det->get_z()].insert(all_cluster[current_det->get_is_X()][current_det->get_z()].end(),current_cluster.begin(),current_cluster.end());
-			events.push_back(new MG_Event(current_event));
-			(events.back())->MultiCluster();
-			cout << " (" << (events.back())->get_NClus() << ")" << endl;
+			else ++clus_it;
 		}
+		cout << "number of suitable cluster for " << (*it)->get_type() << "_" << (*it)->get_n_in_tree() << " : " << current_cluster.size();
+		all_cluster[(*it)->get_is_X()][(*it)->get_z()].insert(all_cluster[(*it)->get_is_X()][(*it)->get_z()].end(),current_cluster.begin(),current_cluster.end());
+		current_event->MultiCluster();
+		cout << " (" << current_event->get_NClus() << ")" << endl;
+		events.push_back(current_event);
 		if((*it)->get_z()>max_z) max_z = (*it)->get_z();
 		if((*it)->get_z()<min_z) min_z = (*it)->get_z();
 	}
@@ -433,15 +201,15 @@ void Signal::HoughTracking(long event_nb){
 	//draw clusters in hough space
 	bin_n = 2*bin_n;
 	map<bool,map<double,int> > sizes;
-	for(map<bool,map<double,vector<MG_Cluster> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
-		for(map<double,vector<MG_Cluster> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
-			for(vector<MG_Cluster>::iterator it=(kt->second).begin();it!=(kt->second).end();++it){
+	for(map<bool,map<double,vector<Cluster*> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
+		for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+			for(vector<Cluster*>::iterator it=(kt->second).begin();it!=(kt->second).end();++it){
 				suitable_clus_n++;
-				if(!it->get_is_up()){
+				if(!(*it)->get_is_up()){
 					for(int i=0;i<bin_n;i++){
 						double current_coord_up = min_coord +i*(max_coord-min_coord)/bin_n;
-						double current_coord_down = current_coord_up + (it->get_pos_mm() - current_coord_up)*(min_z-max_z)/(it->get_z()-max_z);
-						if(it->get_is_X()){
+						double current_coord_down = current_coord_up + ((*it)->get_pos_mm() - current_coord_up)*(min_z-max_z)/((*it)->get_z()-max_z);
+						if((*it)->get_is_X()){
 							hough_space_X->Fill(current_coord_down,current_coord_up);// possible wieght : it->get_ampl()
 						}
 						else{
@@ -452,8 +220,8 @@ void Signal::HoughTracking(long event_nb){
 				else{
 					for(int i=0;i<bin_n;i++){
 						double current_coord_down = min_coord +i*(max_coord-min_coord)/bin_n;
-						double current_coord_up = current_coord_down + (it->get_pos_mm() - current_coord_down)*(max_z-min_z)/(it->get_z()-min_z);
-						if(it->get_is_X()){
+						double current_coord_up = current_coord_down + ((*it)->get_pos_mm() - current_coord_down)*(max_z-min_z)/((*it)->get_z()-min_z);
+						if((*it)->get_is_X()){
 							hough_space_X->Fill(current_coord_down,current_coord_up);// possible wieght : it->get_ampl()
 						}
 						else{
@@ -477,7 +245,7 @@ void Signal::HoughTracking(long event_nb){
 	int_Y->SetMarkerColor(2);
 	map<bool,Point_2D> hough_ray;
 	for(int drop = 0;drop<2;drop++){
-		for(map<bool,map<double,vector<MG_Cluster> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
+		for(map<bool,map<double,vector<Cluster*> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
 			if(hough_ray.count(jt->first)>0) continue;
 			vector<map<double,int> > comb = CosmicBenchEvent::combinaisons(sizes[jt->first], (drop>0));
 			double smallest_distance = numeric_limits<double>::max();
@@ -487,16 +255,16 @@ void Signal::HoughTracking(long event_nb){
 				vector<Point_2D> intersections;
 				for(map<double,int>::iterator map_it = kt->begin();map_it!=kt->end();++map_it){
 					Line_2D first_line;
-					MG_Cluster first_cluster = (jt->second)[map_it->first][map_it->second];
-					if(!(first_cluster.get_is_up())) first_line = Line_2D(Point_2D(min_coord + (first_cluster.get_pos_mm() - min_coord)*(min_z-max_z)/(first_cluster.get_z()-max_z),min_coord),Point_2D(max_coord + (first_cluster.get_pos_mm() - max_coord)*(min_z-max_z)/(first_cluster.get_z()-max_z),max_coord));
-					else first_line = Line_2D(Point_2D(min_coord,min_coord + (first_cluster.get_pos_mm() - min_coord)*(max_z-min_z)/(first_cluster.get_z()-min_z)),Point_2D(max_coord,max_coord + (first_cluster.get_pos_mm() - max_coord)*(max_z-min_z)/(first_cluster.get_z()-min_z)));
+					Cluster * first_cluster = (jt->second)[map_it->first][map_it->second];
+					if(!(first_cluster->get_is_up())) first_line = Line_2D(Point_2D(min_coord + (first_cluster->get_pos_mm() - min_coord)*(min_z-max_z)/(first_cluster->get_z()-max_z),min_coord),Point_2D(max_coord + (first_cluster->get_pos_mm() - max_coord)*(min_z-max_z)/(first_cluster->get_z()-max_z),max_coord));
+					else first_line = Line_2D(Point_2D(min_coord,min_coord + (first_cluster->get_pos_mm() - min_coord)*(max_z-min_z)/(first_cluster->get_z()-min_z)),Point_2D(max_coord,max_coord + (first_cluster->get_pos_mm() - max_coord)*(max_z-min_z)/(first_cluster->get_z()-min_z)));
 					map<double,int>::iterator map_jt = map_it;
 					map_jt++;
 					while(map_jt!=kt->end()){
 						Line_2D second_line;
-						MG_Cluster second_cluster = (jt->second)[map_jt->first][map_jt->second];
-						if(!(second_cluster.get_is_up())) second_line = Line_2D(Point_2D(min_coord + (second_cluster.get_pos_mm() - min_coord)*(min_z-max_z)/(second_cluster.get_z()-max_z),min_coord),Point_2D(max_coord + (second_cluster.get_pos_mm() - max_coord)*(min_z-max_z)/(second_cluster.get_z()-max_z),max_coord));
-						else second_line = Line_2D(Point_2D(min_coord,min_coord + (second_cluster.get_pos_mm() - min_coord)*(max_z-min_z)/(second_cluster.get_z()-min_z)),Point_2D(max_coord,max_coord + (second_cluster.get_pos_mm() - max_coord)*(max_z-min_z)/(second_cluster.get_z()-min_z)));
+						Cluster * second_cluster = (jt->second)[map_jt->first][map_jt->second];
+						if(!(second_cluster->get_is_up())) second_line = Line_2D(Point_2D(min_coord + (second_cluster->get_pos_mm() - min_coord)*(min_z-max_z)/(second_cluster->get_z()-max_z),min_coord),Point_2D(max_coord + (second_cluster->get_pos_mm() - max_coord)*(min_z-max_z)/(second_cluster->get_z()-max_z),max_coord));
+						else second_line = Line_2D(Point_2D(min_coord,min_coord + (second_cluster->get_pos_mm() - min_coord)*(max_z-min_z)/(second_cluster->get_z()-min_z)),Point_2D(max_coord,max_coord + (second_cluster->get_pos_mm() - max_coord)*(max_z-min_z)/(second_cluster->get_z()-min_z)));
 						intersections.push_back(first_line.intersection(second_line));
 						++map_jt;
 					}
@@ -544,6 +312,20 @@ void Signal::HoughTracking(long event_nb){
 	CosmicBenchEvent * thisEvent = new CosmicBenchEvent(this,events);
 	vector<Ray> rays = thisEvent->get_absorption_rays();
 	delete thisEvent;
+	for(vector<Event*>::iterator ev_it=events.begin();ev_it!=events.end();++ev_it){
+		delete *ev_it;
+	}
+	events.clear();
+	for(map<bool,map<double,vector<Cluster*> > >::iterator coord_it=all_cluster.begin();coord_it!=all_cluster.end();++coord_it){
+		for(map<double,vector<Cluster*> >::iterator alt_it=(coord_it->second).begin();alt_it!=(coord_it->second).end();++alt_it){
+			for(vector<Cluster*>::iterator clus_it=(alt_it->second).begin();clus_it!=(alt_it->second).end();++clus_it){
+				delete *clus_it;
+			}
+			(alt_it->second).clear();
+		}
+		(coord_it->second).clear();
+	}
+	all_cluster.clear();
 	TGraph * rays_X = new TGraph();
 	TGraph * rays_Y = new TGraph();
 	int X_point_nb = 0;
@@ -571,50 +353,40 @@ void Signal::HoughTracking(long event_nb){
 	hough_space_Y->Draw("colz");
 	if(rays.size()>0) rays_Y->Draw("sameP");
 	if(Y_int_nb>0) int_Y->Draw("sameP");
+	cHough->Modified();
+	cHough->Update();
 }
-map<int,TProfile*> Signal::SignalOverNoise(){
-	map<int,TProfile*> global_signal_over_noise;
-	if(CM_N!=0){
-		cout << "not implemented with CM" << endl;
-		return global_signal_over_noise;
-	}
-	map<int,TCanvas*> cDisplay;
-	map<int,TH1D*> global_signal;
-	map<int,TH1D*> global_noise;
+map<Tomography::det_type,map<int,TProfile*> > Signal::SignalOverNoise(){
+	map<Tomography::det_type,map<int,TProfile*> > global_signal_over_noise;
+	map<Tomography::det_type,map<int,TH1D*> > global_signal;
+	map<Tomography::det_type,map<int,TH1D*> > global_noise;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-		if((*it)->get_type() == Tomography::MG){
-			MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-			ostringstream name;
-			name << "Multigen_" << current_det->get_mg_n_in_tree();
-			//cDisplay[current_det->get_mg_n_in_tree()] = new TCanvas(name.str().c_str());
-			//cDisplay[current_det->get_mg_n_in_tree()]->Divide(3);
-			name << "_";
-			global_signal[current_det->get_mg_n_in_tree()] = new TH1D((name.str() + "signal").c_str(),(name.str() + "signal").c_str(),500,0,4000);
-			global_noise[current_det->get_mg_n_in_tree()] = new TH1D((name.str() + "noise").c_str(),(name.str() + "noise").c_str(),100,0,100);
-			for(int i=0;i<61;i++){
-				global_noise[current_det->get_mg_n_in_tree()]->Fill(current_det->get_RMS(i));
-			}
-			global_signal_over_noise[current_det->get_mg_n_in_tree()] = new TProfile((name.str() + "S/B").c_str(),(name.str() + "S/B").c_str(),61,0,61);
+		ostringstream name;
+		name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+		name << "_";
+		global_signal[(*it)->get_type()][(*it)->get_n_in_tree()] = new TH1D((name.str() + "signal").c_str(),(name.str() + "signal").c_str(),500,0,Tomography::ADC_max);
+		global_noise[(*it)->get_type()][(*it)->get_n_in_tree()] = new TH1D((name.str() + "noise").c_str(),(name.str() + "noise").c_str(),100,0,100);
+		for(int i=0;i<(*it)->get_Nchannel();i++){
+			global_noise[(*it)->get_type()][(*it)->get_n_in_tree()]->Fill((*it)->get_RMS(i));
 		}
+		global_signal_over_noise[(*it)->get_type()][(*it)->get_n_in_tree()] = new TProfile((name.str() + "S/B").c_str(),(name.str() + "S/B").c_str(),(*it)->get_Nchannel(),0,(*it)->get_Nchannel());
 	}
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	for(long i=0;i<nentries && Tomography::can_continue;i++){
 		LoadTree(i);
 		GetEntry(i);
-
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			if((*it)->get_type() == Tomography::MG){
-				MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-				MG_Event current_event(*current_det,get_mg_ampl(current_det->get_mg_n_in_tree()),use_srf,Nevent);
-				current_event.MultiCluster();
-				vector<MG_Cluster> current_cluster = current_event.get_clusters();
-				for(vector<MG_Cluster>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
-					double current_signal = jt->get_maxStripAmpl();
-					double current_noise = current_det->get_RMS(MG_Detector::StripToChannel[jt->get_maxStrip()]);
-					global_signal[current_det->get_mg_n_in_tree()]->Fill(current_signal);
-					global_signal_over_noise[current_det->get_mg_n_in_tree()]->Fill(MG_Detector::StripToChannel[jt->get_maxStrip()],current_signal/current_noise);
-				}
+			Event * current_event = (*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent);
+			current_event->MultiCluster();
+			vector<Cluster*> current_cluster = current_event->get_clusters();
+			for(vector<Cluster*>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
+				double current_signal = (*jt)->get_maxStripAmpl();
+				double current_noise = (*it)->get_RMS((*it)->StripToChannel((*jt)->get_maxStrip()));
+				global_signal[(*it)->get_type()][(*it)->get_n_in_tree()]->Fill(current_signal);
+				global_signal_over_noise[(*it)->get_type()][(*it)->get_n_in_tree()]->Fill((*it)->StripToChannel((*jt)->get_maxStrip()),current_signal/current_noise);
+				delete *jt;
 			}
+			delete current_event;
 		}
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
 	}
@@ -623,137 +395,117 @@ map<int,TProfile*> Signal::SignalOverNoise(){
 }
 
 void Signal::SignalOverNoiseDisplay(){
-	map<int,TProfile*> global_signal_over_noise;
-	if(CM_N!=0){
-		cout << "not implemented with CM" << endl;
-		return;
-	}
-	map<int,TCanvas*> cDisplay;
-	map<int,TH1D*> global_signal;
-	map<int,TH1D*> global_noise;
+	map<Tomography::det_type,map<int,TProfile*> > global_signal_over_noise;
+	map<Tomography::det_type,map<int,TCanvas*> > cDisplay;
+	map<Tomography::det_type,map<int,TH1D*> > global_signal;
+	map<Tomography::det_type,map<int,TH1D*> > global_noise;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-		if((*it)->get_type() == Tomography::MG){
-			MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-			ostringstream name;
-			name << "Multigen_" << current_det->get_mg_n_in_tree();
-			cDisplay[current_det->get_mg_n_in_tree()] = new TCanvas(name.str().c_str());
-			cDisplay[current_det->get_mg_n_in_tree()]->Divide(3);
-			name << "_";
-			global_signal[current_det->get_mg_n_in_tree()] = new TH1D((name.str() + "signal").c_str(),(name.str() + "signal").c_str(),500,0,4000);
-			global_noise[current_det->get_mg_n_in_tree()] = new TH1D((name.str() + "noise").c_str(),(name.str() + "noise").c_str(),100,0,100);
-			for(int i=0;i<61;i++){
-				global_noise[current_det->get_mg_n_in_tree()]->Fill(current_det->get_RMS(i));
-			}
-			global_signal_over_noise[current_det->get_mg_n_in_tree()] = new TProfile((name.str() + "S/B").c_str(),(name.str() + "S/B").c_str(),61,0,61);
+		ostringstream name;
+		name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+		cDisplay[(*it)->get_type()][(*it)->get_n_in_tree()] = new TCanvas(name.str().c_str());
+		cDisplay[(*it)->get_type()][(*it)->get_n_in_tree()]->Divide(3);
+		name << "_";
+		global_signal[(*it)->get_type()][(*it)->get_n_in_tree()] = new TH1D((name.str() + "signal").c_str(),(name.str() + "signal").c_str(),500,0,Tomography::ADC_max);
+		global_noise[(*it)->get_type()][(*it)->get_n_in_tree()] = new TH1D((name.str() + "noise").c_str(),(name.str() + "noise").c_str(),100,0,100);
+		for(int i=0;i<(*it)->get_Nchannel();i++){
+			global_noise[(*it)->get_type()][(*it)->get_n_in_tree()]->Fill((*it)->get_RMS(i));
 		}
+		global_signal_over_noise[(*it)->get_type()][(*it)->get_n_in_tree()] = new TProfile((name.str() + "S/B").c_str(),(name.str() + "S/B").c_str(),(*it)->get_Nchannel(),0,(*it)->get_Nchannel());
 	}
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	for(long i=0;i<nentries && Tomography::can_continue;i++){
 		LoadTree(i);
 		GetEntry(i);
-
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			if((*it)->get_type() == Tomography::MG){
-				MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-				MG_Event current_event(*current_det,get_mg_ampl(current_det->get_mg_n_in_tree()),use_srf,Nevent);
-				current_event.MultiCluster();
-				vector<MG_Cluster> current_cluster = current_event.get_clusters();
-				for(vector<MG_Cluster>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
-					double current_signal = jt->get_maxStripAmpl();
-					double current_noise = current_det->get_RMS(MG_Detector::StripToChannel[jt->get_maxStrip()]);
-					global_signal[current_det->get_mg_n_in_tree()]->Fill(current_signal);
-					global_signal_over_noise[current_det->get_mg_n_in_tree()]->Fill(MG_Detector::StripToChannel[jt->get_maxStrip()],current_signal/current_noise);
-				}
+			Event * current_event = (*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent);
+			current_event->MultiCluster();
+			vector<Cluster*> current_cluster = current_event->get_clusters();
+			for(vector<Cluster*>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
+				double current_signal = (*jt)->get_maxStripAmpl();
+				double current_noise = (*it)->get_RMS((*it)->StripToChannel((*jt)->get_maxStrip()));
+				global_signal[(*it)->get_type()][(*it)->get_n_in_tree()]->Fill(current_signal);
+				global_signal_over_noise[(*it)->get_type()][(*it)->get_n_in_tree()]->Fill((*it)->StripToChannel((*jt)->get_maxStrip()),current_signal/current_noise);
+				delete *jt;
 			}
+			delete current_event;
 		}
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
 		if(i%5000 == 0 && Tomography::live_graphic_display){
-			for(map<int,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
-				it->second->cd(1);
-				global_signal[it->first]->Draw();
-				it->second->cd(2);
-				global_noise[it->first]->Draw();
-				it->second->cd(3);
-				global_signal_over_noise[it->first]->Draw();
-				it->second->Modified();
-				it->second->Update();
+			for(map<Tomography::det_type,map<int,TCanvas*> >::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
+				for(map<int,TCanvas*>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+					jt->second->cd(1);
+					global_signal[it->first][jt->first]->Draw();
+					jt->second->cd(2);
+					global_noise[it->first][jt->first]->Draw();
+					jt->second->cd(3);
+					global_signal_over_noise[it->first][jt->first]->Draw();
+					jt->second->Modified();
+					jt->second->Update();
+				}
 			}
 		}
 	}
 	cout << "\r" << nentries << "/" << nentries << endl;
-	for(map<int,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
-		it->second->cd(1);
-		TFitResultPtr res_signal = global_signal[it->first]->Fit("landau","SQ");
-		global_signal[it->first]->Draw();
-		it->second->cd(2);
-		TFitResultPtr res_noise = global_noise[it->first]->Fit("gaus","SQ");
-		global_noise[it->first]->Draw();
-		it->second->cd(3);
-		TLine * average_SoN = new TLine(0,(res_signal->Parameter(1))/(res_noise->Parameter(1)),61,(res_signal->Parameter(1))/(res_noise->Parameter(1)));
-		average_SoN->SetLineStyle(2);
-		average_SoN->SetLineColor(2);
-		TLine * mean_SoN = new TLine(0,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()),61,(global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()));
-		mean_SoN->SetLineStyle(2);
-		mean_SoN->SetLineColor(4);
-		global_signal_over_noise[it->first]->Draw();
-		average_SoN->Draw();
-		mean_SoN->Draw();
-		it->second->Modified();
-		it->second->Update();
-		cout << Tomography::MG << it->first << endl;
-		cout << "    mean S/B : " << global_signal_over_noise[it->first]->GetMean(2) << endl;
-		cout << "    mean S/mean B : " << (global_signal[it->first]->GetMean())/(global_noise[it->first]->GetMean()) << endl;
-		cout << "    sigma S/B : " << global_signal_over_noise[it->first]->GetRMS(2) << endl;
-		cout << "    delta mean S/B : " << global_signal_over_noise[it->first]->GetMean(11) << endl;
+	for(map<Tomography::det_type,map<int,TCanvas*> >::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
+		for(map<int,TCanvas*>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+			jt->second->cd(1);
+			TFitResultPtr res_signal = global_signal[it->first][jt->first]->Fit("landau","SQ");
+			global_signal[it->first][jt->first]->Draw();
+			jt->second->cd(2);
+			TFitResultPtr res_noise = global_noise[it->first][jt->first]->Fit("gaus","SQ");
+			global_noise[it->first][jt->first]->Draw();
+			jt->second->cd(3);
+			TLine * average_SoN = new TLine(0,(res_signal->Parameter(1))/(res_noise->Parameter(1)),61,(res_signal->Parameter(1))/(res_noise->Parameter(1)));
+			average_SoN->SetLineStyle(2);
+			average_SoN->SetLineColor(2);
+			TLine * mean_SoN = new TLine(0,(global_signal[it->first][jt->first]->GetMean())/(global_noise[it->first][jt->first]->GetMean()),61,(global_signal[it->first][jt->first]->GetMean())/(global_noise[it->first][jt->first]->GetMean()));
+			mean_SoN->SetLineStyle(2);
+			mean_SoN->SetLineColor(4);
+			global_signal_over_noise[it->first][jt->first]->Draw();
+			average_SoN->Draw();
+			mean_SoN->Draw();
+			jt->second->Modified();
+			jt->second->Update();
+			cout << it->first << "_" << jt->first << endl;
+			cout << "    mean S/B : " << global_signal_over_noise[it->first][jt->first]->GetMean(2) << endl;
+			cout << "    mean S/mean B : " << (global_signal[it->first][jt->first]->GetMean())/(global_noise[it->first][jt->first]->GetMean()) << endl;
+			cout << "    sigma S/B : " << global_signal_over_noise[it->first][jt->first]->GetRMS(2) << endl;
+			cout << "    delta mean S/B : " << global_signal_over_noise[it->first][jt->first]->GetMean(11) << endl;
+		}
 	}
 }
 
 void Signal::EventDisplay(int evn_min, int evn_max){
-	int column_nb = CeilNint((MG_N+CM_N)/2.);
+	int column_nb = CeilNint((get_det_N_tot())/2.);
 	TCanvas * cDisplay = new TCanvas("cDisplay","cDisplay",800,600);
 	cDisplay->Divide(column_nb,2);
-	vector<TGraph*> signal_shape;
-	for(int i=0;i<((CM_N*CM_Detector::Nstrip)+(MG_N*MG_Detector::Nstrip));i++){
-		signal_shape.push_back(new TGraph());
+	map<Tomography::det_type,vector<TGraph*> > signal_shape;
+	for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+		for(int i=0;i<(*det_it)->get_Nchannel();i++){
+			signal_shape[(*det_it)->get_type()].push_back(new TGraph());
+		}
 	}
 	long nentries = Min(fChain->GetEntriesFast(),static_cast<Long64_t>(evn_max));
 	if(evn_min>nentries) return;
 	for(long i=evn_min;i<nentries && Tomography::can_continue;i++){
 		LoadTree(i);
 		GetEntry(i);
-		for(int j=0;j<CM_N;j++){
-			for(int k=0;k<CM_Detector::Nstrip;k++){
-				int index = k+(j*CM_Detector::Nstrip);
-				int point_nb = 0;
-				for(int l=0;l<Tomography::Nsample;l++){
-					signal_shape[index]->SetPoint(point_nb,l,StripAmpl_CM_corr[j][k][l]);
-					point_nb++;
+		int det_id = 1;
+		for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+			vector<vector<double> > current_ampl = get_ampl((*det_it)->get_type(),(*det_it)->get_n_in_tree());
+			for(int j=0;i<(*det_it)->get_Nchannel();j++){
+				for(int k=0;k<Tomography::Nsample;k++){
+					signal_shape[(*det_it)->get_type()][j]->SetPoint(k,k,current_ampl[j][k]);
 				}
-				cDisplay->cd(j+1);
-				if(k==0){
-					signal_shape[index]->GetHistogram()->SetMinimum(-100);
-					signal_shape[index]->GetHistogram()->SetMaximum(1200);
-					signal_shape[index]->Draw("AL");
+				cDisplay->cd(det_id);
+				if(j==0){
+					signal_shape[(*det_it)->get_type()][j]->GetHistogram()->SetMinimum(-100);
+					signal_shape[(*det_it)->get_type()][j]->GetHistogram()->SetMaximum(1200);
+					signal_shape[(*det_it)->get_type()][j]->Draw("AL");
 				}
-				else signal_shape[index]->Draw("L");
+				else signal_shape[(*det_it)->get_type()][j]->Draw("L");
 			}
-		}
-		for(int j=0;j<MG_N;j++){
-			for(int k=0;k<MG_Detector::Nstrip;k++){
-				int index = k + (j*MG_Detector::Nstrip) + (CM_N*CM_Detector::Nstrip);
-				int point_nb = 0;
-				for(int l=0;l<Tomography::Nsample;l++){
-					signal_shape[index]->SetPoint(point_nb,l,StripAmpl_MG_corr[j][k][l]);
-					point_nb++;
-				}
-				cDisplay->cd(CM_N+j+1);
-				if(k==0){
-					signal_shape[index]->GetHistogram()->SetMinimum(-100);
-					signal_shape[index]->GetHistogram()->SetMaximum(1200);
-					signal_shape[index]->Draw("AL");
-				}
-				else signal_shape[index]->Draw("L");
-			}
+			det_id++;
 		}
 		cDisplay->Modified();
 		cDisplay->Update();
@@ -789,7 +541,7 @@ void Signal::SignalDispersion(){
 	TH2D * slope_corr_X = new TH2D("slope_corr_X","slope_corr_X",50,-1,1,50,-1,1);
 	TH2D * slope_corr_Y = new TH2D("slope_corr_Y","slope_corr_Y",50,-1,1,50,-1,1);
 
-	TH1D * clus_pos = new TH1D("clus_pos","clus_pos",1024,0,1023);
+	TH1D * clus_pos = new TH1D("clus_pos","clus_pos",1024,0,Tomography::XY_size);
 	TH1D * clus_size = new TH1D("clus_size","clus_size",50,-1,47);
 	TH1D * ray_slope = new TH1D("slope","slope",100,0,1);
 	TH1D * ray_phi = new TH1D("phi","phi",100,-Pi(),Pi());
@@ -801,51 +553,15 @@ void Signal::SignalDispersion(){
 	double min_angle = -1;
 	double max_angle = 10;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
-	if(CM_N>0){
-		cout << "does not support CM detectors" << endl;
-		return;
-	}
 	for(long ientry=0;ientry<nentries && Tomography::can_continue;ientry++){
 		LoadTree(ientry);
 		GetEntry(ientry);
-		/*
-		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			if((*it)->get_type() == Tomography::MG){
-				MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-				MG_Event current_event(*current_det,get_mg_ampl(current_det->get_mg_n_in_tree()),use_srf,Nevent);
-				current_event.MultiCluster();
-				current_event.do_cuts();
-				int current_n = current_event.get_n_in_tree();
-				bool current_X = current_event.get_is_X();
-				vector<MG_Cluster> current_clusters = current_event.get_clusters();
-				for(vector<MG_Cluster>::iterator clus_it = current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
-					clus_pos->Fill(clus_it->get_pos());
-					clus_size->Fill(clus_it->get_size());
-					int left = ((clus_it->get_pos() - clus_it->get_size()) > 0) ? (clus_it->get_pos() - clus_it->get_size()) : 0;
-					int right = ((clus_it->get_pos() + clus_it->get_size()) < 1023) ? (clus_it->get_pos() + clus_it->get_size()) : 1023;
-					for(int i=left;i<=right;i++){
-						for(int j=0;j<Tomography::Nsample;j++){
-							if(current_X){
-								signalShape_X->Fill(i - clus_it->get_pos(),j,StripAmpl_MG_corr[current_n][MG_Detector::StripToChannel[i]][j]);
-							}
-							else{
-								signalShape_Y->Fill(i - clus_it->get_pos(),j,StripAmpl_MG_corr[current_n][MG_Detector::StripToChannel[i]][j]);
-							}
-						}
-					}
-				}
-			}
-		}
-		*/
 
 		vector<Event*> events;
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			if((*it)->get_type() == Tomography::MG){
-				MG_Detector * current_det = dynamic_cast<MG_Detector*>(*it);
-				events.push_back(new MG_Event(*current_det,get_mg_ampl(current_det->get_mg_n_in_tree()),use_srf,Nevent));
-				events.back()->MultiCluster();
-				events.back()->do_cuts();
-			}
+			events.push_back((*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent));
+			events.back()->MultiCluster();
+			events.back()->do_cuts();
 		}
 		CosmicBenchEvent * CBEvent = new CosmicBenchEvent(this,events);
 		vector<Ray> current_rays = CBEvent->get_absorption_rays();
@@ -862,10 +578,11 @@ void Signal::SignalDispersion(){
 			vector<double> clus_slopes_X;
 			vector<double> clus_slopes_Y;
 			for(vector<Cluster*>::iterator clus_it = current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
-				clus_pos->Fill((*clus_it)->get_pos());
+				clus_pos->Fill((*clus_it)->get_pos()*(Tomography::Static_Detector[(*clus_it)->get_type()]->get_StripPitch()));
 				clus_size->Fill((*clus_it)->get_size());
 				int left = (((*clus_it)->get_pos() - (*clus_it)->get_size()) > 0) ? ((*clus_it)->get_pos() - (*clus_it)->get_size()) : 0;
-				int right = (((*clus_it)->get_pos() + (*clus_it)->get_size()) < 1023) ? ((*clus_it)->get_pos() + (*clus_it)->get_size()) : 1023;
+				int max_strip = detectors[(*clus_it)->find_det(detectors)]->get_Nstrip();
+				int right = (((*clus_it)->get_pos() + (*clus_it)->get_size()) < max_strip) ? ((*clus_it)->get_pos() + (*clus_it)->get_size()) : max_strip;
 				int current_n = (*clus_it)->get_n_in_tree();
 				int current_X = (*clus_it)->get_is_X();
 				TGraphErrors * gFit = new TGraphErrors();
@@ -874,12 +591,13 @@ void Signal::SignalDispersion(){
 				lFit->SetParameters(0,0);
 				lFit->SetParLimits(0,-10,10);
 				lFit->SetParLimits(1,-2,2);
+				vector<vector<double> > det_ampl = get_ampl((*clus_it)->get_type(),current_n);
 				for(int j=0;j<Tomography::Nsample;j++){
 					double mean = 0;
 					double ampl = 0;
 					double max_ampl = 0;
 					for(int i=left;i<=right;i++){
-						double current_ampl = StripAmpl_MG_corr[current_n][MG_Detector::StripToChannel[i]][j];
+						double current_ampl = det_ampl[Tomography::Static_Detector[(*clus_it)->get_type()]->StripToChannel(i)][j];
 						double current_pos = i - (*clus_it)->get_pos();
 						mean = (mean*ampl + current_pos*current_ampl)/(ampl+current_ampl);
 						ampl += current_ampl;

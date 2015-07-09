@@ -51,11 +51,11 @@ int main(int argc, char ** argv){
 		if(operation == ped_run) blah.compute_RMSPed();
 	}
 	else{
-		Tanalyse_W * analysisFile = new Tanalyse_W(config_tree.get<string>("Tree"),config_tree.get<int>("total_CM_N"),config_tree.get<int>("total_MG_N"));
+		CosmicBench * bench = new CosmicBench(config_tree);
+		Tanalyse_W * analysisFile = new Tanalyse_W(config_tree.get<string>("Tree"),bench->get_det_N());
 		DataReader blah(config_tree,false);
 		blah.read_ped();
-		CosmicBench * bench = new CosmicBench(config_tree);
-		int total_det = bench->get_CM_N() + bench->get_MG_N();
+		int total_det = bench->get_det_N_tot();
 		long event_nb = 0;
 		int Nevent = 0;
 		double evttime = 0;
@@ -79,22 +79,18 @@ int main(int argc, char ** argv){
 					}
 				}
 			}
-			vector<CM_Event> cm_events;
-			vector<MG_Event> mg_events;
+			map<Tomography::det_type,vector<Event*> > events;
 			for(int i=0;i<total_det;i++){
 				Detector * det = bench->get_detector(i);
-				if(det->get_type() == Tomography::MG){
-					MG_Detector * current_det = dynamic_cast<MG_Detector*>(det);
-					mg_events.push_back(MG_Event(*current_det,current_data_d[Tomography::MG][current_det->get_mg_n_in_tree()],false,event_nb));
-					(mg_events.back()).MultiCluster();
-				}
-				else if(det->get_type() == Tomography::CM){
-					CM_Detector * current_det = dynamic_cast<CM_Detector*>(det);
-					cm_events.push_back(CM_Event(*current_det,current_data_d[Tomography::CM][current_det->get_cm_n_in_tree()],false,event_nb));
-					(cm_events.back()).MultiCluster();
+				events[det->get_type()].push_back(det->build_event(current_data_d[Tomography::MG][det->get_n_in_tree()],event_nb));
+				(events[det->get_type()].back())->MultiCluster();
+			}
+			analysisFile->fillTree(Nevent,evttime,events);
+			for(map<Tomography::det_type,vector<Event*> >::iterator type_it = events.begin();type_it!=events.end();++type_it){
+				for(vector<Event*>::iterator ev_it = (type_it->second).begin();ev_it!=(type_it->second).end();++ev_it){
+					delete *ev_it;
 				}
 			}
-			analysisFile->fillTree(Nevent,evttime,mg_events,cm_events);
 			event_nb++;
 		}
 		cout << "\r" << "event processed : " << event_nb << endl;

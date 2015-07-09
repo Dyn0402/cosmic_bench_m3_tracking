@@ -248,12 +248,20 @@ CM_Event::CM_Event(const CM_Detector * const detector_, vector<vector<double> > 
 void CM_Event::MultiCluster(){
 	// TODO : implement multicluster for CM
 }
+void CM_Event::HoughCluster(){
+	// TODO : implement houghcluster for CM
+}
 void CM_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
 	if(strip_ampl_.size()!=64){
 		cout << "problem in size" << endl;
 		return;
 	}
 	strip_ampl = strip_ampl_;
+}
+TH1D * CM_Event::get_ampl_hist() const{
+	ostringstream name;
+	name << "ampl_CM_det_" << detector->get_n_in_tree() << "_evn_" << evn;
+	return new TH1D(name.str().c_str(),name.str().c_str(),1024,-CM_Detector::size/2.,CM_Detector::size/2.);
 }
 Event * CM_Event::Clone() const{
 	return new CM_Event(*this);
@@ -263,14 +271,14 @@ CM_Event::~CM_Event(){
 }
 
 CM_Demux_Event::CM_Demux_Event(): Event(){
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
 }
 CM_Demux_Event::CM_Demux_Event(const CM_Demux_Event& other): Event(other){
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
 }
 CM_Demux_Event& CM_Demux_Event::operator=(const CM_Demux_Event& other){
 	Event::operator=(other);
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
 	return *this;
 }
 CM_Demux_Event::CM_Demux_Event(const CM_Event& rawEvent): Event(rawEvent.detector,rawEvent.evn){
@@ -298,10 +306,13 @@ CM_Demux_Event::CM_Demux_Event(const CM_Event& rawEvent): Event(rawEvent.detecto
 	}
 	has_spark = rawEvent.has_spark;
 	strip_ampl = rawEvent.strip_ampl;
-	type = Tomography::CM_Demux;
+	type = Tomography::CM;
 }
 void CM_Demux_Event::MultiCluster(){
 	// TODO : implement multicluster for CM
+}
+void CM_Demux_Event::HoughCluster(){
+	// TODO : implement houghcluster for CM
 }
 void CM_Demux_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
 	if(strip_ampl_.size()!=64){
@@ -312,6 +323,11 @@ void CM_Demux_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
 }
 Event * CM_Demux_Event::Clone() const{
 	return new CM_Demux_Event(*this);
+}
+TH1D * CM_Demux_Event::get_ampl_hist() const{
+	ostringstream name;
+	name << "ampl_CM_det_" << detector->get_n_in_tree() << "_evn_" << evn;
+	return new TH1D(name.str().c_str(),name.str().c_str(),1024,-CM_Detector::size/2.,CM_Detector::size/2.);
 }
 CM_Demux_Event::~CM_Demux_Event(){
 
@@ -436,19 +452,19 @@ void MG_Event::MultiCluster(){
 		pair<int,int> biggest_current_cluster(0,-1);
 		vector<int> current_used_channel;
 		for(int i=0;i<n;i++){
-			if(channelOverThreshold.count(MG_Detector::StripToChannel[i])>0 && find(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel[i]) == global_used_channel.end()){
+			if(channelOverThreshold.count(MG_Detector::StripToChannel_a[i])>0 && find(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel_a[i]) == global_used_channel.end()){
 				pair<int,int> current_cluster(i,i);
 				vector<int> used_channel;
-				used_channel.push_back(MG_Detector::StripToChannel[i]);
+				used_channel.push_back(MG_Detector::StripToChannel_a[i]);
 				map<int,int> hole_channel;
 				for(int j=i+1;j<n;j++){
-					if(/*find(used_channel.begin(),used_channel.end(),MG_Detector::StripToChannel[j]) == used_channel.end() &&*/ find(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel[j]) == global_used_channel.end() /*&& !(hole_channel.count(MG_Detector::StripToChannel[j])>0)*/){
-						if(channelOverThreshold.count(MG_Detector::StripToChannel[j])>0){
+					if(/*find(used_channel.begin(),used_channel.end(),MG_Detector::StripToChannel_a[j]) == used_channel.end() &&*/ find(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel_a[j]) == global_used_channel.end() /*&& !(hole_channel.count(MG_Detector::StripToChannel_a[j])>0)*/){
+						if(channelOverThreshold.count(MG_Detector::StripToChannel_a[j])>0){
 							current_cluster.second = j;
-							used_channel.push_back(MG_Detector::StripToChannel[j]);
+							used_channel.push_back(MG_Detector::StripToChannel_a[j]);
 						}
 						else if(hole_channel.size()<max_hole_size){
-							hole_channel.insert(pair<int,int>(MG_Detector::StripToChannel[j],j));
+							hole_channel.insert(pair<int,int>(MG_Detector::StripToChannel_a[j],j));
 						}
 						else break;
 					}		
@@ -496,8 +512,8 @@ void MG_Event::MultiCluster(){
 		//double tot_ampl = 0;
 		//double pos_TPC = 0;
 		for(int j = cluster_list[i].first;j<((cluster_list[i].second)+1);j++){
-			StripInfo current_strip = allChannels[MG_Detector::StripToChannel[j]];
-			double effective_ampl = current_strip.MaxAmpl/count(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel[j]);
+			StripInfo current_strip = allChannels[MG_Detector::StripToChannel_a[j]];
+			double effective_ampl = current_strip.MaxAmpl/count(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel_a[j]);
 			ClusPos = (ClusPos*ClusAmpl + j*effective_ampl)/(ClusAmpl + effective_ampl);
 			ClusAmpl += effective_ampl;
 
@@ -505,7 +521,7 @@ void MG_Event::MultiCluster(){
 			/*
 			for(int k=0;k<Tomography::Nsample;k++){
 				if(!(current_strip.signal_sample[k])) continue;
-				double current_tot_ampl = strip_ampl[MG_Detector::StripToChannel[j]][k]/count(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel[j]);
+				double current_tot_ampl = strip_ampl[MG_Detector::StripToChannel_a[j]][k]/count(global_used_channel.begin(),global_used_channel.end(),MG_Detector::StripToChannel_a[j]);
 				pos_TPC = (pos_TPC*tot_ampl + j*current_tot_ampl)/(tot_ampl + current_tot_ampl);
 				tot_ampl += current_tot_ampl;
 			}
@@ -521,7 +537,7 @@ void MG_Event::MultiCluster(){
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
 			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
-			SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector->get_RMS(MG_Detector::StripToChannel[j]));
+			SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector->get_RMS(MG_Detector::StripToChannel_a[j]));
 			graph_point_n++;
 		}
 
@@ -531,7 +547,7 @@ void MG_Event::MultiCluster(){
 				double y_current = -1;
 				SRFgraph->GetPoint(iPoint,x_current,y_current);
 				y_current /= ClusMaxStripAmpl;
-				//y_current = strip_ampl[MG_Detector::StripToChannel[static_cast<int>(x_current)]][static_cast<int>(ClusMaxSample)]/ClusMaxStripAmpl;
+				//y_current = strip_ampl[MG_Detector::StripToChannel_a[static_cast<int>(x_current)]][static_cast<int>(ClusMaxSample)]/ClusMaxStripAmpl;
 				SRFgraph->SetPoint(iPoint,x_current,y_current);
 				SRFgraph->SetPointError(iPoint,MG_Detector::StripPitch,(SRFgraph->GetEY())[iPoint]/ClusMaxStripAmpl);
 			}
@@ -606,10 +622,10 @@ void MG_Event::HoughCluster(){
 	vector<pair<int,int> > cluster_list;
 	int k = 0;
 	while(k<n){
-		if(channelOverThreshold.count(MG_Detector::StripToChannel[k])>0){
+		if(channelOverThreshold.count(MG_Detector::StripToChannel_a[k])>0){
 			pair<int,int> current_cluster(k,k);
 			for(int j=k+1;j<n;j++){
-				if(channelOverThreshold.count(MG_Detector::StripToChannel[j])>0){
+				if(channelOverThreshold.count(MG_Detector::StripToChannel_a[j])>0){
 					current_cluster.second = j;
 				}
 				else break;
@@ -622,10 +638,10 @@ void MG_Event::HoughCluster(){
 	k=0;
 	if(cluster_list.empty()){
 		while(k<n){
-			if(channelOverThreshold.count(MG_Detector::StripToChannel[k])>0){
+			if(channelOverThreshold.count(MG_Detector::StripToChannel_a[k])>0){
 				pair<int,int> current_cluster(k,k);
 				for(int j=k+1;j<n;j++){
-					if(channelOverThreshold.count(MG_Detector::StripToChannel[j])>0){
+					if(channelOverThreshold.count(MG_Detector::StripToChannel_a[j])>0){
 						current_cluster.second = j;
 					}
 					else break;
@@ -651,7 +667,7 @@ void MG_Event::HoughCluster(){
 		double ClusT = 0;
 		double ClusTOT = 0;
 		for(int j = cluster_list[i].first;j<((cluster_list[i].second)+1);j++){
-			StripInfo current_strip = allChannels[MG_Detector::StripToChannel[j]];
+			StripInfo current_strip = allChannels[MG_Detector::StripToChannel_a[j]];
 			double effective_ampl = current_strip.MaxAmpl;
 			ClusPos = (ClusPos*ClusAmpl + j*effective_ampl)/(ClusAmpl + effective_ampl);
 			ClusAmpl += effective_ampl;
@@ -664,7 +680,7 @@ void MG_Event::HoughCluster(){
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
 			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
-			SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector->get_RMS(MG_Detector::StripToChannel[j]));
+			SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector->get_RMS(MG_Detector::StripToChannel_a[j]));
 			graph_point_n++;
 		}
 
@@ -674,7 +690,7 @@ void MG_Event::HoughCluster(){
 				double y_current = -1;
 				SRFgraph->GetPoint(iPoint,x_current,y_current);
 				y_current /= ClusMaxStripAmpl;
-				//y_current = strip_ampl[MG_Detector::StripToChannel[static_cast<int>(x_current)]][static_cast<int>(ClusMaxSample)]/ClusMaxStripAmpl;
+				//y_current = strip_ampl[MG_Detector::StripToChannel_a[static_cast<int>(x_current)]][static_cast<int>(ClusMaxSample)]/ClusMaxStripAmpl;
 				SRFgraph->SetPoint(iPoint,x_current,y_current);
 				SRFgraph->SetPointError(iPoint,MG_Detector::StripPitch,(SRFgraph->GetEY())[iPoint]/ClusMaxStripAmpl);
 			}
@@ -731,7 +747,7 @@ TH1D * MG_Event::get_ampl_hist() const{
 		if(it->second>1023) it->second = 1023;
 		for(int strip=it->first;strip<=it->second;strip++){
 			if(is_used[strip]) continue;
-			int channel = MG_Detector::StripToChannel[strip];
+			int channel = MG_Detector::StripToChannel_a[strip];
 			histo->Fill(strip*MG_Detector::StripPitch - MG_Detector::size/2.,*max_element(strip_ampl[channel].begin(),strip_ampl[channel].end()));
 			is_used[strip] = true;
 		}

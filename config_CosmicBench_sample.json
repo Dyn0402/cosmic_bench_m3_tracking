@@ -21,11 +21,11 @@
 		}
 	],
 	"CosmicBench":{
-		"CosMultis": // Cosmultis caracs
+		"CM": // Cosmultis caracs
 		[
 
 		],
-		"MultiGens": // Multigen caracs
+		"MG": // Multigen caracs
 		[
 			{
 				"mg_n": 0, // number of the detector in signal and analysis tree

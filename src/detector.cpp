@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 //Boost
 #include <boost/property_tree/ptree.hpp>
@@ -15,6 +16,7 @@
 using std::cout;
 using std::endl;
 using std::ifstream;
+using std::ostringstream;
 
 //boost
 using boost::property_tree::ptree;
@@ -59,6 +61,9 @@ double Detector::get_angle_z() const{
 int Detector::get_perp_n() const{
 	return perp_n;
 }
+Tomography::det_type Detector::get_perp_type() const{
+	return this->get_type();
+}
 int Detector::get_clustering_holes() const{
 	return clustering_holes;
 }
@@ -67,6 +72,9 @@ double Detector::get_RMS(int i) const{
 }
 int Detector::get_n_in_tree() const{
 	return n_in_tree;
+}
+int Detector::get_asic_n() const{
+	return asic_n;
 }
 Detector::Detector(){
 	z = -1;
@@ -81,6 +89,7 @@ Detector::Detector(){
 	perp_n = -1;
 	clustering_holes = 0;
 	n_in_tree = -1;
+	asic_n = -1;
 }
 Detector::Detector(const Detector& other){
 	z = other.z;
@@ -96,6 +105,7 @@ Detector::Detector(const Detector& other){
 	perp_n = other.perp_n;
 	clustering_holes = other.clustering_holes;
 	n_in_tree = other.n_in_tree;
+	asic_n = other.asic_n;
 }
 Detector& Detector::operator=(const Detector& other){
 	z = other.z;
@@ -111,9 +121,10 @@ Detector& Detector::operator=(const Detector& other){
 	perp_n = other.perp_n;
 	clustering_holes = other.clustering_holes;
 	n_in_tree = other.n_in_tree;
+	asic_n = other.asic_n;
 	return *this;
 }
-Detector::Detector(double z_, bool is_X_, bool is_up_, int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_){
+Detector::Detector(double z_, bool is_X_, bool is_up_, int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_){
 	z = z_;
 	is_X = is_X_;
 	is_up = is_up_;
@@ -126,6 +137,7 @@ Detector::Detector(double z_, bool is_X_, bool is_up_, int det_n, bool is_ref_, 
 	perp_n = perp_n_;
 	clustering_holes = clustering_holes_;
 	n_in_tree = det_n;
+	asic_n = asic_n_;
 }
 Detector::~Detector(){
 
@@ -157,7 +169,7 @@ CM_Detector& CM_Detector::operator=(const CM_Detector& other){
 	ClusSizeCut_Max_Wide = other.ClusSizeCut_Max_Wide;
 	return *this;
 }
-CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_) :Detector(z_,is_X_,is_up_,cm_n, is_ref_, offset_, direction_, angle_x_, angle_y_, angle_z_,-1,0){
+CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int asic_n_) :Detector(z_,is_X_,is_up_,cm_n, is_ref_, offset_, direction_, angle_x_, angle_y_, angle_z_,-1,0,asic_n_){
 	use_thin_strip = use_thin_strip_;
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
@@ -171,8 +183,20 @@ Detector * CM_Detector::Clone() const{
 Event * CM_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
 	return new CM_Event(treeObject, this, entry);
 }
+Event * CM_Detector::build_event(vector<vector<double> > strip_ampl_, int evn_) const{
+	return new CM_Event(this, strip_ampl_,evn_);
+}
 CM_Detector::~CM_Detector(){
 
+}
+Detector * CM_Detector::build_det(const ptree::value_type& child) const{
+	CM_Detector * current_det  = new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<double>("asic_n"));
+	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
+	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
+	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
+	current_det->set_ClusMaxStripAmplCut_Min_Wide(child.second.get<double>("ClusMaxStripAmplCut_Min_Wide"));
+	current_det->set_ClusSizeCut_Max_Wide(child.second.get<double>("ClusSizeCut_Max_Wide"));
+	return current_det;
 }
 void CM_Detector::set_ClusMaxStripAmplCut_Min_Wide(double cut){
 	ClusMaxStripAmplCut_Min_Wide = cut;
@@ -202,11 +226,20 @@ void CM_Detector::set_RMS(vector<double> RMS_){
 double CM_Detector::get_size() const{
 	return size;
 }
+int CM_Detector::get_Nchannel() const{
+	return Nchannel;
+}
 int CM_Detector::get_Nstrip() const{
 	return Nstrip;
 }
 double CM_Detector::get_StripPitch() const{
 	return -1;
+}
+int CM_Detector::get_CMN_div() const{
+	return CMN_div;
+}
+unsigned int CM_Detector::StripToChannel(unsigned int i) const{
+	return i;
 }
 bool CM_Detector::is_suitable(Cluster * clus) const{
 	if(!(clus->is_in_det(this))) return false;
@@ -220,6 +253,12 @@ bool CM_Detector::is_suitable(Cluster * clus) const{
 		if(clus->get_maxStripAmpl() < ClusMaxStripAmplCut_Min_Wide) return false;
 	}
 	return true;
+}
+int CM_Detector::feminos_mapping(int channel) const{
+	return channel;
+}
+int CM_Detector::dream_mapping(int channel) const{
+	return channel;
 }
 
 MG_Detector::MG_Detector(): Detector(){
@@ -242,7 +281,7 @@ MG_Detector& MG_Detector::operator=(const MG_Detector& other){
 	ClusSizeCut_Min = other.ClusSizeCut_Min;
 	return *this;
 }
-MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_){
+MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,asic_n_){
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;
@@ -254,10 +293,21 @@ Detector * MG_Detector::Clone() const{
 Event * MG_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
 	return new MG_Event(treeObject, this, entry);
 }
+Event * MG_Detector::build_event(vector<vector<double> > strip_ampl_, int evn_) const{
+	return new MG_Event(this, strip_ampl_,evn_);
+}
 MG_Detector::~MG_Detector(){
 
 }
-static vector<unsigned int> generate_StripToChannel(){
+Detector * MG_Detector::build_det(const ptree::value_type& child) const{
+	MG_Detector * current_det = new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<double>("angle_z"));
+	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
+	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
+	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
+	current_det->set_ClusSizeCut_Min(child.second.get<double>("ClusSizeCut_Min"));
+	return current_det;
+}
+static vector<unsigned int> generate_StripToChannel_MG(){
 	int p=61; int n=1024;
 	int MultiplexSeries[]={30,10,15,19,5,20,27,22,11,24,18,12,9,6,3,4,1,16,8,2,23,21,7,25,14,28,17,26,13,29};
 	vector<unsigned int> Detector(n,0); // strip to channel correspondance
@@ -270,7 +320,10 @@ static vector<unsigned int> generate_StripToChannel(){
 	}
 	return Detector;
 }
-const vector<unsigned int> MG_Detector::StripToChannel = generate_StripToChannel();
+const vector<unsigned int> MG_Detector::StripToChannel_a = generate_StripToChannel_MG();
+unsigned int MG_Detector::StripToChannel(unsigned int i) const{
+	return StripToChannel_a[i];
+}
 
 vector<unsigned int> MG_Detector::ChannelToStrip(unsigned int channel_nb){
 	vector<unsigned int> channel_list;
@@ -330,11 +383,17 @@ double MG_Detector::SRF_fit(double * x, double * p){
 double MG_Detector::get_size() const{
 	return size;
 }
+int MG_Detector::get_Nchannel() const{
+	return Nchannel;
+}
 int MG_Detector::get_Nstrip() const{
 	return Nstrip;
 }
 double MG_Detector::get_StripPitch() const{
 	return StripPitch;
+}
+int MG_Detector::get_CMN_div() const{
+	return CMN_div;
 }
 bool MG_Detector::is_suitable(Cluster * clus) const{
 	if(!(clus->is_in_det(this))) return false;
@@ -345,6 +404,14 @@ bool MG_Detector::is_suitable(Cluster * clus) const{
 	if(clus->get_maxSample() > ClusMaxSampleCut_Max) return false;
 	if(clus->get_size() < ClusSizeCut_Min) return false;
 	return true;
+}
+int MG_Detector::feminos_mapping(int channel) const{
+	int tmpchan = channel - 2 - (channel>13) - (channel>24) - (channel>47) - (channel>58);
+	if(tmpchan>15 && tmpchan<48) return tmpchan;
+	else return (tmpchan + 1 - (2*(tmpchan%2)));
+}
+int MG_Detector::dream_mapping(int channel) const{
+	return (channel + 1 - (2*(channel%2)));
 }
 
 CosmicBench::CosmicBench(){
@@ -385,22 +452,56 @@ CosmicBench::~CosmicBench(){
 CosmicBench::CosmicBench(ptree config_tree){
 	Init(config_tree);
 }
+map<Tomography::det_type,vector<vector<double> > > CosmicBench::read_pedfile(string filename, map<Tomography::det_type,unsigned short> det_n_){
+	ifstream in;
+	in.open(filename.c_str());
+	int current_det = 0;
+	int current_strip = 0;
+	int last_det = -1;
+	double current_rms = 0;
+	map<Tomography::det_type,vector<vector<double> > > RMS;
+	for(map<Tomography::det_type,unsigned short>::const_iterator type_it=det_n_.begin();type_it!=det_n_.end();++type_it){
+		RMS[type_it->first] = vector<vector<double> >(type_it->second,vector<double>(Tomography::Static_Detector[type_it->first]->get_Nchannel()));
+	}
+	map<const Tomography::det_type,const Detector* const>::iterator det_it = Tomography::Static_Detector.begin();
+	while(in.good() && det_it!=Tomography::Static_Detector.end()){
+		in >> current_det >> current_strip >> current_rms;
+		if(current_det<0 || current_strip<0){
+			cout << "problem reading pedfile" << endl;
+		}
+		if(current_det < last_det && current_strip == 0){
+			++det_it;
+			if(det_it==Tomography::Static_Detector.end()) break;
+		}
+		if(current_det >= det_n_[det_it->first]){
+			cout << "too much " << det_it->first << " detectors" << endl;
+		}
+		if(current_strip > det_it->second->get_Nchannel()){
+			cout << "too much strip for " << det_it->first << "_" << current_det << endl;
+		}
+		RMS[det_it->first][current_det][current_strip] = current_rms;
+		last_det = current_det;
+	}
+	in.close();
+	return RMS;
+}
 void CosmicBench::Init(ptree config_tree){
-	int total_CM_N = config_tree.get<int>("total_CM_N");
-	int total_MG_N = config_tree.get<int>("total_MG_N");
+	//int total_CM_N = config_tree.get<int>("total_CM_N");
+	//int total_MG_N = config_tree.get<int>("total_MG_N");
 	string RMSName = config_tree.get<string>("RMSPed");
+	/*
 	ifstream in;
 	in.open(RMSName.c_str());
 	int rms_strip, det;
 	vector<vector<double> > RMS;
 	for(int i=0;i<total_CM_N;i++){
-		RMS.push_back(vector<double>(CM_Detector::Nstrip,0));
+		RMS.push_back(vector<double>(CM_Detector::Nchannel,0));
 	}
 	for(int i=0;i<total_MG_N;i++){
-		RMS.push_back(vector<double>(MG_Detector::Nstrip,0));
+		RMS.push_back(vector<double>(MG_Detector::Nchannel,0));
 	}
 	int n_lines = 0;
-	while(in.good() && n_lines<((total_CM_N*CM_Detector::Nstrip)+(total_MG_N*MG_Detector::Nstrip))){
+	while(in.good() && n_lines<((total_CM_N*CM_Detector::Nchannel)+(total_MG_N*MG_Detector::Nchannel))){
 		double current_rms;
 		in >> det >> rms_strip >> current_rms;
 		if(det<0 || det>(total_MG_N+total_CM_N-1)){
@@ -416,9 +517,24 @@ void CosmicBench::Init(ptree config_tree){
 		n_lines++;
 	}
 	in.close();
+	*/
+	detectors.clear();
+	for(map<const Tomography::det_type,const Detector* const>::iterator type_it=Tomography::Static_Detector.begin();type_it!=Tomography::Static_Detector.end();++type_it){
+		ostringstream childname;
+		childname << "CosmicBench." << type_it->first;
+		BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child(childname.str())){
+			detectors.push_back(type_it->second->build_det(child));
+			det_n[type_it->first]++;
+		}
+	}
+	map<Tomography::det_type,vector<vector<double> > > RMS = read_pedfile(RMSName,det_n);
+	for(vector<Detector*>::iterator det_it=detectors.begin();det_it!=detectors.end();++det_it){
+		(*det_it)->set_RMS(RMS[(*det_it)->get_type()][(*det_it)->get_n_in_tree()]);
+	}
+	/*
 	detectors.clear();
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
-		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z")));
+		detectors.push_back(new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<double>("asic_n")));
 		CM_Detector * current_det = dynamic_cast<CM_Detector*>(detectors.back());
 		current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 		current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
@@ -429,7 +545,7 @@ void CosmicBench::Init(ptree config_tree){
 		det_n[Tomography::CM]++;
 	}
 	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes")));
+		detectors.push_back(new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<double>("angle_z")));
 		MG_Detector * current_det = dynamic_cast<MG_Detector*>(detectors.back());
 		current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 		current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
@@ -442,9 +558,13 @@ void CosmicBench::Init(ptree config_tree){
 		cout << "problem in detectors number" << endl;
 		return;
 	}
+	*/
 }
 int CosmicBench::get_det_N(Tomography::det_type det_t) const{
 	return (det_n.find(det_t))->second;
+}
+map<Tomography::det_type,unsigned short> CosmicBench::get_det_N() const{
+	return det_n;
 }
 int CosmicBench::get_det_N_tot() const{
 	int tot = 0;

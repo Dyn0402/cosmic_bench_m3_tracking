@@ -1,11 +1,13 @@
 #include "tomography.h"
-#include "datareader.h"
+//#include "datareader.h"
+#include "detector.h"
 #include <map>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <ctime>
 #include <string>
+#include <utility>
 #include <TROOT.h>
 #include <TCanvas.h>
 
@@ -19,6 +21,7 @@ using std::ostringstream;
 using std::setw;
 using std::setfill;
 using std::string;
+using std::pair;
 
 using boost::property_tree::ptree;
 
@@ -29,7 +32,6 @@ bool Tomography::live_graphic_display = !Tomography::is_batch;
 ostream& Tomography::operator<<(ostream& os, const det_type& det){
 	switch(det){
 		case CM : os << "CM"; break;
-		case CM_Demux : os << "CM_Demux"; break;
 		case MG : os << "MG"; break;
 		default : os << "unknown det";
 	}
@@ -107,13 +109,14 @@ Tomography::elec_type Tomography::str_to_elec(string str){
 	else if(str == "feminos") return_value = Feminos;
 	return return_value;
 }
-static map<Tomography::det_type,int> CMN_div_build(){
-	map<Tomography::det_type,int> return_map;
-	return_map[Tomography::CM] = 2;
-	return_map[Tomography::MG] = 2;
+
+static map<const Tomography::det_type,const Detector* const> Static_Detector_build(){
+	map<const Tomography::det_type,const Detector* const> return_map;
+	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::CM,new CM_Detector()));
+	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::MG,new MG_Detector()));
 	return return_map;
 }
-const map<Tomography::det_type,int> Tomography::CMN_div = CMN_div_build();
+map<const Tomography::det_type,const Detector* const> Tomography::Static_Detector = Static_Detector_build();
 /*
 void Tomography::process_elec_files(ptree config_tree){
 	int total_CM_N = config_tree.get<int>("total_CM_N");

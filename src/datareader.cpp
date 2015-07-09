@@ -43,19 +43,16 @@ DataReader::DataReader(){
 	PedName.clear();
 	RMSName.clear();
 	Ped.clear();
+	det_N.clear();
 }
 void DataReader::Init(map<int,Tomography::det_type> det_type_by_asic_, map<int,int> det_n_by_asic_, string PedName_, string RMSName_, string outFileName, long max_event_){
 	det_type_by_asic = det_type_by_asic_;
 	det_n_by_asic = det_n_by_asic_;
-	int CM_N = 0;
-	int MG_N = 0;
 	for(map<int,Tomography::det_type>::iterator type_it = det_type_by_asic.begin();type_it!=det_type_by_asic.end();++type_it){
-		if(type_it->second == Tomography::MG) MG_N++;
-		else if(type_it->second == Tomography::CM) CM_N++;
+		det_N[type_it->second]++;
 	}
-	if(CM_N>0) cout << "Warning CM are not totally supported !" << endl;
 	if(outFileName.size()>0){
-		outTree = new Tsignal_W(outFileName,CM_N,MG_N);
+		outTree = new Tsignal_W(outFileName,det_N);
 	}
 	else outTree = NULL;
 	reader = NULL;
@@ -64,13 +61,11 @@ void DataReader::Init(map<int,Tomography::det_type> det_type_by_asic_, map<int,i
 	mapping = NULL;
 	Nevent = -1;
 	evttime = 0;
-	if(MG_N>0){
-		StripAmpl[Tomography::MG] = vector<vector<vector<float> > >(MG_N,vector<vector<float> >(MG_Detector::Nstrip,vector<float>(Tomography::Nsample,0)));
-		Ped[Tomography::MG] = vector<vector<float> >(MG_N,vector<float>(MG_Detector::Nstrip,0));
-	}
-	if(CM_N>0){
-		StripAmpl[Tomography::CM] = vector<vector<vector<float> > >(CM_N,vector<vector<float> >(CM_Detector::Nstrip,vector<float>(Tomography::Nsample,0)));
-		Ped[Tomography::CM] = vector<vector<float> >(CM_N,vector<float>(CM_Detector::Nstrip,0));
+	for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
+		if(type_it->second > 0){
+			StripAmpl[type_it->first] = vector<vector<vector<float> > >(type_it->second,vector<vector<float> >(Tomography::Static_Detector[type_it->first]->get_Nchannel(),vector<float>(Tomography::Nsample,0)));
+			Ped[type_it->first] = vector<vector<float> >(type_it->second,vector<float>(Tomography::Static_Detector[type_it->first]->get_Nchannel(),0));
+		}
 	}
 	PedName = PedName_;
 	RMSName = RMSName_;
@@ -88,23 +83,13 @@ DataReader::DataReader(map<int,Tomography::det_type> det_type_by_asic_, map<int,
 	mapping = &Feminos_mapping;
 }
 DataReader::DataReader(ptree config_tree, bool save_to_disk){
-	int total_CM_N = config_tree.get<int>("total_CM_N");
-	int total_MG_N = config_tree.get<int>("total_MG_N");
-	int CM_N = 0;
-	int MG_N = 0;
-	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
-		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::CM;
-		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("cm_n");
-		CM_N++;
-	}
-	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::MG;
-		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("mg_n");
-		MG_N++;
-	}
-	if((total_CM_N!=CM_N) || (total_MG_N!=MG_N)){
-		cout << "problem in detectors number" << endl;
-		return;
+	CosmicBench current_CB(config_tree);
+	det_N.clear();
+	for(int i=0;i<current_CB.get_det_N_tot();i++){
+		Detector * current_det = current_CB.get_detector(i);
+		det_type_by_asic[current_det->get_asic_n()] = current_det->get_type();
+		det_n_by_asic[current_det->get_asic_n()] = current_det->get_n_in_tree();
+		det_N[current_det->get_type()]++;
 	}
 	DAQtype = Tomography::str_to_elec(config_tree.get<string>("electronic_type"));
 	string data_file_basename = config_tree.get<string>("data_file_basename");
@@ -115,7 +100,7 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk){
 	int first_index = config_tree.get<int>("data_file_first");
 	int last_index = config_tree.get<int>("data_file_last");
 	if(save_to_disk){
-		outTree = new Tsignal_W(signalName,CM_N,MG_N);
+		outTree = new Tsignal_W(signalName,det_N);
 	}
 	else outTree = NULL;
 	if(DAQtype==Tomography::Dream){
@@ -145,13 +130,11 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk){
 	}
 	Nevent = -1;
 	evttime = 0;
-	if(MG_N>0){
-		StripAmpl[Tomography::MG] = vector<vector<vector<float> > >(MG_N,vector<vector<float> >(MG_Detector::Nstrip,vector<float>(Tomography::Nsample,0)));
-		Ped[Tomography::MG] = vector<vector<float> >(MG_N,vector<float>(MG_Detector::Nstrip,0));
-	}
-	if(CM_N>0){
-		StripAmpl[Tomography::CM] = vector<vector<vector<float> > >(CM_N,vector<vector<float> >(CM_Detector::Nstrip,vector<float>(Tomography::Nsample,0)));
-		Ped[Tomography::CM] = vector<vector<float> >(CM_N,vector<float>(CM_Detector::Nstrip,0));
+	for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
+		if(type_it->second > 0){
+			StripAmpl[type_it->first] = vector<vector<vector<float> > >(type_it->second,vector<vector<float> >(Tomography::Static_Detector[type_it->first]->get_Nchannel(),vector<float>(Tomography::Nsample,0)));
+			Ped[type_it->first] = vector<vector<float> >(type_it->second,vector<float>(Tomography::Static_Detector[type_it->first]->get_Nchannel(),0));
+		}
 	}
 }
 DataReader::~DataReader(){
@@ -170,6 +153,7 @@ DataReader::~DataReader(){
 	PedName.clear();
 	RMSName.clear();
 	Ped.clear();
+	det_N.clear();
 }
 void DataReader::process(){
 	if(reader == NULL){
@@ -209,43 +193,30 @@ void DataReader::process_event(){
 		}
 	}
 	if(outTree != NULL){
-		outTree->fillTree_raw(Nevent,evttime,StripAmpl[Tomography::MG],StripAmpl[Tomography::CM]);
+		outTree->fillTree_raw(Nevent,evttime,StripAmpl);
 	}
 }
 void DataReader::compute_ped(){
-	int total_CM_N = StripAmpl[Tomography::CM].size();
-	int total_MG_N = StripAmpl[Tomography::MG].size();
-	for(int i=0;i<total_MG_N;i++){
-		for(int j=0;j<MG_Detector::Nstrip;j++){
-			Ped[Tomography::MG][i][j] = 0;
-		}
-	}
-	for(int i=0;i<total_CM_N;i++){
-		for(int j=0;j<CM_Detector::Nstrip;j++){
-			Ped[Tomography::CM][i][j] = 0;
+	for(map<Tomography::det_type,unsigned short>::const_iterator type_it = det_N.begin();type_it!=det_N.end();++type_it){
+		for(unsigned int i=0;i<type_it->second;i++){
+			for(int j=0;j<(Tomography::Static_Detector[type_it->first]->get_Nchannel());j++){
+				Ped[type_it->first][i][j] = 0;
+			}
 		}
 	}
 	long nentries = outTree->T->GetEntriesFast();
 	for(long n=0;n<nentries && Tomography::can_continue;n++){
 		StripAmpl = outTree->read_raw(n);
-		for(int i=0;i<total_MG_N;i++){
-			for(int j=0;j<MG_Detector::Nstrip;j++){
-				vector<float> current_strip(Tomography::Nsample,0);
-				for(int k=0;k<Tomography::Nsample;k++){
-					current_strip[k] = StripAmpl[Tomography::MG][i][j][k];
+		for(map<Tomography::det_type,vector<vector<float> > >::iterator type_it=Ped.begin();type_it!=Ped.end();++type_it){
+			for(unsigned int i=0;i<(type_it->second).size();i++){
+				for(unsigned int j=0;j<(type_it->second)[i].size();j++){
+					vector<float> current_strip(Tomography::Nsample,0);
+					for(int k=0;k<Tomography::Nsample;k++){
+						current_strip[k] = StripAmpl[type_it->first][i][j][k];
+					}
+					sort(current_strip.begin(),current_strip.end());
+					(type_it->second)[i][j] += current_strip[Tomography::Nsample/2];
 				}
-				sort(current_strip.begin(),current_strip.end());
-				Ped[Tomography::MG][i][j] += current_strip[Tomography::Nsample/2];
-			}
-		}
-		for(int i=0;i<total_CM_N;i++){
-			for(int j=0;j<CM_Detector::Nstrip;j++){
-				vector<float> current_strip(Tomography::Nsample,0);
-				for(int k=0;k<Tomography::Nsample;k++){
-					current_strip[k] = StripAmpl[Tomography::CM][i][j][k];
-				}
-				sort(current_strip.begin(),current_strip.end());
-				Ped[Tomography::CM][i][j] += current_strip[Tomography::Nsample/2];
 			}
 		}
 		if((n%100) == 0) cout << "\r" << "computing pedestal (" << n << "/" << nentries << ")" << flush;
@@ -253,49 +224,27 @@ void DataReader::compute_ped(){
 	cout << "\r" << "computing pedestal (" << nentries << "/" << nentries << ")" << endl;
 	cout << "writing it to file : " << PedName << "..." << flush;
 	ofstream pedFile(PedName.c_str());
-	for(int i=0;i<total_CM_N;i++){
-		for(int j=0;j<CM_Detector::Nstrip;j++){
-			Ped[Tomography::CM][i][j] /= nentries;
-			pedFile << i << " " << j << " " << Ped[Tomography::CM][i][j] << "\n";
-		}
-	}
-	for(int i=0;i<total_MG_N;i++){
-		for(int j=0;j<MG_Detector::Nstrip;j++){
-			Ped[Tomography::MG][i][j] /= nentries;
-			pedFile << i << " " << j << " " << Ped[Tomography::MG][i][j] << "\n";
+	for(map<Tomography::det_type,vector<vector<float> > >::iterator type_it=Ped.begin();type_it!=Ped.end();++type_it){
+		for(unsigned int i=0;i<(type_it->second).size();i++){
+			for(unsigned int j=0;j<(type_it->second)[i].size();j++){
+				(type_it->second)[i][j] /= nentries;
+				pedFile << i << " " << j << " " << (type_it->second)[i][j] << "\n";
+			}
 		}
 	}
 	pedFile.close();
 	cout << "!" << endl;
 }
 void DataReader::read_ped(){
-	ifstream in;
-	in.open(PedName.c_str());
-	int ped_strip, det;
-	Ped.clear();
-	int total_CM_N = StripAmpl[Tomography::CM].size();
-	int total_MG_N = StripAmpl[Tomography::MG].size();
-	Ped[Tomography::CM] = vector<vector<float> >(total_CM_N,vector<float>(CM_Detector::Nstrip,0));
-	Ped[Tomography::MG] = vector<vector<float> >(total_MG_N,vector<float>(MG_Detector::Nstrip,0));
-	int n_lines = 0;
 	cout << "Reading pedestal from : " << PedName << "..." << endl;
-	while(in.good() && n_lines<((total_CM_N*CM_Detector::Nstrip)+(total_MG_N*MG_Detector::Nstrip))){
-		float current_ped;
-		in >> det >> ped_strip >> current_ped;
-		Tomography::det_type current_type = (n_lines<(total_CM_N*CM_Detector::Nstrip)) ? Tomography::CM : Tomography::MG;
-		if(det<0 || det>(total_MG_N+total_CM_N-1)){
-			cout << "problem reading Ped file" << endl;
+	map<Tomography::det_type,vector<vector<double> > > tmp_Ped = CosmicBench::read_pedfile(PedName,det_N);
+	for(map<Tomography::det_type,vector<vector<float> > >::iterator type_it=Ped.begin();type_it!=Ped.end();++type_it){
+		for(unsigned int i=0;i<(type_it->second).size();i++){
+			for(unsigned int j=0;j<(type_it->second)[i].size();j++){
+				(type_it->second)[i][j] = tmp_Ped[type_it->first][i][j];
+			}
 		}
-		else if(det<total_CM_N && ped_strip>63){
-			cout << "problem reading Ped file" << endl;
-		}
-		else if(ped_strip>60){
-			cout << "problem reading Ped file" << endl;
-		}
-		Ped[current_type][det][ped_strip] = current_ped;
-		n_lines++;
 	}
-	in.close();
 	cout << "done !" << endl;
 }
 void DataReader::compute_RMSPed(){
@@ -357,7 +306,7 @@ void DataReader::do_ped_sub(){
 		if((event_nb%100) == 0) cout << "\rsubstracting pedestal (" << event_nb << "/" << total_event << ")" << flush;
 		StripAmpl = outTree->read_raw(event_nb);
 		do_ped_sub_event();
-		outTree->fillTree_ped(StripAmpl[Tomography::MG],StripAmpl[Tomography::CM]);
+		outTree->fillTree_ped(StripAmpl);
 		event_nb++;
 	}
 	cout << "\rsubstracting pedestal (" << total_event << "/" << total_event << ")" << endl;
@@ -376,7 +325,7 @@ void DataReader::do_common_noise_sub(){
 		if((event_nb%100) == 0) cout << "\rsubstracting common noise (" << event_nb << "/" << total_event << ")" << flush;
 		StripAmpl = outTree->read_ped(event_nb);
 		do_common_noise_sub_event();
-		outTree->fillTree_corr(StripAmpl[Tomography::MG],StripAmpl[Tomography::CM]);
+		outTree->fillTree_corr(StripAmpl);
 		event_nb++;
 	}
 	cout << "\rsubstracting common noise (" << total_event << "/" << total_event << ")" << endl;
@@ -401,22 +350,22 @@ void DataReader::do_ped_sub_event(){
 	}
 }
 void DataReader::do_common_noise_sub_event(){
-	map<Tomography::det_type,int> Nstrip;
-	Nstrip[Tomography::CM] = CM_Detector::Nstrip;
-	Nstrip[Tomography::MG] = MG_Detector::Nstrip;
+	map<Tomography::det_type,int> Nchannel;
+	Nchannel[Tomography::CM] = CM_Detector::Nchannel;
+	Nchannel[Tomography::MG] = MG_Detector::Nchannel;
 	for(map<Tomography::det_type,vector<vector<vector<float> > > >::iterator it = StripAmpl.begin();it!=StripAmpl.end();++it){
 		for(vector<vector<vector<float> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			for(int k=0;k<Tomography::Nsample;k++){
-				for(int det_div=0;det_div<(Tomography::CMN_div.find(it->first))->second;det_div++){
-					int strip_nb = Nstrip[it->first]/(Tomography::CMN_div.find(it->first))->second + Nstrip[it->first]%(Tomography::CMN_div.find(it->first))->second;
+				for(int det_div=0;det_div<(Tomography::Static_Detector[it->first]->get_CMN_div());det_div++){
+					int strip_nb = Nchannel[it->first]/(Tomography::Static_Detector[it->first]->get_CMN_div()) + Nchannel[it->first]%(Tomography::Static_Detector[it->first]->get_CMN_div());
 					int strip_offset = det_div*strip_nb;
 					vector<float> current_sample(strip_nb,0);
-					for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+					for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
 						current_sample[j] = (*jt)[j+strip_offset][k];
 					}
 					sort(current_sample.begin(),current_sample.end());
 					float median = current_sample[strip_nb/2];
-					for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+					for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
 						(*jt)[j+strip_offset][k] -= median;
 					}
 				}
@@ -425,23 +374,23 @@ void DataReader::do_common_noise_sub_event(){
 	}
 }
 void DataReader::do_ped_CMN_sub_event(){
-	map<Tomography::det_type,int> Nstrip;
-	Nstrip[Tomography::CM] = CM_Detector::Nstrip;
-	Nstrip[Tomography::MG] = MG_Detector::Nstrip;
+	map<Tomography::det_type,int> Nchannel;
+	Nchannel[Tomography::CM] = CM_Detector::Nchannel;
+	Nchannel[Tomography::MG] = MG_Detector::Nchannel;
 	for(map<Tomography::det_type,vector<vector<vector<float> > > >::iterator it = StripAmpl.begin();it!=StripAmpl.end();++it){
 		vector<vector<float> >::iterator ped_jt = Ped[it->first].begin();
 		for(vector<vector<vector<float> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			for(int k=0;k<Tomography::Nsample;k++){
-				for(int det_div=0;det_div<(Tomography::CMN_div.find(it->first))->second;det_div++){
-					int strip_nb = Nstrip[it->first]/((Tomography::CMN_div.find(it->first))->second) + Nstrip[it->first]%((Tomography::CMN_div.find(it->first))->second);
+				for(int det_div=0;det_div<(Tomography::Static_Detector[it->first]->get_CMN_div());det_div++){
+					int strip_nb = Nchannel[it->first]/(Tomography::Static_Detector[it->first]->get_CMN_div()) + Nchannel[it->first]%(Tomography::Static_Detector[it->first]->get_CMN_div());
 					int strip_offset = det_div*strip_nb;
 					vector<float> current_sample(strip_nb,0);
-					for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+					for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
 						current_sample[j] = (*jt)[j+strip_offset][k] - (*ped_jt)[j+strip_offset];
 					}
 					sort(current_sample.begin(),current_sample.end());
 					float median = current_sample[strip_nb/2];
-					for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+					for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
 						(*jt)[j+strip_offset][k] -= median + (*ped_jt)[j+strip_offset];
 					}
 				}
@@ -463,16 +412,8 @@ bool DataReader::is_end(){
 	return (reader->is_end());
 }
 int DataReader::Dream_mapping(Tomography::det_type det,int channel){
-	if(det == Tomography::MG){
-		return (channel + 1 - (2*(channel%2)));
-	}
-	return channel;
+	return Tomography::Static_Detector[det]->dream_mapping(channel);
 }
 int DataReader::Feminos_mapping(Tomography::det_type det,int channel){
-	if(det == Tomography::MG){
-		int tmpchan = channel - 2 - (channel>13) - (channel>24) - (channel>47) - (channel>58);
-		if(tmpchan>15 && tmpchan<48) return tmpchan;
-		else return (tmpchan + 1 - (2*(tmpchan%2)));
-	}
-	return channel;
+	return Tomography::Static_Detector[det]->feminos_mapping(channel);
 }

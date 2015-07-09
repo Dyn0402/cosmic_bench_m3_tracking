@@ -27,7 +27,7 @@ class Signal: public Tsignal_R, public CosmicBench{
 		//void ElecToRays(string outFileName);
 		void EventDisplay(int evn_min = 0, int evn_max = 20);
 		void HoughTracking(long event_nb);
-		map<int,TProfile*> SignalOverNoise();
+		map<Tomography::det_type,map<int,TProfile*> > SignalOverNoise();
 		void SignalOverNoiseDisplay();
 		void SignalDispersion();
 	protected:

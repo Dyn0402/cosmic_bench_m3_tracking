@@ -84,28 +84,28 @@ liveDisplay::liveDisplay(string config_file){
 	data_file_basename = config_tree.get<string>("data_file_basename");
 	ifstream pedFile((config_tree.get<string>("Ped")).c_str());
 	/*
-	Pedestal_CM = new float[CM_N][DataReader::Nstrip_CM];
-	Pedestal_MG = new float[MG_N][DataReader::Nstrip_MG];
+	Pedestal_CM = new float[CM_N][DataReader::Nchannel_CM];
+	Pedestal_MG = new float[MG_N][DataReader::Nchannel_MG];
 	for(int i=0;i<CM_N;i++){
-		for(int j=0;j<DataReader::Nstrip_CM;j++){
+		for(int j=0;j<DataReader::Nchannel_CM;j++){
 			pedFile >> i >> j >> Pedestal_CM[i][j];
 		}
 	}
 	for(int i=0;i<MG_N;i++){
-		for(int j=0;j<DataReader::Nstrip_MG;j++){
+		for(int j=0;j<DataReader::Nchannel_MG;j++){
 			pedFile >> i >> j >> Pedestal_MG[i][j];
 		}
 	}
 	*/
-	Pedestal[Tomography::CM] = vector<vector<float> >(CM_N,vector<float>(DataReader::Nstrip_CM,0));
-	Pedestal[Tomography::MG] = vector<vector<float> >(MG_N,vector<float>(DataReader::Nstrip_MG,0));
+	Pedestal[Tomography::CM] = vector<vector<float> >(CM_N,vector<float>(DataReader::Nchannel_CM,0));
+	Pedestal[Tomography::MG] = vector<vector<float> >(MG_N,vector<float>(DataReader::Nchannel_MG,0));
 	for(int i=0;i<CM_N;i++){
-		for(int j=0;j<DataReader::Nstrip_CM;j++){
+		for(int j=0;j<DataReader::Nchannel_CM;j++){
 			pedFile >> i >> j >> Pedestal[Tomography::CM][i][j];
 		}
 	}
 	for(int i=0;i<MG_N;i++){
-		for(int j=0;j<DataReader::Nstrip_MG;j++){
+		for(int j=0;j<DataReader::Nchannel_MG;j++){
 			pedFile >> i >> j >> Pedestal[Tomography::MG][i][j];
 		}
 	}
@@ -201,9 +201,9 @@ void liveDisplay::flux_map(double z){
 	map<Tomography::det_type,int> detector_div;
 	detector_div[Tomography::CM] = 2;
 	detector_div[Tomography::MG] = 2;
-	map<Tomography::det_type,int> Nstrip;
-	Nstrip[Tomography::CM] = DataReader::Nstrip_CM;
-	Nstrip[Tomography::MG] = DataReader::Nstrip_MG;
+	map<Tomography::det_type,int> Nchannel;
+	Nchannel[Tomography::CM] = DataReader::Nchannel_CM;
+	Nchannel[Tomography::MG] = DataReader::Nchannel_MG;
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
 	long processed = 0;
@@ -254,14 +254,14 @@ void liveDisplay::flux_map(double z){
 				/*
 				//pedestal sub
 				for(unsigned int i=0;i<MG_N;i++){
-					for(int j=0;j<DataReader::Nstrip_MG;j++){
+					for(int j=0;j<DataReader::Nchannel_MG;j++){
 						for(int k=0;k<DataReader::Nsample;k++){
 							event_ampl["MG"][i][j][k] -= Pedestal_MG[i][j];
 						}
 					}
 				}
 				for(unsigned int i=0;i<CM_N;i++){
-					for(int j=0;j<DataReader::Nstrip_CM;j++){
+					for(int j=0;j<DataReader::Nchannel_CM;j++){
 						for(int k=0;k<DataReader::Nsample;k++){
 							event_ampl["CM"][i][j][k] -= Pedestal_CM[i][j];
 						}
@@ -271,7 +271,7 @@ void liveDisplay::flux_map(double z){
 				for(unsigned int i=0;i<MG_N;i++){
 					for(int k=0;k<DataReader::Nsample;k++){
 						for(int det_div=0;det_div<detector_div_MG;det_div++){
-							int strip_nb = DataReader::Nstrip_MG/detector_div_MG;
+							int strip_nb = DataReader::Nchannel_MG/detector_div_MG;
 							int strip_offset = det_div*strip_nb;
 							vector<float> current_sample(strip_nb,0);
 							for(int j=0;j<strip_nb;j++){
@@ -288,7 +288,7 @@ void liveDisplay::flux_map(double z){
 				for(unsigned int i=0;i<CM_N;i++){
 					for(int k=0;k<DataReader::Nsample;k++){
 						for(int det_div=0;det_div<detector_div_CM;det_div++){
-							int strip_nb = DataReader::Nstrip_CM/detector_div_CM;
+							int strip_nb = DataReader::Nchannel_CM/detector_div_CM;
 							int strip_offset = det_div*strip_nb;
 							vector<float> current_sample(strip_nb,0);
 							for(int j=0;j<strip_nb;j++){
@@ -308,7 +308,7 @@ void liveDisplay::flux_map(double z){
 				for(int i=0;i<MG_N;i++){
 					for(int k=0;k<DataReader::Nsample;k++){
 						for(int det_div=0;det_div<detector_div_MG;det_div++){
-							int strip_nb = DataReader::Nstrip_MG/detector_div_MG;
+							int strip_nb = DataReader::Nchannel_MG/detector_div_MG;
 							int strip_offset = det_div*strip_nb;
 							vector<float> current_sample(strip_nb,0);
 							for(int j=0;j<strip_nb;j++){
@@ -325,7 +325,7 @@ void liveDisplay::flux_map(double z){
 				for(int i=0;i<CM_N;i++){
 					for(int k=0;k<DataReader::Nsample;k++){
 						for(int det_div=0;det_div<detector_div_CM;det_div++){
-							int strip_nb = DataReader::Nstrip_CM/detector_div_CM;
+							int strip_nb = DataReader::Nchannel_CM/detector_div_CM;
 							int strip_offset = det_div*strip_nb;
 							vector<float> current_sample(strip_nb,0);
 							for(int j=0;j<strip_nb;j++){
@@ -346,15 +346,15 @@ void liveDisplay::flux_map(double z){
 					for(vector<vector<vector<double> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 						for(int k=0;k<DataReader::Nsample;k++){
 							for(int det_div=0;det_div<detector_div[it->first];det_div++){
-								int strip_nb = Nstrip[it->first]/detector_div[it->first] + Nstrip[it->first]%detector_div[it->first];
+								int strip_nb = Nchannel[it->first]/detector_div[it->first] + Nchannel[it->first]%detector_div[it->first];
 								int strip_offset = det_div*strip_nb;
 								vector<float> current_sample(strip_nb,0);
-								for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+								for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
 									current_sample[j] = (*jt)[j+strip_offset][k] - (*ped_jt)[j+strip_offset];
 								}
 								sort(current_sample.begin(),current_sample.end());
 								float median = current_sample[strip_nb/2];
-								for(int j=0;(j<strip_nb && (j+strip_offset)<Nstrip[it->first]);j++){
+								for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
 									(*jt)[j+strip_offset][k] -= median + (*ped_jt)[j+strip_offset];
 								}
 							}

@@ -30,6 +30,7 @@ class Tanalyse_R;
 class Analyse;
 
 class Event{
+	friend class Analyse;
 	public:
 		int get_evn() const;
 		Tomography::det_type get_type() const;
@@ -40,6 +41,7 @@ class Event{
 		bool get_is_X() const;
 		virtual ~Event();
 		virtual void MultiCluster() = 0;
+		virtual void HoughCluster() = 0;
 		void do_cuts();
 		virtual void set_strip_ampl(vector<vector<double> > strip_ampl_) = 0;
 		vector<Cluster*> get_clusters() const;
@@ -78,13 +80,13 @@ class CM_Event: public Event{
 		CM_Event(const CM_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_);
 		~CM_Event();
 		void MultiCluster();
+		void HoughCluster();
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		TH1D * get_ampl_hist() const;
 		Event * Clone() const;
 };
 
 class CM_Demux_Event: public Event{
-	friend class Analyse;
 	public:
 		CM_Demux_Event();
 		CM_Demux_Event(const CM_Demux_Event& other);
@@ -93,12 +95,12 @@ class CM_Demux_Event: public Event{
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		~CM_Demux_Event();
 		void MultiCluster();
+		void HoughCluster();
 		TH1D * get_ampl_hist() const;
 		Event * Clone() const;
 };
 
 class MG_Event: public Event{
-	friend class Analyse;
 	public:
 		MG_Event();
 		MG_Event(const MG_Event& other);

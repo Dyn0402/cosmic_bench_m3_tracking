@@ -15,6 +15,8 @@ using std::vector;
 
 using boost::property_tree::ptree;
 
+class Detector;
+
 template<typename T,typename R>
 ostream& operator<<(ostream& os, const map<T,R>& map_);
 
@@ -26,7 +28,6 @@ namespace Tomography{
 	enum det_type{
 		unknown_det,
 		CM,
-		CM_Demux,
 		MG
 	};
 	enum strip_type{
@@ -50,7 +51,7 @@ namespace Tomography{
 	const int Nchannel = 64;
 	const int Nasic_FEU = 8;
 	const int Nasic_Feminos = 4;
-	extern const map<det_type,int> CMN_div;
+	extern map<const det_type,const Detector* const> Static_Detector;
 	const string DreamExt = "fdf";
 	const string FeminosExt = "aqs";
 	const double chisquare_threshold = 100;

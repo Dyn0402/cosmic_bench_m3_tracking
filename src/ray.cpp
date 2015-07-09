@@ -91,7 +91,9 @@ Ray_2D::~Ray_2D(){
 	clusters.clear();
 }
 void Ray_2D::add_cluster(Cluster * clus){
-	if(clus->get_type() == Tomography::CM) return;
+	if(clus->get_type() == Tomography::CM){
+		if(dynamic_cast<CM_Cluster*>(clus)->get_strip_type() != Tomography::Demux) return;
+	}
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
 		if((clus->get_type() == (*it)->get_type()) && (clus->get_n_in_tree() == (*it)->get_n_in_tree())) return;
 	}
@@ -202,29 +204,12 @@ double Ray_2D::get_residu(Detector * det) const{
 }
 double Ray_2D::get_residu_ref(Cluster * clus) const{
 	bool is_in_ray = false;
-	if(clus->get_type() == Tomography::CM_Demux){
-		int det_n = clus->get_n_in_tree();
-		for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
-			if((*it)->get_type() == Tomography::CM_Demux){
-				if((*it)->get_n_in_tree() == det_n){
-					is_in_ray = true;
-					break;
-				}
-			}
+	for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
+		if((*it)->get_type() == clus->get_type() && (*it)->get_n_in_tree() == clus->get_n_in_tree()){
+			is_in_ray = true;
+			break;
 		}
 	}
-	else if(clus->get_type() == Tomography::MG){
-		int det_n = clus->get_n_in_tree();
-		for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
-			if((*it)->get_type() == Tomography::MG){
-				if((*it)->get_n_in_tree() == det_n){
-					is_in_ray = true;
-					break;
-				}
-			}
-		}
-	}
-	else is_in_ray = true;
 	if(is_in_ray) return numeric_limits<double>::max();
 	return clus->get_pos_mm() - (Z_intercept + slope*clus->get_z());
 }
@@ -320,7 +305,9 @@ Ray::~Ray(){
 	clusters.clear();
 }
 void Ray::add_cluster(Cluster * clus){
-	if(clus->get_type() == Tomography::CM) return;
+	if(clus->get_type() == Tomography::CM){
+		if(dynamic_cast<CM_Cluster*>(clus)->get_strip_type() != Tomography::Demux) return;
+	}
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
 		if((clus->get_type() == (*it)->get_type()) && (clus->get_n_in_tree() == (*it)->get_n_in_tree())) return;
 	}

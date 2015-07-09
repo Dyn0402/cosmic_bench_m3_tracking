@@ -45,6 +45,7 @@ class DataReader{
 		Tomography::elec_type DAQtype;
 		map<int,Tomography::det_type> det_type_by_asic;
 		map<int,int> det_n_by_asic;
+		map<Tomography::det_type,unsigned short> det_N;
 		long max_event;
 		long Nevent;
 		double evttime;
