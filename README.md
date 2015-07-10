@@ -1,4 +1,4 @@
-### Utiliser le soft
+### Use this soft
 
 * Datareader :
 
@@ -29,15 +29,15 @@ display : use this option to display the signal shpape for each detector
 hough : use this option to study hough tracking style
 
 
-### Etendre le soft :
+### Extend this soft :
 
-Ajouter un détecteur :
+Add a new type of detector :
 
-* Ajouter votre type de detecteur à l'enum Tomogrphy::det_type
-* Mettre à jour Tomography::operator<<(ostream,det_type)
-* Mettre à jour Tomography::Static_Detector
-* Implementer sa classe Detector (hérite de Detector)
-* Implementer sa classe Cluster (hérite de Cluster)
-* Implementer sa classe Event (hérite de Event)
-* Mettre à jour les classes de stockage T{signal,analyse}_{R,W} pour utiliser le stockage disque par fichier ROOT (fonctions constructeur, init, fill et get)
-* Mettre à jour le fichier de config pour commencer à utiliser le soft
+* Add your type to Tomogrphy::det_type enum
+* update Tomography::operator<<(ostream,det_type) function
+* update Tomography::Static_Detector map
+* Implement your <type>_Detector class (must inherit from Detector class)
+* Implement your <type>_Cluster (must inherit from Cluster class)
+* Implement your <type>_Event (must inherit from Event class)
+* Update T{signal,analyse}_{R,W} storage classes to use ROOT disk I/O (in particular constructor, destructor, init, fill and get methods)
+* Update the config file corresponding to your bench caracteristcs
