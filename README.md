@@ -17,8 +17,8 @@ config_file : path to config file which contain the cosmic bench caracteristics 
 multicluster : use this option to build analyse file using existing Ped.dat and RMS.dat and signal file  
 SoB : use this option to display signal and noise amplitude  
 dispersion : use this option to display some correlation between the detectors signal  
-display : use this option to display the signal shpape for each detector  
-hough : use this option to study hough tracking style  
+display : use this option to display the signal shpape for each detector from event 0 to n (n being the additional option)
+hough : use this option to study hough tracking style for event n (n being the additional option)
 
 * tracking
 
