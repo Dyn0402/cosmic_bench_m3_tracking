@@ -350,22 +350,19 @@ void DataReader::do_ped_sub_event(){
 	}
 }
 void DataReader::do_common_noise_sub_event(){
-	map<Tomography::det_type,int> Nchannel;
-	Nchannel[Tomography::CM] = CM_Detector::Nchannel;
-	Nchannel[Tomography::MG] = MG_Detector::Nchannel;
 	for(map<Tomography::det_type,vector<vector<vector<float> > > >::iterator it = StripAmpl.begin();it!=StripAmpl.end();++it){
 		for(vector<vector<vector<float> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			for(int k=0;k<Tomography::Nsample;k++){
 				for(int det_div=0;det_div<(Tomography::Static_Detector[it->first]->get_CMN_div());det_div++){
-					int strip_nb = Nchannel[it->first]/(Tomography::Static_Detector[it->first]->get_CMN_div()) + Nchannel[it->first]%(Tomography::Static_Detector[it->first]->get_CMN_div());
+					int strip_nb = (Tomography::Static_Detector[it->first]->get_Nchannel())/(Tomography::Static_Detector[it->first]->get_CMN_div()) + (Tomography::Static_Detector[it->first]->get_Nchannel())%(Tomography::Static_Detector[it->first]->get_CMN_div());
 					int strip_offset = det_div*strip_nb;
 					vector<float> current_sample(strip_nb,0);
-					for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
+					for(int j=0;(j<strip_nb && (j+strip_offset)<(Tomography::Static_Detector[it->first]->get_Nchannel()));j++){
 						current_sample[j] = (*jt)[j+strip_offset][k];
 					}
 					sort(current_sample.begin(),current_sample.end());
 					float median = current_sample[strip_nb/2];
-					for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
+					for(int j=0;(j<strip_nb && (j+strip_offset)<(Tomography::Static_Detector[it->first]->get_Nchannel()));j++){
 						(*jt)[j+strip_offset][k] -= median;
 					}
 				}
@@ -374,23 +371,20 @@ void DataReader::do_common_noise_sub_event(){
 	}
 }
 void DataReader::do_ped_CMN_sub_event(){
-	map<Tomography::det_type,int> Nchannel;
-	Nchannel[Tomography::CM] = CM_Detector::Nchannel;
-	Nchannel[Tomography::MG] = MG_Detector::Nchannel;
 	for(map<Tomography::det_type,vector<vector<vector<float> > > >::iterator it = StripAmpl.begin();it!=StripAmpl.end();++it){
 		vector<vector<float> >::iterator ped_jt = Ped[it->first].begin();
 		for(vector<vector<vector<float> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			for(int k=0;k<Tomography::Nsample;k++){
 				for(int det_div=0;det_div<(Tomography::Static_Detector[it->first]->get_CMN_div());det_div++){
-					int strip_nb = Nchannel[it->first]/(Tomography::Static_Detector[it->first]->get_CMN_div()) + Nchannel[it->first]%(Tomography::Static_Detector[it->first]->get_CMN_div());
+					int strip_nb = (Tomography::Static_Detector[it->first]->get_Nchannel())/(Tomography::Static_Detector[it->first]->get_CMN_div()) + (Tomography::Static_Detector[it->first]->get_Nchannel())%(Tomography::Static_Detector[it->first]->get_CMN_div());
 					int strip_offset = det_div*strip_nb;
 					vector<float> current_sample(strip_nb,0);
-					for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
+					for(int j=0;(j<strip_nb && (j+strip_offset)<(Tomography::Static_Detector[it->first]->get_Nchannel()));j++){
 						current_sample[j] = (*jt)[j+strip_offset][k] - (*ped_jt)[j+strip_offset];
 					}
 					sort(current_sample.begin(),current_sample.end());
 					float median = current_sample[strip_nb/2];
-					for(int j=0;(j<strip_nb && (j+strip_offset)<Nchannel[it->first]);j++){
+					for(int j=0;(j<strip_nb && (j+strip_offset)<(Tomography::Static_Detector[it->first]->get_Nchannel()));j++){
 						(*jt)[j+strip_offset][k] -= median + (*ped_jt)[j+strip_offset];
 					}
 				}
