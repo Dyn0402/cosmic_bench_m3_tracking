@@ -812,7 +812,7 @@ void MGv2_Event::MultiCluster(){
 	int SampleMax = Tomography::SampleMax;
 	int TOTCut = Tomography::TOTCut;
 	int p = 61;
-	int n = 1024;
+	int n = 1037;
 	map<int,bool> channelOverThreshold;
 	map<int,StripInfo> allChannels;
 	for(int i=0;i<p;i++){
@@ -925,7 +925,7 @@ void MGv2_Event::MultiCluster(){
 	//third loop : store the clusters and their caracteristics
 	//NClus = cluster_list.size();
 	for(unsigned int i=0;i<cluster_list.size();i++){
-		TF1 * SRFfit = new TF1("SRFfit",dynamic_cast<MGv2_Detector*>(detector),&MGv2_Detector::SRF_fit,0,1024,2,"MGv2_Detector","SRF_fit");
+		TF1 * SRFfit = new TF1("SRFfit",dynamic_cast<MGv2_Detector*>(detector),&MGv2_Detector::SRF_fit,0,1037,2,"MGv2_Detector","SRF_fit");
 		TGraphErrors * SRFgraph = new TGraphErrors();
 		int graph_point_n = 0;
 		double ClusSize = 1 + cluster_list[i].second - cluster_list[i].first;
@@ -1021,7 +1021,7 @@ void MGv2_Event::HoughCluster(){
 	int SampleMax = Tomography::SampleMax;
 	int TOTCut = Tomography::TOTCut;
 	int p = 61;
-	int n = 1024;
+	int n = 1037;
 	map<int,bool> channelOverThreshold;
 	map<int,StripInfo> allChannels;
 	for(int i=0;i<p;i++){
@@ -1167,7 +1167,7 @@ TH1D * MGv2_Event::get_ampl_hist() const{
 	for(vector<Cluster*>::const_iterator it=clusters.begin();it!=clusters.end();++it){
 		cluster_edges.push_back(pair<int,int>(FloorNint((*it)->get_pos()-(*it)->get_size()),CeilNint((*it)->get_pos()+(*it)->get_size())));
 	}
-	vector<bool> is_used(1024,false);
+	vector<bool> is_used(1037,false);
 	for(vector<pair<int,int> >::iterator it = cluster_edges.begin();it!=cluster_edges.end();++it){
 		if(it->first<0) it->first = 0;
 		if(it->second<0) it->second = 0;
