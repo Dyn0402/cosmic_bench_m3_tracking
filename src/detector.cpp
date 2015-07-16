@@ -463,7 +463,7 @@ Detector * MGv2_Detector::build_det(const ptree::value_type& child) const{
 }
 static vector<unsigned int> generate_StripToChannel_MGv2(){
 	int p=61; int n=1037;
-	int MultiplexSeries[]={1,4,3,6,9,12,18,24,11,22,27,20,5,19,15,10,30};//16,8,2,23,21,7,25,14,28,17,26,13,29};
+	int MultiplexSeries[]={30,10,15,19,5,20,27,22,11,24,18,12,9,6,3,4,1,16,8,2,23,21,7,25,14,28,17,26,13,29};
 	vector<unsigned int> Detector(n,0); // strip to channel correspondance
 	for(int i=0;i<(p-1)/2;i++){
 		for(int j=0;j<p;j++){
@@ -483,7 +483,7 @@ vector<unsigned int> MGv2_Detector::ChannelToStrip(unsigned int channel_nb){
 	vector<unsigned int> channel_list;
 	if(channel_nb>=61) return channel_list;
 	int p=61; int n=1037;
-	int MultiplexSeries[]={1,4,3,6,9,12,18,24,11,22,27,20,5,19,15,10,30};//16,8,2,23,21,7,25,14,28,17,26,13,29};
+	int MultiplexSeries[]={30,10,15,19,5,20,27,22,11,24,18,12,9,6,3,4,1,16,8,2,23,21,7,25,14,28,17,26,13,29};
 	unsigned int Detector[n]; // strip to channel correspondance
 	for(int i=0;i<(p-1)/2;i++){
 		for(int j=0;j<p;j++){
@@ -567,7 +567,9 @@ int MGv2_Detector::feminos_mapping(int channel) const{
 	else return (tmpchan + 1 - (2*(tmpchan%2)));
 }
 int MGv2_Detector::dream_mapping(int channel) const{
-	return channel;
+	if(channel == 57) return 8;
+	else if(channel == 55) return 6;
+	else return (63 - channel);
 }
 
 
