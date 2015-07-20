@@ -108,8 +108,8 @@ void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_
    fChain->SetMakeClass(1);
 
    fChain->SetBranchAddress("evn", &evn, &b_evn);
-   evttime = 0;
-   //fChain->SetBranchAddress("evttime", &evttime, &b_evttime);
+   //evttime = 0;
+   fChain->SetBranchAddress("evttime", &evttime, &b_evttime);
    if(det_N[Tomography::CM]>0){
       CM_NClus = new int[det_N[Tomography::CM]];
       fChain->SetBranchAddress("CM_NClus", CM_NClus, &b_CM_NClus);
