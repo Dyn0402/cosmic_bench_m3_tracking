@@ -221,7 +221,7 @@ void Analyse::Residus_ref(){
 			efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
 			efficacity_2D[name.str()]->SetStats(false);
 			correlation[name.str()] = new TGraph();
-			angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
+			angle_alignment[name.str()] = new TProfile((name.str()+"_resVSperpPos").c_str(),(name.str()+"_resVSperpPos").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
 			resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
 			resVSampl[name.str()] = new TProfile((name.str()+"_resVSampl").c_str(),(name.str()+"_resVSampl").c_str(),500,-100,10000,-5,5);
 			resVStime[name.str()] = new TProfile((name.str()+"_resVStime").c_str(),(name.str()+"_resVStime").c_str(),38,-2,34,-5,5);
@@ -349,8 +349,6 @@ void Analyse::Residus_ref(){
 						resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
 					}
 					point_nb[name.str()]++;
-					delete *matching_cluster;
-					current_clusters.erase(matching_cluster);
 					MM_residus[name.str()]->Fill(residu);
 					resVStime[name.str()]->Fill((*matching_cluster)->get_t(),residu);
 					resVSampl[name.str()]->Fill((*matching_cluster)->get_ampl(),residu);
@@ -360,6 +358,8 @@ void Analyse::Residus_ref(){
 					absResVSampl[name.str()]->Fill((*matching_cluster)->get_ampl(),Abs(residu));
 					absResVStot[name.str()]->Fill((*matching_cluster)->get_TOT(),Abs(residu));
 					absResVSsize[name.str()]->Fill((*matching_cluster)->get_size(),Abs(residu));
+					delete *matching_cluster;
+					current_clusters.erase(matching_cluster);
 					if(residu<chisquare_threshold){
 						muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 					}
@@ -833,169 +833,125 @@ void Analyse::Residus_ref_2D(){
 	c0->Update();
 }
 void Analyse::Efficacity(){
-	map<Tomography::det_type,vector<TCanvas*> > c_MM;
-	map<Tomography::det_type,vector<TProfile*> > hist_residus;
-	map<Tomography::det_type,vector<TProfile*> > hist_spark;
-	int nbins = 200;
-	//int lim = 100;
+		int non_ref_n = 0;
+	double chisquare_threshold = 10;
+	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
+		if(!((*it)->get_is_ref())) non_ref_n++;
+	}
+	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
+	map<string,TCanvas*> c_MM;
+	map<string,TProfile*> MM_eff;
 	long eventReconstructed = 0;
-	long eventSuitable = 0;
-	if (fChain == 0) return;
+	double eventSuitable = 0;
+	map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> > perp_pairs;
+	//map<string, unsigned int> det_in_nref_dir;
+	//map<string, bool> nref_is_X;
+	//unsigned int det_x_n = 0;
+	unsigned int nref_x_n = 0;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
-	LoadTree(0);
-	fChain->GetEntry(0);
-	double beginTime = evttime;
 	LoadTree(nentries-1);
 	fChain->GetEntry(nentries-1);
-	double endTime = evttime;
-
-	for(map<Tomography::det_type,unsigned short>::const_iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
-		if((type_it->second) > 0){
-			c_MM[type_it->first] = vector<TCanvas*>(type_it->second,NULL);
-			hist_residus[type_it->first] = vector<TProfile*>(type_it->second,NULL);
-			hist_spark[type_it->first] = vector<TProfile*>(type_it->second,NULL);
-		}
-		for(unsigned short i=0;i<type_it->second;i++){
+	double maxtime = evttime;
+	int nbins = maxtime/100;
+	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
+		if(!((*it)->get_is_ref())){
 			ostringstream name;
-			name << type_it->first << "_" << i;
-			c_MM[type_it->first][i] = new TCanvas(name.str().c_str(),name.str().c_str());
-			hist_residus[type_it->first][i] = new TProfile((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,beginTime,endTime,0,2);
-			hist_residus[type_it->first][i]->SetLineColor(4);
-			hist_spark[type_it->first][i] = new TProfile((name.str()+"_spark").c_str(),(name.str()+"_spark").c_str(),nbins,beginTime,endTime,0,2);
-			hist_spark[type_it->first][i]->SetLineColor(2);
+			name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
+			if((*it)->get_perp_n()>-1) perp_pairs[pair<Tomography::det_type,int>((*it)->get_type(),(*it)->get_n_in_tree())] = pair<Tomography::det_type,int>((*it)->get_perp_type(),(*it)->get_perp_n());
+			c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
+			MM_eff[name.str()] = new TProfile((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins,0,maxtime,0,1);
+			if((*it)->get_is_X()) nref_x_n++;
+		}
+		//if((*it)->get_is_X()) det_x_n++;
+	}
+	/*
+	for(map<string,bool>::iterator it = nref_is_X.begin();it!=nref_is_X.end();++it){
+		if(it->second) det_in_nref_dir[it->first] = det_x_n - nref_x_n;
+		else det_in_nref_dir[it->first] = (MG_N + CM_N - det_x_n) - (nref_is_X.size() - nref_x_n);
+	}
+	*/
+	for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
+		if(perp_pairs.count(map_it->second)==0){
+			cout << "2D detectors must be set to non ref in both direction" << endl;
+			return;
 		}
 	}
-	TCanvas * c0 = new TCanvas("chiSquare","chiSquare");
-	TProfile * chiSquareH = new TProfile("chiSquares","chiSquares",nbins,0,nentries,-10,200);
-	TCanvas * c_t = new TCanvas("diff_T","diff_T");
-	//TH1D * diff_t = new TH1D("diff_t","diff_t",nbins,-20,20);
-	TH1D * tLO = new TH1D("tLO","tLO",nbins,0,40);
-	TH1D * tNLO = new TH1D("tNLO","tNLO",nbins,0,40);
-	tLO->SetLineColor(2);
-	tNLO->SetLineColor(4);
-	TCanvas * c_sigma = new TCanvas("sigma_T","sigma_T");
-	TH1D * sigmaLO = new TH1D("sigmaLO","sigmaLO",nbins,0,20);
-	TH1D * sigmaNLO = new TH1D("sigmaNLO","sigmaNLO",nbins,0,20);
-	sigmaLO->SetLineColor(2);
-	sigmaNLO->SetLineColor(4);
-	//TH1D * sigma_t = new TH1D("sigma_t","sigma_t",nbins,0,40);
-	TCanvas * c_test = new TCanvas("test","test");
-	TH1D * test_order = new TH1D("test_order","test_order",nbins,-10,200);
-
+	if (fChain == 0) return;
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
 	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
 		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
-		vector<Ray> currentRays = currentCBEvent->get_absorption_rays();
+		vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
+		vector<Ray>::iterator ray_it = currentRays.begin();
+		while(ray_it!= currentRays.end()){
+			if(ray_it->get_chiSquare_X()>-1 && ray_it->get_chiSquare_Y()>-1 && ((ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y())/ray_it->get_clus_n())<chisquare_threshold){
+				++ray_it;
+			}
+			else ray_it = currentRays.erase(ray_it);
+		}
 		eventReconstructed+=currentRays.size();
-		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
-		if(currentRays.size()>0){
-			Ray first = currentRays[0];
-			for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
-				if(it->get_chiSquare_X()>-1 && it->get_chiSquare_Y()>-1){
-					chiSquareH->Fill(evn,it->get_chiSquare_X()+it->get_chiSquare_Y());
-					//sigma_t->Fill(it->get_t_sigma());
-					if(it->get_t_mean()<first.get_t_mean()){
-						first = Ray(*it);
+		eventSuitable+=currentCBEvent->get_clus_N()*1./(get_det_N_tot());
+		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
+			if(!((*it)->get_is_ref())){
+				ostringstream name;
+				name <<(*it)->get_type() << "_" << (*it)->get_n_in_tree();
+				vector<Cluster*> current_clusters = (*it)->get_clusters();
+				for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
+					//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
+					//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
+					//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
+					//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+					if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
+					if(jt->get_clus_n()<static_cast<unsigned int>(get_det_N_tot()-non_ref_n)) continue;
+					double residu = numeric_limits<double>::max();
+					vector<Cluster*>::iterator matching_cluster = current_clusters.end();
+					for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+						(*kt)->set_perp_pos_mm(*jt);
+						double current_residu = jt->get_residu_ref(*kt);
+						if(current_residu<residu){
+							residu = current_residu;
+							matching_cluster = kt;
+						}
+					}
+					if(matching_cluster == current_clusters.end()) continue;
+					(*matching_cluster)->set_perp_pos_mm(*jt);
+					delete *matching_cluster;
+					current_clusters.erase(matching_cluster);
+					if(residu<chisquare_threshold){
+						MM_eff[name.str()]->Fill(evttime,1);
+					}
+					else{
+						MM_eff[name.str()]->Fill(evttime,0);
 					}
 				}
-			}
-			test_order->Fill(first.get_chiSquare_X() + first.get_chiSquare_Y());
-		}
-		if(currentRays.size()>1){
-			//diff_t->Fill(currentRays[0].get_t_mean() - currentRays[1].get_t_mean());
-			double sigma0 = currentRays[0].get_t_sigma();
-			double sigma1 = currentRays[1].get_t_sigma();
-			double t0 = currentRays[0].get_t_mean();
-			double t1 = currentRays[1].get_t_mean();
-			if(t0<t1){
-				tLO->Fill(t0);
-				tNLO->Fill(t1);
-				sigmaLO->Fill(sigma0);
-				sigmaNLO->Fill(sigma1);
-			}
-			else{
-				tLO->Fill(t1);
-				tNLO->Fill(t0);
-				sigmaLO->Fill(sigma1);
-				sigmaNLO->Fill(sigma0);
-			}
-		}
-		for(vector<Detector*>::iterator jt=detectors.begin();jt!=detectors.end();++jt){
-			hist_residus[(*jt)->get_type()][(*jt)->get_n_in_tree()]->Fill(evttime,currentCBEvent->get_clus_N_by_det(*jt));
-			if((*jt)->get_type() == Tomography::CM){
-				hist_spark[(*jt)->get_type()][(*jt)->get_n_in_tree()]->Fill(evttime,CM_Spark[(*jt)->get_n_in_tree()]);
-			}
-			if((*jt)->get_type() == Tomography::MG){
-				hist_spark[(*jt)->get_type()][(*jt)->get_n_in_tree()]->Fill(evttime,MG_Spark[(*jt)->get_n_in_tree()]);
+				for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+					delete *kt;
+				}
 			}
 		}
 		delete currentCBEvent;
-		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
+		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << jentry << flush;
 		if(jentry%5000 == 0 && Tomography::live_graphic_display){
-			for(map<Tomography::det_type,vector<TCanvas*> >::iterator type_it = c_MM.begin();type_it!=c_MM.end();++type_it){
-				for(unsigned int i=0;i<(type_it->second).size();i++){
-					(type_it->second)[i]->cd();
-					hist_residus[type_it->first][i]->Draw();
-					hist_spark[type_it->first][i]->Draw("SAME");
-					(type_it->second)[i]->Modified();
-					(type_it->second)[i]->Update();
-				}
+			for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
+				it->second->cd();
+				MM_eff[it->first]->Draw();
+				it->second->Modified();
+				it->second->Update();
 			}
-			c0->cd();
-			chiSquareH->Draw();
-			c0->Modified();
-			c0->Update();
-			c_t->cd();
-			//diff_t->Draw();
-			tLO->Draw();
-			tNLO->Draw("SAME");
-			c_t->Modified();
-			c_t->Update();
-			c_sigma->cd();
-			//sigma_t->Draw();
-			sigmaLO->Draw();
-			sigmaNLO->Draw("SAME");
-			c_sigma->Modified();
-			c_sigma->Update();
-			c_test->cd();
-			test_order->Draw();
-			c_test->Modified();
-			c_test->Update();
 		}
 	}
-	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
-	for(map<Tomography::det_type,vector<TCanvas*> >::iterator type_it = c_MM.begin();type_it!=c_MM.end();++type_it){
-		for(unsigned int i=0;i<(type_it->second).size();i++){
-			(type_it->second)[i]->cd();
-			hist_residus[type_it->first][i]->Draw();
-			hist_spark[type_it->first][i]->Draw("SAME");
-			(type_it->second)[i]->Modified();
-			(type_it->second)[i]->Update();
-		}
+	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << nentries << endl;
+	for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
+		cout << endl;
+		cout << endl;
+		it->second->cd();
+		MM_eff[it->first]->Draw();
+		it->second->Modified();
+		it->second->Update();
 	}
-	c0->cd();
-	chiSquareH->Draw();
-	c0->Modified();
-	c0->Update();
-	c_t->cd();
-	//diff_t->Draw();
-	tLO->Draw();
-	tNLO->Draw("SAME");
-	c_t->Modified();
-	c_t->Update();
-	c_sigma->cd();
-	//sigma_t->Draw();
-	sigmaLO->Draw();
-	sigmaNLO->Draw("SAME");
-	c_sigma->Modified();
-	c_sigma->Update();
-	c_test->cd();
-	test_order->Draw();
-	c_test->Modified();
-	c_test->Update();
 }
 void Analyse::ExportAbsorptionRays(string outFileName){
 	long eventReconstructed = 0;
