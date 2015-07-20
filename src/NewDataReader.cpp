@@ -88,7 +88,7 @@ int main(int argc, char ** argv){
 			map<Tomography::det_type,vector<Event*> > events;
 			for(int i=0;i<total_det;i++){
 				Detector * det = bench->get_detector(i);
-				events[det->get_type()].push_back(det->build_event(current_data_d[Tomography::MG][det->get_n_in_tree()],event_nb));
+				events[det->get_type()].push_back(det->build_event(current_data_d[det->get_type()][det->get_n_in_tree()],event_nb));
 				(events[det->get_type()].back())->MultiCluster();
 			}
 			analysisFile->fillTree(Nevent,evttime,events);
