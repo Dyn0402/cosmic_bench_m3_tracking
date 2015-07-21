@@ -786,7 +786,7 @@ void Analyse::Residus_ref_2D(){
 			}
 			muon_total->Fill(jt->eval_X(nref_z),jt->eval_Y(nref_z));
 		}
-		for(vector<Event*>::iterator it = (nref_events).begin();it!=(nref_events).end();++it){
+		for(vector<Event*>::iterator it = (nref_event).begin();it!=(nref_event).end();++it){
 			delete *it;
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << jentry << flush;
