@@ -306,7 +306,6 @@ void Analyse::Residus_ref(){
 		}
 		eventReconstructed+=currentRays.size();
 		eventSuitable+=currentCBEvent->get_clus_N()*1./(get_det_N_tot());
-		
 		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
 			if(!((*it)->get_is_ref())){
 				ostringstream name;
@@ -699,6 +698,15 @@ void Analyse::Residus_ref_2D(){
 			return;
 		}
 	}
+	if(det_z.size()>2){
+		cout << "this is meant to calculate the efficacity of only one 2D detector" << endl;
+		return;
+	}
+	double nref_z = det_z[0];
+	if(det_z[1]!=nref_z){
+		cout << "problem in z coordinate of the 2D detector" << endl;
+		return;
+	}
 
 	c_MM = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
 	muon_seen = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
@@ -768,16 +776,17 @@ void Analyse::Residus_ref_2D(){
 				for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
 					delete *kt;
 				}
-				muon_total->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 				if(seen_clus_in_array.size()==2){
 					muon_seen->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 					for(int i_event=0;i_event<2;i_event++){
+						delete (nref_event[i_event]->clusters)[seen_clus_in_array[i_event]];
 						(nref_event[i_event]->clusters).erase((nref_event[i_event]->clusters).begin()+seen_clus_in_array[i_event]);
 					}
 				}
 			}
+			muon_total->Fill(jt->eval_X(nref_z),jt->eval_Y(nref_z));
 		}
-		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
+		for(vector<Event*>::iterator it = (nref_events).begin();it!=(nref_events).end();++it){
 			delete *it;
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << jentry << flush;
