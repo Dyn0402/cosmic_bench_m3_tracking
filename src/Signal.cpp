@@ -134,6 +134,10 @@ void Signal::MultiCluster(){
 	cout << "destination file : " << analyseTree << endl;
 	Tanalyse_W * analyseFile = new Tanalyse_W(analyseTree,det_n);
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
+	fChain->SetBranchStatus("*",0);
+	fChain->SetBranchStatus("Nevent",1);
+	fChain->SetBranchStatus("evttime",1);
+	fChain->SetBranchStatus("StripAmpl_*_corr",1);
 	for(long i=0;i<nentries && Tomography::can_continue;i++){
 		LoadTree(i);
 		GetEntry(i);
@@ -156,6 +160,7 @@ void Signal::MultiCluster(){
 	analyseFile->Write();
 	analyseFile->CloseFile();
 	//delete analyseFile;
+	fChain->SetBranchStatus("*",1);
 }
 
 void Signal::HoughTracking(long event_nb){
