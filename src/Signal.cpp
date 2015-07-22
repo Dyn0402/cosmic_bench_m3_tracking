@@ -484,10 +484,10 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 	int column_nb = CeilNint((get_det_N_tot())/2.);
 	TCanvas * cDisplay = new TCanvas("cDisplay","cDisplay",800,600);
 	cDisplay->Divide(column_nb,2);
-	map<Tomography::det_type,vector<TGraph*> > signal_shape;
+	map<pair<Tomography::det_type,int>,vector<TGraph*> > signal_shape;
 	for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
 		for(int i=0;i<(*det_it)->get_Nchannel();i++){
-			signal_shape[(*det_it)->get_type()].push_back(new TGraph());
+			signal_shape[pair<Tomography::det_type,int>((*det_it)->get_type(),(*det_it)->get_n_in_tree())].push_back(new TGraph());
 		}
 	}
 	long nentries = Min(fChain->GetEntriesFast(),static_cast<Long64_t>(evn_max));
@@ -498,17 +498,18 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 		int det_id = 1;
 		for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
 			vector<vector<double> > current_ampl = get_ampl((*det_it)->get_type(),(*det_it)->get_n_in_tree());
+			pair<Tomography::det_type,int> current_key((*det_it)->get_type(),(*det_it)->get_n_in_tree());
 			for(int j=0;j<(*det_it)->get_Nchannel();j++){
 				for(int k=0;k<Tomography::Nsample;k++){
-					signal_shape[(*det_it)->get_type()][j]->SetPoint(k,k,current_ampl[j][k]);
+					signal_shape[current_key][j]->SetPoint(k,k,current_ampl[j][k]);
 				}
 				cDisplay->cd(det_id);
 				if(j==0){
-					signal_shape[(*det_it)->get_type()][j]->GetHistogram()->SetMinimum(-100);
-					signal_shape[(*det_it)->get_type()][j]->GetHistogram()->SetMaximum(1200);
-					signal_shape[(*det_it)->get_type()][j]->Draw("AL");
+					signal_shape[current_key][j]->GetHistogram()->SetMinimum(-100);
+					signal_shape[current_key][j]->GetHistogram()->SetMaximum(1200);
+					signal_shape[current_key][j]->Draw("AL");
 				}
-				else signal_shape[(*det_it)->get_type()][j]->Draw("L");
+				else signal_shape[current_key][j]->Draw("L");
 			}
 			det_id++;
 		}
