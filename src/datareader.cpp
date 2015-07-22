@@ -205,6 +205,8 @@ void DataReader::compute_ped(){
 		}
 	}
 	long nentries = outTree->T->GetEntriesFast();
+	outTree->disable_data_branches();
+	outTree->enable_raw_branches();
 	for(long n=0;n<nentries && Tomography::can_continue;n++){
 		StripAmpl = outTree->read_raw(n);
 		for(map<Tomography::det_type,vector<vector<float> > >::iterator type_it=Ped.begin();type_it!=Ped.end();++type_it){
@@ -221,6 +223,7 @@ void DataReader::compute_ped(){
 		}
 		if((n%100) == 0) cout << "\r" << "computing pedestal (" << n << "/" << nentries << ")" << flush;
 	}
+	outTree->enable_all_branches();
 	cout << "\r" << "computing pedestal (" << nentries << "/" << nentries << ")" << endl;
 	cout << "writing it to file : " << PedName << "..." << flush;
 	ofstream pedFile(PedName.c_str());
@@ -268,6 +271,8 @@ void DataReader::compute_RMSPed(){
 			}
 		}
 	}
+	outTree->disable_data_branches();
+	outTree->enable_corr_branches();
 	for(long n=0;n<nentries && Tomography::can_continue;n++){
 		StripAmpl = outTree->read_corr(n);
 		for(map<Tomography::det_type,vector<vector<TH1F*> > >::iterator type_it = ampl_hist.begin();type_it!=ampl_hist.end();++type_it){
@@ -281,6 +286,7 @@ void DataReader::compute_RMSPed(){
 		}
 		if((n%100) == 0) cout << "\rcomputing RMS (" << n << "/" << nentries << ")" << flush;
 	}
+	outTree->enable_all_branches();
 	cout << "\rcomputing RMS (" << nentries << "/" << nentries << ")" << endl;
 	ofstream RMSPedFile(RMSName.c_str());
 	for(map<Tomography::det_type,vector<vector<TH1F*> > >::iterator type_it = ampl_hist.begin();type_it!=ampl_hist.end();++type_it){
@@ -302,6 +308,9 @@ void DataReader::do_ped_sub(){
 	}
 	long total_event = outTree->T->GetEntriesFast();
 	if(max_event>0 && max_event<total_event) total_event = max_event;
+	outTree->disable_data_branches();
+	outTree->enable_raw_branches();
+	outTree->enable_ped_branches();
 	while(event_nb<total_event && Tomography::can_continue){
 		if((event_nb%100) == 0) cout << "\rsubstracting pedestal (" << event_nb << "/" << total_event << ")" << flush;
 		StripAmpl = outTree->read_raw(event_nb);
@@ -309,6 +318,7 @@ void DataReader::do_ped_sub(){
 		outTree->fillTree_ped(StripAmpl);
 		event_nb++;
 	}
+	outTree->enable_all_branches();
 	cout << "\rsubstracting pedestal (" << total_event << "/" << total_event << ")" << endl;
 	if(outTree != NULL){
 		outTree->Write();
@@ -321,6 +331,9 @@ void DataReader::do_common_noise_sub(){
 	}
 	long total_event = outTree->T->GetEntriesFast();
 	if(max_event>0 && max_event<total_event) total_event = max_event;
+	outTree->disable_data_branches();
+	outTree->enable_ped_branches();
+	outTree->enable_corr_branches();
 	while(event_nb<total_event && Tomography::can_continue){
 		if((event_nb%100) == 0) cout << "\rsubstracting common noise (" << event_nb << "/" << total_event << ")" << flush;
 		StripAmpl = outTree->read_ped(event_nb);
@@ -328,6 +341,7 @@ void DataReader::do_common_noise_sub(){
 		outTree->fillTree_corr(StripAmpl);
 		event_nb++;
 	}
+	outTree->enable_all_branches();
 	cout << "\rsubstracting common noise (" << total_event << "/" << total_event << ")" << endl;
 	if(outTree != NULL){
 		outTree->Write();

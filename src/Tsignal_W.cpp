@@ -8,8 +8,10 @@
 using std::vector;
 
 #include <iostream>
+#include <sstream>
 using std::cout;
 using std::endl;
+using std::ostringstream;
 
 
 Tsignal_W::Tsignal_W(string saveFileName, map<Tomography::det_type,unsigned short> det_N_)
@@ -337,6 +339,29 @@ void Tsignal_W::Reset_corr(){
    if(det_N[Tomography::MG]>0) T->GetBranch("StripAmpl_MG_corr")->Reset();
    if(det_N[Tomography::MGv2]>0) T->GetBranch("StripAmpl_MGv2_corr")->Reset();
    if(det_N[Tomography::CM]>0) T->GetBranch("StripAmpl_CM_corr")->Reset();
+}
+void Tsignal_W::disable_data_branches(){
+   T->SetBranchStatus("*",0);
+   T->SetBranchStatus("Nevent",1);
+   T->SetBranchStatus("evttime",1);
+}
+void Tsignal_W::enable_all_branches(){
+   T->SetBranchStatus("*",1);
+}
+void Tsignal_W::enable_raw_branches(){
+   for(map<Tomography::det_type,unsigned short>::const_iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
+      if(type_it->second > 0){
+         ostringstream name;
+         name << "StripAmpl_" << type_it->first;
+         T->SetBranchStatus(name.str().c_str(),1);
+      }
+   }
+}
+void Tsignal_W::enable_ped_branches(){
+   T->SetBranchStatus("StripAmpl_*_ped",1);
+}
+void Tsignal_W::enable_corr_branches(){
+T->SetBranchStatus("StripAmpl_*_corr",1);
 }
 map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_raw(long entry){
    map<Tomography::det_type,vector<vector<vector<float> > > > return_map;

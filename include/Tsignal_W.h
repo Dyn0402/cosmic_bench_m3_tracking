@@ -52,6 +52,11 @@ public :
    void Reset_raw();
    void Reset_ped();
    void Reset_corr();
+   void disable_data_branches();
+   void enable_all_branches();
+   void enable_raw_branches();
+   void enable_ped_branches();
+   void enable_corr_branches();
    void fillTree_raw(int evn_, double evttime_, map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
    void fillTree_ped(map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
    void fillTree_corr(map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
