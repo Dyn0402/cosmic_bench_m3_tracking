@@ -175,7 +175,7 @@ int main(int argc, char ** argv){
 			cout << "flux map param : " << endl;
 			cout << "   z : " << z << "mm" << endl;
 			cout << "   y_angle : " << y_angle << "°" << endl;
-			blah->WatToFluxMap(z,TEllipse(atof(argv[4]),atof(argv[5]),atof(argv[6]),atof(argv[7]),0,360,atof(argv[8])),0,y_angle*Pi()/180.);
+			blah->WatToFluxMap(z,TEllipse(atof(argv[4]),atof(argv[5]),atof(argv[6]),atof(argv[7]),0,360,atof(argv[8])),0,0,y_angle*Pi()/180.);
 		}
 	}
 	else{

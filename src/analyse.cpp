@@ -1108,7 +1108,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1, double y_angle){
 	c1->Update();
 	return fluxMapZ;
 }
-void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
+void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, TCanvas * c2, double y_angle){
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
 	double chisquare_threshold = 100;
@@ -1181,6 +1181,14 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 	TLine * right_line = new TLine(vertical_band_half_width+this_el->GetX1(),y_min,vertical_band_half_width+this_el->GetX1(),y_max);
 	TH2D * tank_profile = new TH2D("tank_profile","tank_profile",nentries/interval_length,0,nentries/interval_length,Sqrt(0.02*nentries),y_min,y_max);
 	unsigned int track_in_vertical_band = 0;
+	if(c2 == 0){
+		c2 = new TCanvas("WaterMon","WaterMon");
+	}
+	c2->Divide(4);
+	TH1D * tank_tracks = new TH1D("tank_tracks","tank_tracks",nentries/interval_length,0,nentries);
+	TProfile * tank_tracks_norm = new TProfile("tank_tracks_norm","tank_tracks_norm",nentries/interval_length,0,nentries/interval_length,0,1);
+	TProfile * tank_tracks_norm_H = new TProfile("tank_tracks_norm_H","tank_tracks_norm_H",nentries/interval_length,0,nentries/interval_length,0,1);
+	TProfile * tank_tracks_norm_V = new TProfile("tank_tracks_norm_V","tank_tracks_norm_V",nentries/interval_length,0,nentries/interval_length,0,1);
 	cout << setw(20) << "interval n" <<  "|" << setw(20) << "total track" <<  "|" << setw(20) << "track in ellipse" <<  "|" << setw(20) << "track in H band" <<  "|" << setw(20) << "track in V band" << endl;
 	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
 		Long64_t ientry = LoadTree(jentry);
@@ -1201,7 +1209,10 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 			Point_2D point_in_plane(current_point.get_X(),current_point.get_Y()/Cos(y_angle));
 			fluxMapZ->Fill(point_in_plane.get_X(),point_in_plane.get_Y());
 			reconstructed_track++;
-			if(point_in_plane.is_inside(*this_el)) track_in_ellipse++;
+			if(point_in_plane.is_inside(*this_el)){
+				track_in_ellipse++;
+				tank_tracks->Fill(jentry);
+			}
 			if(Abs(point_in_plane.get_Y() - this_el->GetY1()) < band_half_width) track_in_band++;
 			if(Abs(point_in_plane.get_X() - this_el->GetX1()) < vertical_band_half_width){
 				tank_profile->Fill(interval_n,point_in_plane.get_Y());
@@ -1214,6 +1225,14 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 			for(int j=1;j<=tank_profile->GetNbinsY();j++){
 				int binN = tank_profile->GetBin(interval_n,j);
 				tank_profile->SetBinContent(binN,tank_profile->GetBinContent(binN)/track_in_vertical_band);
+			}
+			for(int j=1;j<=nentries/interval_length;j++){
+				tank_tracks_norm->SetBinContent(j,track_in_ellipse/reconstructed_track);
+				tank_tracks_norm_H->SetBinContent(j,track_in_ellipse/track_in_band);
+				tank_tracks_norm_V->SetBinContent(j,track_in_ellipse/track_in_vertical_band);
+				tank_tracks_norm->SetBinError(j,Sqrt(track_in_ellipse*(reconstructed_track - track_in_ellipse)/(reconstructed_track*reconstructed_track)));
+				tank_tracks_norm_H->SetBinError(j,Sqrt(track_in_ellipse*(track_in_band - track_in_ellipse)/(track_in_band*track_in_band)));
+				tank_tracks_norm_V->SetBinError(j,Sqrt(track_in_ellipse*(track_in_vertical_band - track_in_ellipse)/(track_in_vertical_band*track_in_vertical_band)));
 			}
 			interval_n++;
 			event_n_interval = 0;
@@ -1234,6 +1253,16 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 			tank_profile->Draw("COLZ");
 			c1->Modified();
 			c1->Update();
+			c2->cd(1);
+			tank_tracks->Draw("E1");
+			c2->cd(2);
+			tank_tracks_norm->Draw();
+			c2->cd(3);
+			tank_tracks_norm_H->Draw();
+			c2->cd(4);
+			tank_tracks_norm_V->Draw();
+			c2->Modified();
+			c2->Update();
 		}
 	}
 	cout << setw(20) << interval_n <<  "|" << setw(20) << reconstructed_track <<  "|" << setw(20) << track_in_ellipse <<  "|" << setw(20) << track_in_band <<  "|" << setw(20) << track_in_vertical_band << endl;
@@ -1241,6 +1270,14 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 		for(int j=1;j<=tank_profile->GetNbinsY();j++){
 			int binN = tank_profile->GetBin(interval_n,j);
 			tank_profile->SetBinContent(binN,tank_profile->GetBinContent(binN)/track_in_vertical_band);
+		}
+		for(int j=1;j<=nentries/interval_length;j++){
+			tank_tracks_norm->SetBinContent(j,track_in_ellipse/reconstructed_track);
+			tank_tracks_norm_H->SetBinContent(j,track_in_ellipse/track_in_band);
+			tank_tracks_norm_V->SetBinContent(j,track_in_ellipse/track_in_vertical_band);
+			tank_tracks_norm->SetBinError(j,Sqrt(track_in_ellipse*(reconstructed_track - track_in_ellipse)/(reconstructed_track*reconstructed_track)));
+			tank_tracks_norm_H->SetBinError(j,Sqrt(track_in_ellipse*(track_in_band - track_in_ellipse)/(track_in_band*track_in_band)));
+			tank_tracks_norm_V->SetBinError(j,Sqrt(track_in_ellipse*(track_in_vertical_band - track_in_ellipse)/(track_in_vertical_band*track_in_vertical_band)));
 		}
 	}
 	c1->cd(1);
@@ -1254,6 +1291,16 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, double y_angle){
 	tank_profile->Draw("COLZ");
 	c1->Modified();
 	c1->Update();
+	c2->cd(1);
+	tank_tracks->Draw("E1");
+	c2->cd(2);
+	tank_tracks_norm->Draw();
+	c2->cd(3);
+	tank_tracks_norm_H->Draw();
+	c2->cd(4);
+	tank_tracks_norm_V->Draw();
+	c2->Modified();
+	c2->Update();
 }
 void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TCanvas * c3, TCanvas * c4){
 	long eventReconstructed = 0;
