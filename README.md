@@ -17,12 +17,27 @@ config_file : path to config file which contain the cosmic bench caracteristics 
 multicluster : use this option to build analyse file using existing Ped.dat and RMS.dat and signal file  
 SoB : use this option to display signal and noise amplitude  
 dispersion : use this option to display some correlation between the detectors signal  
-display : use this option to display the signal shpape for each detector from event 0 to n (n being the additional option)
+display : use this option to display the signal shpape for each detector from event 0 to n (n being the additional option) 
 hough : use this option to study hough tracking style for event n (n being the additional option)
 
 * tracking
 
 `tracking <config_file> {efficacity,eff2D,residus,fluxmap,tomoAbs,raypairs,srf,correlation,eventdisplay,eventdisplaymult,SoN,acceptance,watto} [additional options]`
+
+config_file : path to config file which contain the cosmic bench caracteristics and different file path 
+eff2D : compute 2D efficiency of 2D detectors (you need to switch is_ref to
+false for both coordinates 
+residus : compute efficiency, residuals and various alignement distribution for
+the is_ref=false detectors 
+fluxmap : compute muon flux for a given height in additional option 
+raypairs : export deviation tomography rays in a file which name is given in
+additional option 
+correlation : show correlation between detectors/coordinates for time and
+amplitude 
+eventdisplay : show the detectors, cluster and reconstructed tracks for the
+event number given in additional option
+eventdisplaymult : do the same as eventdisplay but scan from event 0 to the
+given event
 
 * wrapper
 
