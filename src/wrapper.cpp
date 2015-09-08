@@ -61,7 +61,7 @@ int main(int argc, char ** argv){
 	DataReader blah(config_tree_bench,false);
 	blah.read_ped();
 	CosmicBench * bench = new CosmicBench(config_tree_bench);
-	int total_det = bench->get_CM_N() + bench->get_MG_N();
+	int total_det = bench->get_det_N_tot();
 	double Z_Up = numeric_limits<double>::min();
 	double Z_Down = numeric_limits<double>::max();
 	for(int i=0;i<total_det;i++){
@@ -95,16 +95,8 @@ int main(int argc, char ** argv){
 		vector<Event*> events;
 		for(int i=0;i<total_det;i++){
 			Detector * det = bench->get_detector(i);
-			if(det->get_type() == Tomography::MG){
-				MG_Detector * current_det = dynamic_cast<MG_Detector*>(det);
-				events.push_back(new MG_Event(*current_det,current_data_d[Tomography::MG][current_det->get_mg_n_in_tree()],false,event_nb));
-				(events.back())->MultiCluster();
-			}
-			else if(det->get_type() == Tomography::CM){
-				CM_Detector * current_det = dynamic_cast<CM_Detector*>(det);
-				events.push_back(new CM_Event(*current_det,current_data_d[Tomography::CM][current_det->get_cm_n_in_tree()],false,event_nb));
-				(events.back())->MultiCluster();
-			}
+			events.push_back(det->build_event(current_data_d[det->get_type()][det->get_n_in_tree()],event_nb));
+			(events.back())->MultiCluster();
 		}
 		CosmicBenchEvent CBEvent(bench,events);
 		CBEvent.do_cuts();

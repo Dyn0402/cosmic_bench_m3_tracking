@@ -1220,12 +1220,12 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, TCanvas * c2, dou
 				int binN = tank_profile->GetBin(interval_n,j);
 				tank_profile->SetBinContent(binN,tank_profile->GetBinContent(binN)/track_in_vertical_band);
 			}
-			tank_tracks_norm->SetBinContent(interval_n,track_in_ellipse/reconstructed_track);
-			tank_tracks_norm_H->SetBinContent(interval_n,track_in_ellipse/track_in_band);
-			tank_tracks_norm_V->SetBinContent(interval_n,track_in_ellipse/track_in_vertical_band);
-			tank_tracks_norm->SetBinError(interval_n,Sqrt(track_in_ellipse*(reconstructed_track - track_in_ellipse)/(reconstructed_track*reconstructed_track)));
-			tank_tracks_norm_H->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_band - track_in_ellipse)/(track_in_band*track_in_band)));
-			tank_tracks_norm_V->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_vertical_band - track_in_ellipse)/(track_in_vertical_band*track_in_vertical_band)));
+			tank_tracks_norm->SetBinContent(interval_n,track_in_ellipse*1./reconstructed_track);
+			tank_tracks_norm_H->SetBinContent(interval_n,track_in_ellipse*1./track_in_band);
+			tank_tracks_norm_V->SetBinContent(interval_n,track_in_ellipse*1./track_in_vertical_band);
+			tank_tracks_norm->SetBinError(interval_n,Sqrt(track_in_ellipse*(reconstructed_track - track_in_ellipse)*1./(reconstructed_track*reconstructed_track)));
+			tank_tracks_norm_H->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_band - track_in_ellipse)*1./(track_in_band*track_in_band)));
+			tank_tracks_norm_V->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_vertical_band - track_in_ellipse)*1./(track_in_vertical_band*track_in_vertical_band)));
 			interval_n++;
 			event_n_interval = 0;
 			reconstructed_track = 0;
@@ -1263,12 +1263,12 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, TCanvas * c2, dou
 			int binN = tank_profile->GetBin(interval_n,j);
 			tank_profile->SetBinContent(binN,tank_profile->GetBinContent(binN)/track_in_vertical_band);
 		}
-		tank_tracks_norm->SetBinContent(interval_n,track_in_ellipse/reconstructed_track);
-		tank_tracks_norm_H->SetBinContent(interval_n,track_in_ellipse/track_in_band);
-		tank_tracks_norm_V->SetBinContent(interval_n,track_in_ellipse/track_in_vertical_band);
-		tank_tracks_norm->SetBinError(interval_n,Sqrt(track_in_ellipse*(reconstructed_track - track_in_ellipse)/(reconstructed_track*reconstructed_track)));
-		tank_tracks_norm_H->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_band - track_in_ellipse)/(track_in_band*track_in_band)));
-		tank_tracks_norm_V->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_vertical_band - track_in_ellipse)/(track_in_vertical_band*track_in_vertical_band)));
+		tank_tracks_norm->SetBinContent(interval_n,track_in_ellipse*1./reconstructed_track);
+		tank_tracks_norm_H->SetBinContent(interval_n,track_in_ellipse*1./track_in_band);
+		tank_tracks_norm_V->SetBinContent(interval_n,track_in_ellipse*1./track_in_vertical_band);
+		tank_tracks_norm->SetBinError(interval_n,Sqrt(track_in_ellipse*(reconstructed_track - track_in_ellipse)*1./(reconstructed_track*reconstructed_track)));
+		tank_tracks_norm_H->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_band - track_in_ellipse)*1./(track_in_band*track_in_band)));
+		tank_tracks_norm_V->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_vertical_band - track_in_ellipse)*1./(track_in_vertical_band*track_in_vertical_band)));
 	}
 	c1->cd(1);
 	fluxMapZ->Draw("COLZ");

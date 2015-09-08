@@ -165,11 +165,7 @@ int main(int argc, char ** argv){
 
 	ROOT::Math::Functor f(current_minimizer,18); 
 	CosmicBench bench_carac(configTree);
-	if(bench_carac.get_CM_N() > 0){
-		cout << "not implemented for CM" << endl;
-		return 0;
-	}
-	if(bench_carac.get_MG_N() != 8){
+	if((bench_carac.get_det_N(Tomography::MG) != 8) || (bench_carac.get_det_N_tot() != 8)){
 		cout << "only implemented with 4 MG2D setup" << endl;
 	}
 	double step[18];

@@ -2,7 +2,6 @@
 #include "tomography.h"
 #include "detector.h"
 
-#include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <ctime>
@@ -13,8 +12,6 @@
 
 #include <boost/foreach.hpp>
 
-using std::cout;
-using std::endl;
 using std::ostringstream;
 using std::setw;
 using std::setfill;
@@ -22,7 +19,7 @@ using std::string;
 using std::pair;
 
 
-bool Tomography::can_continue = true;
+//bool Tomography::can_continue = true;
 bool Tomography::is_batch = gROOT->IsBatch();
 bool Tomography::live_graphic_display = !Tomography::is_batch;
 
@@ -94,13 +91,13 @@ template ostream& operator<<(ostream& os, const map<int,double>& map_);
 template ostream& operator<<(ostream& os, const map<double,int>& map_);
 template ostream& operator<<(ostream& os, const map<int,int>& map_);
 template ostream& operator<<(ostream& os, const map<bool,map<int,int> >& map_);
-
+/*
 void Tomography::signal_handler(int s){
 	cout << "\nCaught signal " << s << endl;
 	cout << endl;
 	can_continue = false;
 }
-
+*/
 Tomography::elec_type Tomography::str_to_elec(string str){
 	elec_type return_value = unknown_elec;
 	if(str == "dream") return_value = Dream;

@@ -5,9 +5,12 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include <boost/property_tree/ptree.hpp>
 
+using std::cout;
+using std::endl;
 using std::ostream;
 using std::map;
 using std::string;
@@ -58,8 +61,12 @@ namespace Tomography{
 	const double chisquare_threshold = 100;
 	extern bool live_graphic_display; // toggle updating of canvas during calculation
 	extern bool is_batch;
-	extern bool can_continue;
-	void signal_handler(int s);
+	static bool can_continue = true;
+	inline void signal_handler(int s){
+		cout << "\nCaught signal " << s << endl;
+		cout << endl;
+		can_continue = false;
+	}
 	elec_type str_to_elec(string str);
 	ostream& operator<<(ostream& os, const det_type& det);
 	ostream& operator<<(ostream& os, const strip_type& strip);

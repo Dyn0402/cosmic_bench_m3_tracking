@@ -12,6 +12,7 @@
 #include "detector.h"
 #include "ray.h"
 #include "event.h"
+#include "cluster.h"
 
 #include <TFile.h>
 #include <TCanvas.h>
@@ -23,7 +24,7 @@
 #include <TStyle.h>
 #include <TMath.h>
 
-//#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 using std::cout;
 using std::endl;
@@ -44,23 +45,18 @@ using TMath::ATan;
 
 Carac::Carac(string configFilePath){
 	read_json(configFilePath, config_tree);
-	f = new TFile((config_tree.get<string>("Tree")).c_str());
-	cout << config_tree.get<string>("Tree") << endl;
-	TTree * tree = (TTree*)(f->Get("T"));
-	max_event = config_tree.get<long>("max_event");
-	CM_N = config_tree.get<int>("total_CM_N");
-	MG_N = config_tree.get<int>("total_MG_N");
-	Tanalyse_R::Init(tree,CM_N,MG_N);
+	Init();
 }
 Carac::Carac(ptree config_tree_){
 	config_tree = config_tree_;
+	Init();
+}
+void Carac::Init(){
 	f = new TFile((config_tree.get<string>("Tree")).c_str());
 	cout << config_tree.get<string>("Tree") << endl;
 	TTree * tree = (TTree*)(f->Get("T"));
 	max_event = config_tree.get<long>("max_event");
-	CM_N = config_tree.get<int>("total_CM_N");
-	MG_N = config_tree.get<int>("total_MG_N");
-	Tanalyse_R::Init(tree,CM_N,MG_N);
+	Tanalyse_R::Init(tree,CosmicBench(config_tree).get_det_N());
 }
 Carac::~Carac(){
 	//delete f;
@@ -97,18 +93,16 @@ void Carac::Residus_ref(){
 	int nbins = 200;
 	double marge = 1./10.;
 	int nbins_2D = 100*(1+2*marge);
-	vector< pair<int,int> > perp_pairs;
+	map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> > perp_pairs;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	CosmicBench temp_CB(config_tree);
-	for(int i=0;i<(temp_CB.get_CM_N() + temp_CB.get_MG_N());i++){
+	for(int i=0;i<(temp_CB.get_det_N_tot());i++){
 		Detector * current_det = temp_CB.get_detector(i);
 		ostringstream name;
-		if(current_det->get_type() == Tomography::CM){
-			name << "Cosmulti_" << (dynamic_cast<CM_Detector*>(current_det))->get_cm_n_in_tree();
-		}
-		else if(current_det->get_type() == Tomography::MG){
-			name << "Multigen_" << (dynamic_cast<MG_Detector*>(current_det))->get_mg_n_in_tree();
-			if(current_det->get_perp_n()>-1) perp_pairs.push_back(pair<int,int>((dynamic_cast<MG_Detector*>(current_det))->get_mg_n_in_tree(),current_det->get_perp_n()));
+		name << current_det->get_type() << "_" << current_det->get_n_in_tree();
+		if(current_det->get_perp_n()>-1) perp_pairs[pair<Tomography::det_type,int>(current_det->get_type(),current_det->get_n_in_tree())] = pair<Tomography::det_type,int>(current_det->get_perp_type(),current_det->get_perp_n());
+		else{
+			perp_pairs[pair<Tomography::det_type,int>(current_det->get_type(),current_det->get_n_in_tree())] = pair<Tomography::det_type,int>(current_det->get_type(),-1);
 		}
 		c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
 		c_MM[name.str()]->Divide(4,4);
@@ -150,31 +144,10 @@ void Carac::Residus_ref(){
 		angle_xy_fit[name.str()]->SetParLimits(1,-5,5);
 		angle_xy_fit[name.str()]->SetParLimits(2,-20,20);
 	}
-	sort(perp_pairs.begin(),perp_pairs.end());
-	for(vector<pair<int,int> >::iterator det_it = perp_pairs.begin();det_it!=perp_pairs.end();++det_it){
-		vector<pair<int,int> >::iterator det_jt = (det_it+1);
-		while(det_jt!=perp_pairs.end()){
-			if(det_jt->first == det_it->first){
-				if(det_jt->second != det_it->second){
-					cout << "error in 2D detector pairing" << endl;
-					return;
-				}
-				else{
-					det_jt = perp_pairs.erase(det_jt);
-				}
-			}
-			else if(det_jt->second == det_it->first){
-				if(det_jt->first != det_it->second){
-					cout << "error in 2D detector pairing" << endl;
-					return;
-				}
-				else{
-					det_jt = perp_pairs.erase(det_jt);
-				}
-			}
-			else{
-				det_jt++;
-			}
+	for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator map_it = perp_pairs.begin();map_it!=perp_pairs.end();++map_it){
+		if(perp_pairs.count(map_it->second)==0 && (map_it->second).second > -1){
+			cout << "2D detectors must be set to non ref in both direction" << endl;
+			return;
 		}
 	}
 	TCanvas * c0 = new TCanvas("stats","stats");
@@ -186,17 +159,18 @@ void Carac::Residus_ref(){
 	map<string,TH1D*> ray_slope;
 	map<string,TH1D*> ray_phi;
 	int color_n = 1;
-	for(vector<pair<int,int> >::iterator det_it = perp_pairs.begin();det_it!=perp_pairs.end();++det_it){
+	for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator det_it = perp_pairs.begin();det_it!=perp_pairs.end();++det_it){
 		ostringstream name_compl;
-		name_compl << "_" << det_it->first << "_" << det_it->second;
-		chisquares["MG"+name_compl.str()] = new TH1D(("chiSquares" + name_compl.str()).c_str(),("chiSquares" + name_compl.str()).c_str(),nbins,0,chisquare_threshold);
-		chisquares["MG"+name_compl.str()]->SetLineColor(color_n);
-		ray_clus_n["MG"+name_compl.str()] = new TH1D(("clus_n" + name_compl.str()).c_str(),("clus_n" + name_compl.str()).c_str(),MG_N + CM_N + 1,0,MG_N + CM_N + 1);
-		ray_clus_n["MG"+name_compl.str()]->SetLineColor(color_n);
-		ray_slope["MG"+name_compl.str()] = new TH1D(("slope" + name_compl.str()).c_str(),("slope" + name_compl.str()).c_str(),100,0,1);
-		ray_slope["MG"+name_compl.str()]->SetLineColor(color_n);
-		ray_phi["MG"+name_compl.str()] = new TH1D(("phi" + name_compl.str()).c_str(),("phi" + name_compl.str()).c_str(),100,-Pi(),Pi());
-		ray_phi["MG"+name_compl.str()]->SetLineColor(color_n);
+		name_compl << (det_it->first).first << "_" << (det_it->first).second;
+		if((det_it->second).second > -1) name_compl << "_" << (det_it->second).first << "_" << (det_it->second).second;
+		chisquares[name_compl.str()] = new TH1D(("chiSquares_" + name_compl.str()).c_str(),("chiSquares_" + name_compl.str()).c_str(),nbins,0,chisquare_threshold);
+		chisquares[name_compl.str()]->SetLineColor(color_n);
+		ray_clus_n[name_compl.str()] = new TH1D(("clus_n_" + name_compl.str()).c_str(),("clus_n_" + name_compl.str()).c_str(),temp_CB.get_det_N_tot() + 1,0,temp_CB.get_det_N_tot() + 1);
+		ray_clus_n[name_compl.str()]->SetLineColor(color_n);
+		ray_slope[name_compl.str()] = new TH1D(("slope_" + name_compl.str()).c_str(),("slope_" + name_compl.str()).c_str(),100,0,1);
+		ray_slope[name_compl.str()]->SetLineColor(color_n);
+		ray_phi[name_compl.str()] = new TH1D(("phi_" + name_compl.str()).c_str(),("phi_" + name_compl.str()).c_str(),100,-Pi(),Pi());
+		ray_phi[name_compl.str()]->SetLineColor(color_n);
 		color_n++;
 	}
 	if (fChain == 0) return;
@@ -205,32 +179,41 @@ void Carac::Residus_ref(){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
-		for(vector<pair<int,int> >::iterator pair_it = perp_pairs.begin();pair_it!=perp_pairs.end();++pair_it){
+		for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator pair_it = perp_pairs.begin();pair_it!=perp_pairs.end();++pair_it){
 			ostringstream name_compl;
-			name_compl << "_" << pair_it->first << "_" << pair_it->second;
+			name_compl << (pair_it->first).first << "_" << (pair_it->first).second;
+			if((pair_it->second).second > -1) name_compl << "_" << (pair_it->second).first << "_" << (pair_it->second).second;
 			int non_ref_n = 0;
-			for(ptree::iterator tree_it = config_tree.get_child("CosmicBench.MultiGens").begin(); tree_it != config_tree.get_child("CosmicBench.MultiGens").end(); tree_it++){
-				if(tree_it->second.get<int>("mg_n") == pair_it->first || tree_it->second.get<int>("mg_n") == pair_it->second){
-					tree_it->second.put<bool>("is_ref",false);
-					non_ref_n++;
-				}
-				else{
-					tree_it->second.put<bool>("is_ref",true);
+			for(map<const Tomography::det_type,const Detector* const>::const_iterator type_it = Tomography::Static_Detector.begin();type_it!=Tomography::Static_Detector.end();++type_it){
+				ostringstream tree_child;
+				tree_child << "CosmicBench." << type_it->first;
+				for(ptree::iterator tree_it = config_tree.get_child(tree_child.str().c_str()).begin(); tree_it != config_tree.get_child(tree_child.str().c_str()).end(); tree_it++){
+					Detector * current_det = (type_it->second)->build_det(*tree_it);
+					if(type_it->first == (pair_it->first).first && current_det->get_n_in_tree() == (pair_it->first).second){
+						tree_it->second.put<bool>("is_ref",false);
+						non_ref_n++;
+					}
+					else if((pair_it->second).second > -1 && type_it->first == (pair_it->second).first && current_det->get_n_in_tree() == (pair_it->second).second){
+						tree_it->second.put<bool>("is_ref",false);
+						non_ref_n++;
+					}
+					else tree_it->second.put<bool>("is_ref",true);
+					delete current_det;
 				}
 			}
 			CosmicBench * current_CB = new CosmicBench(config_tree);
-			CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(current_CB,this,false,-1);
+			CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(current_CB,this,-1);
 			vector<Ray> currentRays = currentCBEvent->get_absorption_rays(chisquare_threshold);
 			vector<Ray>::iterator ray_it = currentRays.begin();
 			while(ray_it!= currentRays.end()){
 				if(ray_it->get_chiSquare_X()>-1 && ray_it->get_chiSquare_Y()>-1 && ((ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y())/ray_it->get_clus_n())<chisquare_threshold){
-					chisquares["MG"+name_compl.str()]->Fill(ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y());
-					ray_clus_n["MG"+name_compl.str()]->Fill(ray_it->get_clus_n());
+					chisquares[name_compl.str()]->Fill(ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y());
+					ray_clus_n[name_compl.str()]->Fill(ray_it->get_clus_n());
 					double slope = Sqrt((ray_it->get_slope_Y()*ray_it->get_slope_Y()) + (ray_it->get_slope_X()*ray_it->get_slope_X()));
-					ray_slope["MG"+name_compl.str()]->Fill(ATan(slope));
+					ray_slope[name_compl.str()]->Fill(ATan(slope));
 					double phi = 2*ATan((ray_it->get_slope_Y())/(slope + ray_it->get_slope_X()));
 					if(ray_it->get_slope_X()==0 && ray_it->get_slope_Y()<0) phi = Pi();
-					ray_phi["MG"+name_compl.str()]->Fill(phi);
+					ray_phi[name_compl.str()]->Fill(phi);
 					++ray_it;
 				}
 				else ray_it = currentRays.erase(ray_it);
@@ -238,117 +221,63 @@ void Carac::Residus_ref(){
 			
 			for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
 				if(!((*it)->get_is_ref())){
-					if((*it)->get_type() == Tomography::CM_Demux){
-						ostringstream name;
-						name << "Cosmulti_" << (*it)->get_n_in_tree();
-						vector<CM_Demux_Cluster> current_clusters = (dynamic_cast<CM_Demux_Event*>(*it))->get_clusters();
-						for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-							//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
-							//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
-							//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
-							//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
-							if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
-							if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
-							double residu = numeric_limits<double>::max();
-							vector<CM_Demux_Cluster>::iterator matching_cluster = current_clusters.end();
-							for(vector<CM_Demux_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-								kt->set_perp_pos_mm(*jt);
-								double current_residu = jt->get_residu_ref(&(*kt));
-								if(current_residu<residu){
-									residu = current_residu;
-									matching_cluster = kt;
-								}
+					ostringstream name;
+					name <<(*it)->get_type() << "_" << (*it)->get_n_in_tree();
+					vector<Cluster*> current_clusters = (*it)->get_clusters();
+					for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
+						//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
+						//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
+						//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
+						//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
+						if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
+						if(jt->get_clus_n()<static_cast<unsigned int>(current_CB->get_det_N_tot()-non_ref_n)) continue;
+						double residu = numeric_limits<double>::max();
+						vector<Cluster*>::iterator matching_cluster = current_clusters.end();
+						for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+							(*kt)->set_perp_pos_mm(*jt);
+							double current_residu = jt->get_residu_ref(*kt);
+							if(current_residu<residu){
+								residu = current_residu;
+								matching_cluster = kt;
 							}
-							muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
-							if(matching_cluster == current_clusters.end()) continue;
-							matching_cluster->set_perp_pos_mm(*jt);
-							if(matching_cluster->get_is_X()){
-								correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),matching_cluster->get_pos_mm());
-								angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-								resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-								resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
-								absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_X()),Abs(residu));
-								resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
-							}
-							else{
-								correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),matching_cluster->get_pos_mm());
-								angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-								resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-								resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
-								absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_Y()),Abs(residu));
-								resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
-							}
-							point_nb[name.str()]++;
-							current_clusters.erase(matching_cluster);
-							MM_residus[name.str()]->Fill(residu);
-							resVStime[name.str()]->Fill(matching_cluster->get_t(),residu);
-							resVSampl[name.str()]->Fill(matching_cluster->get_ampl(),residu);
-							resVStot[name.str()]->Fill(matching_cluster->get_TOT(),residu);
-							resVSsize[name.str()]->Fill(matching_cluster->get_size(),residu);
-							absResVStime[name.str()]->Fill(matching_cluster->get_t(),Abs(residu));
-							absResVSampl[name.str()]->Fill(matching_cluster->get_ampl(),Abs(residu));
-							absResVStot[name.str()]->Fill(matching_cluster->get_TOT(),Abs(residu));
-							absResVSsize[name.str()]->Fill(matching_cluster->get_size(),Abs(residu));
-							if(residu<chisquare_threshold){
-								muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
-							}
+						}
+						muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
+						if(matching_cluster == current_clusters.end()) continue;
+						(*matching_cluster)->set_perp_pos_mm(*jt);
+						if((*matching_cluster)->get_is_X()){
+							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),(*matching_cluster)->get_pos_mm());
+							angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+							resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
+							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_X()),Abs(residu));
+							resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
+						}
+						else{
+							correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),(*matching_cluster)->get_pos_mm());
+							angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
+							resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
+							resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
+							absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_Y()),Abs(residu));
+							resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
+						}
+						point_nb[name.str()]++;
+						MM_residus[name.str()]->Fill(residu);
+						resVStime[name.str()]->Fill((*matching_cluster)->get_t(),residu);
+						resVSampl[name.str()]->Fill((*matching_cluster)->get_ampl(),residu);
+						resVStot[name.str()]->Fill((*matching_cluster)->get_TOT(),residu);
+						resVSsize[name.str()]->Fill((*matching_cluster)->get_size(),residu);
+						absResVStime[name.str()]->Fill((*matching_cluster)->get_t(),Abs(residu));
+						absResVSampl[name.str()]->Fill((*matching_cluster)->get_ampl(),Abs(residu));
+						absResVStot[name.str()]->Fill((*matching_cluster)->get_TOT(),Abs(residu));
+						absResVSsize[name.str()]->Fill((*matching_cluster)->get_size(),Abs(residu));
+						delete *matching_cluster;
+						current_clusters.erase(matching_cluster);
+						if(residu<chisquare_threshold){
+							muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
 						}
 					}
-					else if((*it)->get_type() == Tomography::MG){
-						ostringstream name;
-						name << "Multigen_" << (*it)->get_n_in_tree();
-						vector<MG_Cluster> current_clusters = (dynamic_cast<MG_Event*>(*it))->get_clusters();
-						for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
-							//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
-							//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
-							//if(clus_in_nref_dir<det_in_nref_dir[name.str()]) continue;
-							//if(chiSquare_in_nref_dir > chisquare_threshold/static_cast<double>(clus_in_nref_dir)) continue;
-							if((jt->get_chiSquare_X() + jt->get_chiSquare_Y()) > chisquare_threshold/static_cast<double>(non_ref_n)) continue;
-							if(jt->get_clus_n()<static_cast<unsigned int>(CM_N+MG_N-non_ref_n)) continue;
-							double residu = numeric_limits<double>::max();
-							vector<MG_Cluster>::iterator matching_cluster = current_clusters.end();
-							for(vector<MG_Cluster>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
-								kt->set_perp_pos_mm(*jt);
-								double current_residu = jt->get_residu_ref(&(*kt));
-								if(current_residu<residu){
-									residu = current_residu;
-									matching_cluster = kt;
-								}
-							}
-							muon_total[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
-							if(matching_cluster == current_clusters.end()) continue;
-							matching_cluster->set_perp_pos_mm(*jt);
-							if(matching_cluster->get_is_X()){
-								correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_X((*it)->get_z()),matching_cluster->get_pos_mm());
-								angle_alignment[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-								resVSpos[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-								resVSangle[name.str()]->Fill(jt->get_slope_X(),residu);
-								absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_X()),Abs(residu));
-								resVSanglePerp[name.str()]->Fill(jt->get_slope_Y(),residu);
-							}
-							else{
-								correlation[name.str()]->SetPoint(point_nb[name.str()],jt->eval_Y((*it)->get_z()),matching_cluster->get_pos_mm());
-								angle_alignment[name.str()]->Fill(jt->eval_X((*it)->get_z()),residu);
-								resVSpos[name.str()]->Fill(jt->eval_Y((*it)->get_z()),residu);
-								resVSangle[name.str()]->Fill(jt->get_slope_Y(),residu);
-								absResVSabsAngle[name.str()]->Fill(Abs(jt->get_slope_Y()),Abs(residu));
-								resVSanglePerp[name.str()]->Fill(jt->get_slope_X(),residu);
-							}
-							point_nb[name.str()]++;
-							current_clusters.erase(matching_cluster);
-							MM_residus[name.str()]->Fill(residu);
-							resVStime[name.str()]->Fill(matching_cluster->get_t(),residu);
-							resVSampl[name.str()]->Fill(matching_cluster->get_ampl(),residu);
-							resVStot[name.str()]->Fill(matching_cluster->get_TOT(),residu);
-							resVSsize[name.str()]->Fill(matching_cluster->get_size(),residu);
-							absResVStime[name.str()]->Fill(matching_cluster->get_t(),Abs(residu));
-							absResVSampl[name.str()]->Fill(matching_cluster->get_ampl(),Abs(residu));
-							absResVStot[name.str()]->Fill(matching_cluster->get_TOT(),Abs(residu));
-							absResVSsize[name.str()]->Fill(matching_cluster->get_size(),Abs(residu));
-							if(residu<chisquare_threshold){
-								muon_seen[name.str()]->Fill(jt->eval_X((*it)->get_z()),jt->eval_Y((*it)->get_z()));
-							}
-						}
+					for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+						delete *kt;
 					}
 				}
 			}
@@ -400,18 +329,19 @@ void Carac::Residus_ref(){
 				it->second->Modified();
 				it->second->Update();
 			}
-			for(vector<pair<int,int> >::iterator pair_it = perp_pairs.begin();pair_it!=perp_pairs.end();++pair_it){
+			for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator pair_it = perp_pairs.begin();pair_it!=perp_pairs.end();++pair_it){
 				ostringstream name_compl;
-				name_compl << "_" << pair_it->first << "_" << pair_it->second;
+				name_compl << (pair_it->first).first << "_" << (pair_it->first).second;
+				if((pair_it->second).second > -1) name_compl << "_" << (pair_it->second).first << "_" << (pair_it->second).second;
 				string option = (pair_it == perp_pairs.begin()) ? "" : "SAME";
 				c0->cd(1);
-				ray_clus_n["MG"+name_compl.str()]->Draw(option.c_str());
+				ray_clus_n[name_compl.str()]->Draw(option.c_str());
 				c0->cd(2);
-				chisquares["MG"+name_compl.str()]->Draw(option.c_str());
+				chisquares[name_compl.str()]->Draw(option.c_str());
 				c0->cd(3);
-				ray_slope["MG"+name_compl.str()]->Draw(option.c_str());
+				ray_slope[name_compl.str()]->Draw(option.c_str());
 				c0->cd(4);
-				ray_phi["MG"+name_compl.str()]->Draw(option.c_str());
+				ray_phi[name_compl.str()]->Draw(option.c_str());
 			}
 			c0->Modified();
 			c0->Update();
@@ -481,18 +411,19 @@ void Carac::Residus_ref(){
 		it->second->Update();
 		cout << it->first << " efficacity : " << 100.*efficacity[it->first] << "%" << endl;
 	}
-	for(vector<pair<int,int> >::iterator pair_it = perp_pairs.begin();pair_it!=perp_pairs.end();++pair_it){
+	for(map<pair<Tomography::det_type,int>,pair<Tomography::det_type,int> >::iterator pair_it = perp_pairs.begin();pair_it!=perp_pairs.end();++pair_it){
 		ostringstream name_compl;
-		name_compl << "_" << pair_it->first << "_" << pair_it->second;
+		name_compl << (pair_it->first).first << "_" << (pair_it->first).second;
+		if((pair_it->second).second > -1) name_compl << "_" << (pair_it->second).first << "_" << (pair_it->second).second;
 		string option = (pair_it == perp_pairs.begin()) ? "" : "SAME";
 		c0->cd(1);
-		ray_clus_n["MG"+name_compl.str()]->Draw(option.c_str());
+		ray_clus_n[name_compl.str()]->Draw(option.c_str());
 		c0->cd(2);
-		chisquares["MG"+name_compl.str()]->Draw(option.c_str());
+		chisquares[name_compl.str()]->Draw(option.c_str());
 		c0->cd(3);
-		ray_slope["MG"+name_compl.str()]->Draw(option.c_str());
+		ray_slope[name_compl.str()]->Draw(option.c_str());
 		c0->cd(4);
-		ray_phi["MG"+name_compl.str()]->Draw(option.c_str());
+		ray_phi[name_compl.str()]->Draw(option.c_str());
 	}
 	c0->Modified();
 	c0->Update();
