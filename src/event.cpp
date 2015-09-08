@@ -23,6 +23,7 @@
 #include <TCanvas.h>
 #include <TLine.h>
 #include <TStyle.h>
+#include <TText.h>
 
 using std::pair;
 using std::string;
@@ -1541,12 +1542,12 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 		//find the biggest number of good clusters combinaisons
 		//if no ray found, allow to drop a detector
 		for(int drop = 0;drop<2;drop++){
-			if(suitableRays[it->first].size() > 0) continue;
+			if(suitableRays[it->first].size() > 0) break;
 			// you can adjust the size to require more or less hit
 			while(b && (it->second).size()>2){
 				b = false;
 				//find best combinaison of clusters
-				vector<map<double,int> > comb = combinaisons(sizes[it->first], (drop>0));
+				vector<map<double,int> > comb = combinaisons(sizes[it->first], (drop > 0));
 				double current_chiSquare = numeric_limits<double>::max();
 				map<double,int> best_comb;
 				char coord = (it->first) ? 'X' : 'Y';
@@ -1568,7 +1569,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 					//if(!(has_up && has_down)) continue;
 					currentRay.process();
 					/*double sigma = currentRay.get_t_sigma();*/
-					if(currentRay.get_chiSquare()<current_chiSquare && currentRay.get_chiSquare()>-1 && (currentRay.get_chiSquare()/currentRay.get_clus_n())<(10.*chiSquare_threshold)){
+					if(currentRay.get_chiSquare()<current_chiSquare && currentRay.get_chiSquare()>-1 && (currentRay.get_chiSquare()/currentRay.get_clus_n())<(2.*chiSquare_threshold)){
 						bestRay = currentRay;
 						current_chiSquare = currentRay.get_chiSquare();//sigma;
 						best_comb = *kt;
@@ -1633,6 +1634,9 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	bool is_null = (c1==0);
 	if(is_null) c1 = new TCanvas();
 	TCanvas * cDisplay = c1;
+	ostringstream title;
+	title << "Event " << evn;
+	cDisplay->SetTitle(title.str().c_str());
 	cDisplay->Clear();
 	cDisplay->Divide(2);
 	map<double,TH1D*> ampl_hists_X;
@@ -1709,25 +1713,25 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	}
 	vector<TLine*> clus_X;
 	vector<TLine*> clus_Y;
+	double min_z = Min(ampl_hists_X.begin()->first,ampl_hists_Y.begin()->first);
+	double max_z = Max((--(ampl_hists_X.end()))->first,(--(ampl_hists_Y.end()))->first);
+	double temp = min_z;
+	min_z -= 0.1*(max_z-min_z);
+	max_z += 0.1*(max_z-temp);
 	for(map<double,vector<double> >::iterator it = clus_pos_X.begin();it!=clus_pos_X.end();++it){
 		for(vector<double>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-			clus_X.push_back(new TLine(*jt,it->first,*jt,it->first + (min_dist/scale)));
+			clus_X.push_back(new TLine(*jt,it->first,*jt,Min(it->first + (min_dist/scale),max_z)));
 			(clus_X.back())->SetLineColor(pos_color);
 			(clus_X.back())->SetLineStyle(2);
 		}
 	}
 	for(map<double,vector<double> >::iterator it = clus_pos_Y.begin();it!=clus_pos_Y.end();++it){
 		for(vector<double>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-			clus_Y.push_back(new TLine(*jt,it->first,*jt,it->first + (min_dist/scale)));
+			clus_Y.push_back(new TLine(*jt,it->first,*jt,Min(it->first + (min_dist/scale),max_z)));
 			(clus_Y.back())->SetLineColor(pos_color);
 			(clus_Y.back())->SetLineStyle(2);
 		}
 	}
-	double min_z = Min(ampl_hists_X.begin()->first,ampl_hists_Y.begin()->first);
-	double max_z = Max((--(ampl_hists_X.end()))->first,(--(ampl_hists_Y.end()))->first);
-	double temp = min_z;
-	min_z -= 0.1*(max_z-min_z);
-	max_z += 0.1*(max_z-temp);
 	vector<TLine*> rays_X;
 	vector<TLine*> rays_Y;
 	for(rays_it = eventRays.begin();rays_it!=eventRays.end();++rays_it){
@@ -1747,16 +1751,23 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	}
 	TH1D * bg_X = new TH1D("XZ plane","XZ plane",2,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.);
 	TH1D * bg_Y = new TH1D("YZ plane","YZ plane",2,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.);
-	bg_X->Fill(-Tomography::XY_size/2.,min_z);
-	bg_X->Fill(Tomography::XY_size/2.,max_z);
+	//bg_X->Fill(-Tomography::XY_size/2.,min_z);
+	//bg_X->Fill(Tomography::XY_size/2.,max_z);
 	bg_X->SetAxisRange(min_z,max_z,"Y");
-	bg_Y->Fill(-Tomography::XY_size/2.,min_z);
-	bg_Y->Fill(Tomography::XY_size/2.,max_z);
+	bg_X->GetXaxis()->SetTitle("X [mm]");
+	bg_X->GetYaxis()->SetTitle("Z [mm]");
+	bg_X->SetDirectory(0);
+	//bg_Y->Fill(-Tomography::XY_size/2.,min_z);
+	//bg_Y->Fill(Tomography::XY_size/2.,max_z);
 	bg_Y->SetAxisRange(min_z,max_z,"Y");
+	bg_Y->GetXaxis()->SetTitle("Y [mm]");
+	bg_Y->GetYaxis()->SetTitle("Z [mm]");
+	bg_Y->SetDirectory(0);
 	cDisplay->cd(1);
 	bg_X->Draw("AXIS");
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
-		map_it->second->DrawCopy("SAME ][");
+		map_it->second->SetDirectory(0);
+		map_it->second->Draw("SAME ][");
 	}
 	for(vector<TLine*>::iterator line_it = clus_X.begin();line_it!=clus_X.end();++line_it){
 		(*line_it)->Draw();
@@ -1770,7 +1781,8 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	cDisplay->cd(2);
 	bg_Y->Draw("AXIS");
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_Y.begin();map_it!=ampl_hists_Y.end();++map_it){
-		map_it->second->DrawCopy("SAME ][");
+		map_it->second->SetDirectory(0);
+		map_it->second->Draw("SAME ][");
 	}
 	for(vector<TLine*>::iterator line_it = clus_Y.begin();line_it!=clus_Y.end();++line_it){
 		(*line_it)->Draw();
@@ -1781,16 +1793,32 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	for(vector<TLine*>::iterator line_it = det_Y.begin();line_it!=det_Y.end();++line_it){
 		(*line_it)->Draw();
 	}
+	TText * canvas_title = new TText(0.5,0.965,title.str().c_str());
+	canvas_title->SetTextAlign(22);
+	cDisplay->cd();
+	canvas_title->Draw();
+	TText * left_pad_title = new TText(0.5,0.96,bg_X->GetTitle());
+	left_pad_title->SetNDC(true);
+	left_pad_title->SetTextAlign(22);
+	cDisplay->cd(1);
+	left_pad_title->Draw();
+	TText * right_pad_title = new TText(0.5,0.96,bg_Y->GetTitle());
+	right_pad_title->SetNDC(true);
+	right_pad_title->SetTextAlign(22);
+	cDisplay->cd(2);
+	right_pad_title->Draw();
+	cDisplay->GetPad(1)->SetFillStyle(0);
+	cDisplay->GetPad(2)->SetFillStyle(0);
 	cDisplay->Modified();
 	cDisplay->Update();
-	for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
-		delete map_it->second;
-	}
-	for(map<double,TH1D*>::iterator map_it = ampl_hists_Y.begin();map_it!=ampl_hists_Y.end();++map_it){
-		delete map_it->second;
-	}
 	if(!is_null){
-		delete bg_X; delete bg_Y;
+		for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
+			delete map_it->second;
+		}
+		for(map<double,TH1D*>::iterator map_it = ampl_hists_Y.begin();map_it!=ampl_hists_Y.end();++map_it){
+			delete map_it->second;
+		}
+		delete bg_X; delete bg_Y; delete canvas_title; delete left_pad_title; delete right_pad_title;
 		for(vector<TLine*>::iterator line_it = clus_X.begin();line_it!=clus_X.end();++line_it){
 			delete (*line_it);
 		}
