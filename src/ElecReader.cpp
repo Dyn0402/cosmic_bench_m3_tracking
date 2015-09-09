@@ -421,7 +421,7 @@ void DreamElecReader::seek_next_EOE(int feu_id){
 			if(current_data.is_EOE()) eoe_reached = true;
 		}
 	}
-	cout << "    skipped " << line_skipped << "to realign with dream packet" << endl;
+	cout << "    skipped " << line_skipped << " lines (approx. " << line_skipped/(74*Tomography::Nasic_FEU) << " events) to realign with dream packet" << endl;
 }
 double DreamElecReader::get_data(int asic_n,int channel_n,int sample_n){
 	if(!(feu_data.count(asic_n/Tomography::Nasic_FEU)>0)){
