@@ -182,6 +182,10 @@ void DreamElecReader::read_next_event(){
 		for(map<int,FeuData>::iterator evn_it = feu_data.begin();evn_it!=feu_data.end();++evn_it){
 			if(is_sync[evn_it->first]) continue;
 			read_next_event_file(evn_it->first);
+			while((evn_it->second).Nevent < 0){
+				seek_next_EOE(evn_it->first);
+				read_next_event_file(evn_it->first);
+			}
 		}
 		current_Nevent = ((feu_data.begin())->second).Nevent;
 		desync = false;
@@ -366,7 +370,7 @@ void DreamElecReader::read_next_event_file(int feu_id){
 				}
 			}
 			(feu_data[feu_id].file)->read((char*)&current_data,sizeof(current_data));
-			current_data.ntohs_();	
+			current_data.ntohs_();
 		}
 		if(event_complete || has_bug) break;
 	}
@@ -379,6 +383,45 @@ void DreamElecReader::read_next_event_file(int feu_id){
 		feu_data[feu_id].evttime = 0;
 
 	}
+}
+void DreamElecReader::seek_next_EOE(int feu_id){
+	if(!(feu_data.count(feu_id)>0)){
+		cout << "Feu ID not found for read (" << feu_id << ")" << endl;
+		return;
+	}
+	bool eoe_reached = false;
+	int line_skipped = 0;
+	reset_data(feu_id);
+	DataLineDream current_data;
+	while(feu_data[feu_id].current_index <= last_index && !eoe_reached){
+		if((feu_data[feu_id].file)->eof()){
+			if(feu_data[feu_id].current_index == last_index){
+				cout << "end of data for FEU : " << feu_id_to_n[feu_id] << endl;
+				reset_data(feu_id);
+				return;
+			}
+			(feu_data[feu_id].file)->close();
+			feu_data[feu_id].current_index++;
+			ostringstream current_name;
+			current_name << base_name << setw(3) << setfill('0') << feu_data[feu_id].current_index << "_" << setw(2) << setfill('0') << feu_id_to_n[feu_id] << "." << Tomography::DreamExt;
+			feu_data[feu_id].file->open(current_name.str().c_str(),ifstream::binary);
+			if((feu_data[feu_id].file)->is_open()) cout << "\n" << current_name.str() << " loaded !" << endl;
+			else{
+				cout << "\ncan't load : " << current_name.str() << endl;
+				reset_data(feu_id);
+				return;
+			}
+		}
+		(feu_data[feu_id].file)->read((char*)&current_data,sizeof(current_data));
+		current_data.ntohs_();
+		while((feu_data[feu_id].file)->good() && !eoe_reached){
+			(feu_data[feu_id].file)->read((char*)&current_data,sizeof(current_data));
+			current_data.ntohs_();
+			line_skipped++;
+			if(current_data.is_EOE()) eoe_reached = true;
+		}
+	}
+	cout << "    skipped " << line_skipped << "to realign with dream packet" << endl;
 }
 double DreamElecReader::get_data(int asic_n,int channel_n,int sample_n){
 	if(!(feu_data.count(asic_n/Tomography::Nasic_FEU)>0)){

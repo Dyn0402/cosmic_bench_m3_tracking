@@ -74,6 +74,7 @@ class DreamElecReader: public ElecReader{
 		void reset_data();
 		void reset_data(int feu_id);
 		void read_next_event_file(int feu_id);
+		void seek_next_EOE(int feu_id);
 		map<int,FeuData> feu_data;
 		map<int,int> feu_id_to_n;
 };
