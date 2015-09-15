@@ -1,6 +1,5 @@
 #define tomography_cpp
 #include "tomography.h"
-#include "detector.h"
 
 #include <sstream>
 #include <iomanip>
@@ -19,7 +18,7 @@ using std::string;
 using std::pair;
 
 
-//bool Tomography::can_continue = true;
+bool Tomography::can_continue = true;
 bool Tomography::is_batch = gROOT->IsBatch();
 bool Tomography::live_graphic_display = !Tomography::is_batch;
 
@@ -104,7 +103,7 @@ Tomography::elec_type Tomography::str_to_elec(string str){
 	else if(str == "feminos") return_value = Feminos;
 	return return_value;
 }
-
+/*
 static map<const Tomography::det_type,const Detector* const> Static_Detector_build(){
 	map<const Tomography::det_type,const Detector* const> return_map;
 	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::CM,new CM_Detector()));
@@ -114,6 +113,7 @@ static map<const Tomography::det_type,const Detector* const> Static_Detector_bui
 }
 
 map<const Tomography::det_type,const Detector* const> Tomography::Static_Detector = Static_Detector_build();
+*/
 /*
 void Tomography::process_elec_files(ptree config_tree){
 	int total_CM_N = config_tree.get<int>("total_CM_N");

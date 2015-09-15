@@ -55,13 +55,13 @@ namespace Tomography{
 	const int Nchannel = 64;
 	const int Nasic_FEU = 8;
 	const int Nasic_Feminos = 4;
-	extern map<const det_type,const Detector* const> Static_Detector;
 	const string DreamExt = "fdf";
 	const string FeminosExt = "aqs";
+	extern map<const Tomography::det_type,const Detector* const> Static_Detector;
 	const double chisquare_threshold = 100;
 	extern bool live_graphic_display; // toggle updating of canvas during calculation
 	extern bool is_batch;
-	static bool can_continue = true;
+	extern bool can_continue;// = true;
 	inline void signal_handler(int s){
 		cout << "\nCaught signal " << s << endl;
 		cout << endl;

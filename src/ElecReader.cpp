@@ -412,16 +412,18 @@ void DreamElecReader::seek_next_EOE(int feu_id){
 				return;
 			}
 		}
+		/*
 		(feu_data[feu_id].file)->read((char*)&current_data,sizeof(current_data));
 		current_data.ntohs_();
-		while((feu_data[feu_id].file)->good() && !eoe_reached){
+		*/
+		do {
 			(feu_data[feu_id].file)->read((char*)&current_data,sizeof(current_data));
 			current_data.ntohs_();
 			line_skipped++;
 			if(current_data.is_EOE()) eoe_reached = true;
-		}
+		} while((feu_data[feu_id].file)->good() && !eoe_reached);
 	}
-	cout << "    skipped " << line_skipped << " lines (approx. " << line_skipped/(74*Tomography::Nasic_FEU) << " events) to realign with dream packet" << endl;
+	cout << "    skipped " << line_skipped << " lines (approx. " << line_skipped/(((74*Tomography::Nasic_FEU)+10)*Tomography::Nsample) << " events) to realign with dream packet" << endl;
 }
 double DreamElecReader::get_data(int asic_n,int channel_n,int sample_n){
 	if(!(feu_data.count(asic_n/Tomography::Nasic_FEU)>0)){
