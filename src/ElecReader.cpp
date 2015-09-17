@@ -152,6 +152,7 @@ DreamElecReader::DreamElecReader(string base_name_,map<int,int> feu_id_to_n_,int
 		current_name << base_name << setw(3) << setfill('0') << feu_data[feu_it->first].current_index << "_" << setw(2) << setfill('0') << feu_it->second << "." << Tomography::DreamExt;
 		feu_data[feu_it->first].file = new ifstream(current_name.str().c_str(),ifstream::binary);
 		if((feu_data[feu_it->first].file)->is_open()) cout << "\n" << current_name.str() << " loaded !" << endl;
+		else cout << "\ncan't load : " << current_name.str() << endl;
 		for(int i=0;i<Tomography::Nasic_FEU;i++){
 			for(int j=0;j<Tomography::Nchannel;j++){
 				for(int k=0;k<Tomography::Nsample;k++){
