@@ -575,10 +575,9 @@ int MGv2_Detector::feminos_mapping(int channel) const{
 	else return (tmpchan + 1 - (2*(tmpchan%2)));
 }
 int MGv2_Detector::dream_mapping(int channel) const{
-	if(channel > 60) return -1;
-	if(channel == 6) return 52;
-	else if(channel == 8) return 54;
-	else return (60 - channel);
+	if(channel == 6) return 8;
+	else if(channel == 8) return 6;
+	else return channel;
 	/*
 	if(channel == 57) return 8;
 	else if(channel == 55) return 6;
