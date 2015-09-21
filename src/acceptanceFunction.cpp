@@ -178,9 +178,9 @@ TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,doubl
 	double width_x = x_max_plot - x_min_plot;
 	double width_y = y_max_plot - y_min_plot;
 	x_max_plot += width_x/(nbin_x*100.);
-	x_min_plot += width_x/(nbin_x*100.);
+	x_min_plot -= width_x/(nbin_x*100.);
 	y_max_plot += width_y/(nbin_y*100.);
-	y_min_plot += width_y/(nbin_y*100.);
+	y_min_plot -= width_y/(nbin_y*100.);
 	double width_step_x = (x_max_plot - x_min_plot)/step_x;
 	double width_step_y = (y_max_plot - y_min_plot)/step_y;
 	for(int i=0;i<step_x && Tomography::can_continue;i++){
@@ -240,9 +240,9 @@ TH2D acceptanceFunction::plot_XY(int nbin_x, int nbin_y,double z, double y_angle
 	width_x = x_max_plot - x_min_plot;
 	width_y = y_max_plot - y_min_plot;
 	x_max_plot += width_x/(nbin_x*100.);
-	x_min_plot += width_x/(nbin_x*100.);
+	x_min_plot -= width_x/(nbin_x*100.);
 	y_max_plot += width_y/(nbin_y*100.);
-	y_min_plot += width_y/(nbin_y*100.);
+	y_min_plot -= width_y/(nbin_y*100.);
 	double width_step_x = (x_max_plot - x_min_plot)/step_x;
 	double width_step_y = (y_max_plot - y_min_plot)/step_y;
 	for(int i=0;i<step_x && Tomography::can_continue;i++){
