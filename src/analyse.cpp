@@ -164,11 +164,13 @@ void Analyse::Residus(){
 	c0->Update();
 }
 void Analyse::Residus_ref(){
-	int non_ref_n = 0;
 	double chisquare_threshold = 10;
+	/*
+	int non_ref_n = 0;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())) non_ref_n++;
 	}
+	*/
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
 	map<string,TCanvas*> c_MM;
@@ -505,11 +507,13 @@ void Analyse::Residus_ref(){
 	c0->Update();
 }
 double Analyse::Residus_ref_cost(){
-	int non_ref_n = 0;
 	double chisquare_threshold = 10;
+	/*
+	int non_ref_n = 0;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())) non_ref_n++;
 	}
+	*/
 	map<string,TH1D*> MM_residus;
 	map<string,TF1*> offset_fit;
 	map<string,TProfile*> angle_alignment;
@@ -657,11 +661,13 @@ double Analyse::Residus_ref_cost(){
 	return cost;
 }
 void Analyse::Residus_ref_2D(){
-	int non_ref_n = 0;
 	double chisquare_threshold = 10;
+	/*
+	int non_ref_n = 0;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())) non_ref_n++;
 	}
+	*/
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
 	TCanvas* c_MM;
@@ -850,11 +856,13 @@ void Analyse::Residus_ref_2D(){
 	c0->Update();
 }
 void Analyse::Efficacity(){
-		int non_ref_n = 0;
 	double chisquare_threshold = 10;
+	/*
+	int non_ref_n = 0;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())) non_ref_n++;
 	}
+	*/
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
 	map<string,TCanvas*> c_MM;
@@ -1216,16 +1224,36 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, TCanvas * c2, dou
 		event_n_interval++;
 		if(event_n_interval%interval_length == 0){
 			cout << setw(20) << interval_n <<  "|" << setw(20) << reconstructed_track <<  "|" << setw(20) << track_in_ellipse <<  "|" << setw(20) << track_in_band <<  "|" << setw(20) << track_in_vertical_band << endl;
+
 			for(int j=1;j<=tank_profile->GetNbinsY();j++){
 				int binN = tank_profile->GetBin(interval_n,j);
-				tank_profile->SetBinContent(binN,tank_profile->GetBinContent(binN)/track_in_vertical_band);
+				if(track_in_vertical_band>0) tank_profile->SetBinContent(binN,tank_profile->GetBinContent(binN)/track_in_vertical_band);
+				else tank_profile->SetBinContent(binN,0);
 			}
-			tank_tracks_norm->SetBinContent(interval_n,track_in_ellipse*1./reconstructed_track);
-			tank_tracks_norm_H->SetBinContent(interval_n,track_in_ellipse*1./track_in_band);
-			tank_tracks_norm_V->SetBinContent(interval_n,track_in_ellipse*1./track_in_vertical_band);
-			tank_tracks_norm->SetBinError(interval_n,Sqrt(track_in_ellipse*(reconstructed_track - track_in_ellipse)*1./(reconstructed_track*reconstructed_track)));
-			tank_tracks_norm_H->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_band - track_in_ellipse)*1./(track_in_band*track_in_band)));
-			tank_tracks_norm_V->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_vertical_band - track_in_ellipse)*1./(track_in_vertical_band*track_in_vertical_band)));
+			if(reconstructed_track>0){
+				tank_tracks_norm->SetBinContent(interval_n,track_in_ellipse*1./reconstructed_track);
+				tank_tracks_norm->SetBinError(interval_n,Sqrt(track_in_ellipse*(reconstructed_track - track_in_ellipse)*1./(reconstructed_track*reconstructed_track)));
+			}
+			else{
+				tank_tracks_norm->SetBinContent(interval_n,0);
+				tank_tracks_norm->SetBinError(interval_n,0);
+			}
+			if(track_in_band>0){
+				tank_tracks_norm_H->SetBinContent(interval_n,track_in_ellipse*1./track_in_band);
+				tank_tracks_norm_H->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_band - track_in_ellipse)*1./(track_in_band*track_in_band)));
+			}
+			else{
+				tank_tracks_norm_H->SetBinContent(interval_n,0);
+				tank_tracks_norm_H->SetBinError(interval_n,0);
+			}
+			if(track_in_vertical_band>0){
+				tank_tracks_norm_V->SetBinContent(interval_n,track_in_ellipse*1./track_in_vertical_band);
+				tank_tracks_norm_V->SetBinError(interval_n,Sqrt(track_in_ellipse*(track_in_vertical_band - track_in_ellipse)*1./(track_in_vertical_band*track_in_vertical_band)));
+			}
+			else{
+				tank_tracks_norm_V->SetBinContent(interval_n,0);
+				tank_tracks_norm_V->SetBinError(interval_n,0);
+			}
 			interval_n++;
 			event_n_interval = 0;
 			reconstructed_track = 0;
