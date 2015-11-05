@@ -58,68 +58,50 @@ default: msg
 
 all: exec
 
-exec: echo_things tracking_b absorptionMap_b MultiCluster_b DataReader_b AutoAlign_b HV_Monitor_b wrapper_b carac_all_b
+exec: tracking absorptionMap MultiCluster DataReader AutoAlign HV_Monitor wrapper carac_all
 
 todo: live
 
 echo_things:
 	@$(ECHO) "$(GREEN)Building with flags:$(NC) $(CXXFLAGS)"
 
-$(ODIR)/%.o: $(SDIR)/%.cpp
+$(ODIR)/%.o: $(SDIR)/%.cpp echo_things
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(CXX) -o $@ $(CXXFLAGS) -c $<
 
-DataReader: echo_things DataReader_b
-
-absorptionMap: echo_things absorptionMap_b
-
-tracking: echo_things tracking_b
-
-MultiCluster: echo_things MultiCluster_b
-
-live: echo_things live_b
-
-AutoAlign: echo_things AutoAlign_b
-
-HV_Monitor: echo_things HV_Monitor_b
-
-wrapper: echo_things wrapper_b
-
-carac_all: echo_things carac_all_b
-
-DataReader_b: $(DataReader_obj)
+DataReader: $(DataReader_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o DataReader $(LDFLAGS)
 
-absorptionMap_b: $(absorptionMap_obj)
+absorptionMap: $(absorptionMap_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o absorptionMap $(LDFLAGS)
 
-tracking_b: $(tracking_obj)
+tracking: $(tracking_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o tracking $(LDFLAGS)
 
-MultiCluster_b: $(MultiCluster_obj)
+MultiCluster: $(MultiCluster_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o MultiCluster $(LDFLAGS)
 
-live_b: $(live_obj)
+live: $(live_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o live $(LDFLAGS)
 
-AutoAlign_b: $(AutoAlign_obj)
+AutoAlign: $(AutoAlign_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o AutoAlign $(LDFLAGS)
 
-HV_Monitor_b: $(HV_Monitor_obj)
+HV_Monitor: $(HV_Monitor_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o HV_Monitor $(LDFLAGS) -lcaenhvwrapper
 
-wrapper_b: $(wrapper_obj)
+wrapper: $(wrapper_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o wrapper $(LDFLAGS)
 
-carac_all_b: $(carac_all_obj)
+carac_all: $(carac_all_obj)
 	@$(ECHO) "$(GREEN)Building $@$(NC)"
 	@$(LD) $^ -o carac_all $(LDFLAGS)
 
