@@ -30,14 +30,15 @@ class Cluster{
 		void set_perp_pos_mm(Ray ray);
 		double get_perp_pos_mm() const;
 		int find_det(const vector<Detector*> det_array) const;
-		bool is_in_det(const Detector * det) const;
+		bool is_in_det(const Detector * const det) const;
 		int get_n_in_tree() const;
 		virtual Cluster * Clone() const = 0;
 	protected:
 		Cluster();
 		Cluster(const Cluster& other);
 		Cluster& operator=(const Cluster& other);
-		Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry = -1);
+		Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry);
+		Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det);
 		Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		int evn;
 		double evttime;
@@ -69,7 +70,8 @@ class CM_Cluster: public Cluster{
 		CM_Cluster();
 		CM_Cluster(const CM_Cluster& other);
 		CM_Cluster& operator=(const CM_Cluster& other);
-		CM_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry = -1);
+		CM_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry);
+		CM_Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det);
 		CM_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~CM_Cluster();
 		Tomography::strip_type get_strip_type() const;
@@ -100,7 +102,8 @@ class MG_Cluster: public Cluster{
 		MG_Cluster();
 		MG_Cluster(const MG_Cluster& other);
 		MG_Cluster& operator=(const MG_Cluster& other);
-		MG_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry = -1);
+		MG_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry);
+		MG_Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det);
 		MG_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~MG_Cluster();
 		double get_pos_mm() const;
@@ -114,7 +117,8 @@ class MGv2_Cluster: public Cluster{
 		MGv2_Cluster();
 		MGv2_Cluster(const MGv2_Cluster& other);
 		MGv2_Cluster& operator=(const MGv2_Cluster& other);
-		MGv2_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry = -1);
+		MGv2_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry);
+		MGv2_Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det);
 		MGv2_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
 		~MGv2_Cluster();
 		double get_pos_mm() const;

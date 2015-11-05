@@ -63,7 +63,7 @@ Carac::~Carac(){
 }
 
 void Carac::Residus_ref(){
-	double chisquare_threshold = 10;
+	const double chisquare_threshold = 10;
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
 	map<string,TCanvas*> c_MM;

@@ -192,6 +192,9 @@ Detector * CM_Detector::Clone() const{
 Event * CM_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
 	return new CM_Event(treeObject, this, entry);
 }
+Event * CM_Detector::build_event(const Tanalyse_R * const treeObject) const{
+	return new CM_Event(treeObject, this);
+}
 Event * CM_Detector::build_event(vector<vector<double> > strip_ampl_, int evn_) const{
 	return new CM_Event(this, strip_ampl_,evn_);
 }
@@ -250,14 +253,14 @@ int CM_Detector::get_CMN_div() const{
 unsigned int CM_Detector::StripToChannel(unsigned int i) const{
 	return i;
 }
-bool CM_Detector::is_suitable(Cluster * clus) const{
+bool CM_Detector::is_suitable(const Cluster * const clus) const{
 	if(!(clus->is_in_det(this))) return false;
 	if(clus->get_pos() < 0) return false;
 	if(clus->get_pos() > 63) return false;
 	if(clus->get_TOT() < ClusTOTCut_Min) return false;
 	if(clus->get_maxSample() < ClusMaxSampleCut_Min) return false;
 	if(clus->get_maxSample() > ClusMaxSampleCut_Max) return false;
-	if(dynamic_cast<CM_Cluster*>(clus)->get_strip_type() == Tomography::Wide){
+	if(dynamic_cast<const CM_Cluster * const>(clus)->get_strip_type() == Tomography::Wide){
 		if(clus->get_size() > ClusSizeCut_Max_Wide) return false;
 		if(clus->get_maxStripAmpl() < ClusMaxStripAmplCut_Min_Wide) return false;
 	}
@@ -301,6 +304,9 @@ Detector * MG_Detector::Clone() const{
 }
 Event * MG_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
 	return new MG_Event(treeObject, this, entry);
+}
+Event * MG_Detector::build_event(const Tanalyse_R * const treeObject) const{
+	return new MG_Event(treeObject, this);
 }
 Event * MG_Detector::build_event(vector<vector<double> > strip_ampl_, int evn_) const{
 	return new MG_Event(this, strip_ampl_,evn_);
@@ -404,7 +410,7 @@ double MG_Detector::get_StripPitch() const{
 int MG_Detector::get_CMN_div() const{
 	return CMN_div;
 }
-bool MG_Detector::is_suitable(Cluster * clus) const{
+bool MG_Detector::is_suitable(const Cluster * const clus) const{
 	if(!(clus->is_in_det(this))) return false;
 	if(clus->get_pos() < 0) return false;
 	if(clus->get_pos() > 1023) return false;
@@ -454,6 +460,9 @@ Detector * MGv2_Detector::Clone() const{
 }
 Event * MGv2_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
 	return new MGv2_Event(treeObject, this, entry);
+}
+Event * MGv2_Detector::build_event(const Tanalyse_R * const treeObject) const{
+	return new MGv2_Event(treeObject, this);
 }
 Event * MGv2_Detector::build_event(vector<vector<double> > strip_ampl_, int evn_) const{
 	return new MGv2_Event(this, strip_ampl_,evn_);
@@ -557,7 +566,7 @@ double MGv2_Detector::get_StripPitch() const{
 int MGv2_Detector::get_CMN_div() const{
 	return CMN_div;
 }
-bool MGv2_Detector::is_suitable(Cluster * clus) const{
+bool MGv2_Detector::is_suitable(const Cluster * const clus) const{
 	if(!(clus->is_in_det(this))) return false;
 	if(clus->get_pos() < 0) return false;
 	if(clus->get_pos() > 1036) return false;

@@ -109,6 +109,28 @@ Cluster::Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det,
 	angle_z = det->get_angle_z();
 	n_in_tree = det->get_n_in_tree();
 }
+Cluster::Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det){
+	evn = treeObject->evn;
+	number = number_;
+	ampl = -1;
+	size = -1;
+	pos = -1;
+	maxStripAmpl = -1;
+	maxSample = -1;
+	maxStrip = -1;
+	TOT = -1;
+	t = -1;
+	z = det->get_z();
+	is_X = det->get_is_X();
+	is_up = det->get_is_up();
+	offset = det->get_offset();
+	direction = det->get_direction();
+	perp_pos_mm = -1;
+	angle_x = det->get_angle_x();
+	angle_y = det->get_angle_y();
+	angle_z = det->get_angle_z();
+	n_in_tree = det->get_n_in_tree();
+}
 Cluster::Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_){
 	evn = -1;
 	number = number_;
@@ -193,7 +215,7 @@ int Cluster::find_det(const vector<Detector*> det_array) const{
 	}
 	return n_pos;
 }
-bool Cluster::is_in_det(const Detector * det) const{
+bool Cluster::is_in_det(const Detector * const det) const{
 	return ((type == det->get_type()) && (n_in_tree == det->get_n_in_tree()));
 }
 Cluster::~Cluster(){
@@ -221,6 +243,22 @@ CM_Cluster::CM_Cluster(Tanalyse_R * treeObject,int number_,const Detector * cons
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
+	}
+	ampl = treeObject->CM_ClusAmpl[n_in_tree][number];
+	size = treeObject->CM_ClusSize[n_in_tree][number];
+	pos = treeObject->CM_ClusPos[n_in_tree][number];
+	maxStripAmpl = treeObject->CM_ClusMaxStripAmpl[n_in_tree][number];
+	maxSample = treeObject->CM_ClusMaxSample[n_in_tree][number];
+	TOT = treeObject->CM_ClusTOT[n_in_tree][number];
+	t = treeObject->CM_ClusT[n_in_tree][number];
+	maxStrip = treeObject->CM_ClusMaxStrip[n_in_tree][number];
+	type = Tomography::CM;
+	(pos>31) ? strip_type = Tomography::Wide : strip_type = Tomography::Thin;
+}
+CM_Cluster::CM_Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det): Cluster(treeObject,number_,det){
+	if(det->get_type() != Tomography::CM){
+		*this = CM_Cluster();
+		return;
 	}
 	ampl = treeObject->CM_ClusAmpl[n_in_tree][number];
 	size = treeObject->CM_ClusSize[n_in_tree][number];
@@ -444,6 +482,21 @@ MG_Cluster::MG_Cluster(Tanalyse_R * treeObject,int number_,const Detector * cons
 	maxStrip = treeObject->MG_ClusMaxStrip[n_in_tree][number];
 	type = Tomography::MG;
 }
+MG_Cluster::MG_Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det): Cluster(treeObject,number_,det){
+	if(det->get_type() != Tomography::MG){
+		*this = MG_Cluster();
+		return;
+	}
+	ampl = treeObject->MG_ClusAmpl[n_in_tree][number];
+	size = treeObject->MG_ClusSize[n_in_tree][number];
+	pos = treeObject->MG_ClusPos[n_in_tree][number];
+	maxStripAmpl = treeObject->MG_ClusMaxStripAmpl[n_in_tree][number];
+	maxSample = treeObject->MG_ClusMaxSample[n_in_tree][number];
+	TOT = treeObject->MG_ClusTOT[n_in_tree][number];
+	t = treeObject->MG_ClusT[n_in_tree][number];
+	maxStrip = treeObject->MG_ClusMaxStrip[n_in_tree][number];
+	type = Tomography::MG;
+}
 MG_Cluster::MG_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(det, number_, pos_, size_, ampl_, maxSample_, maxStripAmpl_, TOT_, t_, maxStrip_){
 	if(det->get_type() != Tomography::MG){
 		*this = MG_Cluster();
@@ -519,6 +572,21 @@ MGv2_Cluster::MGv2_Cluster(Tanalyse_R * treeObject,int number_,const Detector * 
 	if(entry>-1){
 		treeObject->LoadTree(entry);
 		treeObject->GetEntry(entry);
+	}
+	ampl = treeObject->MGv2_ClusAmpl[n_in_tree][number];
+	size = treeObject->MGv2_ClusSize[n_in_tree][number];
+	pos = treeObject->MGv2_ClusPos[n_in_tree][number];
+	maxStripAmpl = treeObject->MGv2_ClusMaxStripAmpl[n_in_tree][number];
+	maxSample = treeObject->MGv2_ClusMaxSample[n_in_tree][number];
+	TOT = treeObject->MGv2_ClusTOT[n_in_tree][number];
+	t = treeObject->MGv2_ClusT[n_in_tree][number];
+	maxStrip = treeObject->MGv2_ClusMaxStrip[n_in_tree][number];
+	type = Tomography::MGv2;
+}
+MGv2_Cluster::MGv2_Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det): Cluster(treeObject,number_,det){
+	if(det->get_type() != Tomography::MGv2){
+		*this = MGv2_Cluster();
+		return;
 	}
 	ampl = treeObject->MGv2_ClusAmpl[n_in_tree][number];
 	size = treeObject->MGv2_ClusSize[n_in_tree][number];

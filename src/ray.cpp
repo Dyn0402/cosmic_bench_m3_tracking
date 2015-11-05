@@ -92,9 +92,9 @@ Ray_2D::~Ray_2D(){
 	clear();
 	clusters.clear();
 }
-void Ray_2D::add_cluster(Cluster * clus){
+void Ray_2D::add_cluster(const Cluster * const clus){
 	if(clus->get_type() == Tomography::CM){
-		if(dynamic_cast<CM_Cluster*>(clus)->get_strip_type() != Tomography::Demux) return;
+		if(dynamic_cast<const CM_Cluster * const>(clus)->get_strip_type() != Tomography::Demux) return;
 	}
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
 		if((clus->get_type() == (*it)->get_type()) && (clus->get_n_in_tree() == (*it)->get_n_in_tree())) return;
@@ -173,7 +173,7 @@ double Ray_2D::get_Z_intercept() const{
 double Ray_2D::eval(double z) const{
 	return slope*z+Z_intercept;
 }
-double Ray_2D::get_residu(Detector * det) const{
+double Ray_2D::get_residu(const Detector * const det) const{
 	if(clusters.size()<3) return numeric_limits<double>::min();
 	TGraph * pos = new TGraph();
 	double maxZ = numeric_limits<double>::min();
@@ -207,7 +207,7 @@ double Ray_2D::get_residu(Detector * det) const{
 	delete pos; delete line;
 	return residu;
 }
-double Ray_2D::get_residu_ref(Cluster * clus) const{
+double Ray_2D::get_residu_ref(const Cluster * const clus) const{
 	bool is_in_ray = false;
 	for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
 		if((*it)->get_type() == clus->get_type() && (*it)->get_n_in_tree() == clus->get_n_in_tree()){
@@ -309,9 +309,9 @@ Ray::~Ray(){
 	clear();
 	clusters.clear();
 }
-void Ray::add_cluster(Cluster * clus){
+void Ray::add_cluster(const Cluster * const clus){
 	if(clus->get_type() == Tomography::CM){
-		if(dynamic_cast<CM_Cluster*>(clus)->get_strip_type() != Tomography::Demux) return;
+		if(dynamic_cast<const CM_Cluster * const>(clus)->get_strip_type() != Tomography::Demux) return;
 	}
 	for(vector<Cluster*>::iterator it = clusters.begin(); it!=clusters.end();++it){
 		if((clus->get_type() == (*it)->get_type()) && (clus->get_n_in_tree() == (*it)->get_n_in_tree())) return;
@@ -378,14 +378,14 @@ double Ray::eval_X(double z) const{
 double Ray::eval_Y(double z) const{
 	return slope_Y*z+Z_intercept_Y;
 }
-double Ray::eval_X(Detector * det) const{
+double Ray::eval_X(const Detector * const det) const{
 	double n_x = Cos(det->get_angle_z())*Sin(det->get_angle_y()) + Sin(det->get_angle_z())*Sin(det->get_angle_x())*Cos(det->get_angle_y());
 	double n_y = Cos(det->get_angle_z())*Sin(det->get_angle_x())*Cos(det->get_angle_y()) - Sin(det->get_angle_z())*Sin(det->get_angle_y());
 	double n_z = Cos(det->get_angle_x())*Cos(det->get_angle_y());
 	double z = (n_z*det->get_z() - Z_intercept_X*n_x - Z_intercept_Y*n_y)/(n_z + slope_X*n_x + slope_Y*n_y);
 	return slope_X*z + Z_intercept_X;
 }
-double Ray::eval_Y(Detector * det) const{
+double Ray::eval_Y(const Detector * const det) const{
 	double n_x = Cos(det->get_angle_z())*Sin(det->get_angle_y()) + Sin(det->get_angle_z())*Sin(det->get_angle_x())*Cos(det->get_angle_y());
 	double n_y = Cos(det->get_angle_z())*Sin(det->get_angle_x())*Cos(det->get_angle_y()) - Sin(det->get_angle_z())*Sin(det->get_angle_y());
 	double n_z = Cos(det->get_angle_x())*Cos(det->get_angle_y());
@@ -398,7 +398,7 @@ Point Ray::eval_plane(Plane proj) const{
 	Line ray_line(first,second);
 	return proj.intersection(ray_line);
 }
-double Ray::get_residu(Detector * det) const{
+double Ray::get_residu(const Detector * const det) const{
 	bool is_in_ray = false;
 	for(vector<Cluster*>::const_iterator it = clusters.begin(); it!=clusters.end();++it){
 		if((*it)->is_in_det(det)){
@@ -420,7 +420,7 @@ double Ray::get_residu(Detector * det) const{
 		}
 	}
 }
-double Ray::get_residu_ref(Cluster * clus) const{
+double Ray::get_residu_ref(const Cluster * const clus) const{
 	if(clus->get_is_X()){
 		Ray_2D sub_ray = Ray_2D(*this,'X');
 		return sub_ray.get_residu_ref(clus);

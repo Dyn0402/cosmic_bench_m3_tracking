@@ -54,7 +54,8 @@ class Event{
 		Event(int evn_ = -1);
 		Event(const Event& other);
 		Event& operator=(const Event& other);
-		Event(Tanalyse_R * treeObject,const Detector * const det,long entry = -1);
+		Event(Tanalyse_R * treeObject,const Detector * const det,long entry);
+		Event(const Tanalyse_R * const treeObject,const Detector * const det);
 		Event(const Detector * const detector_,int evn_);
 		int evn;
 		Tomography::det_type type;
@@ -70,7 +71,8 @@ class CM_Event: public Event{
 		CM_Event();
 		CM_Event(const CM_Event& other);
 		CM_Event& operator=(const CM_Event& other);
-		CM_Event(Tanalyse_R * treeObject,const CM_Detector * const det, long entry = -1);
+		CM_Event(Tanalyse_R * treeObject,const CM_Detector * const det, long entry);
+		CM_Event(const Tanalyse_R * const treeObject,const CM_Detector * const det);
 		CM_Event(const CM_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_);
 		~CM_Event();
 		void MultiCluster();
@@ -99,7 +101,8 @@ class MG_Event: public Event{
 		MG_Event();
 		MG_Event(const MG_Event& other);
 		MG_Event& operator=(const MG_Event& other);
-		MG_Event(Tanalyse_R * treeObject,const MG_Detector * const det, long entry = -1, bool use_srf_ = false);
+		MG_Event(Tanalyse_R * treeObject,const MG_Detector * const det, long entry, bool use_srf_ = false);
+		MG_Event(const Tanalyse_R * const treeObject,const MG_Detector * const det, bool use_srf_ = false);
 		MG_Event(const MG_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, bool use_srf_ = false);
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		~MG_Event();
@@ -116,7 +119,8 @@ class MGv2_Event: public Event{
 		MGv2_Event();
 		MGv2_Event(const MGv2_Event& other);
 		MGv2_Event& operator=(const MGv2_Event& other);
-		MGv2_Event(Tanalyse_R * treeObject,const MGv2_Detector * const det, long entry = -1, bool use_srf_ = false);
+		MGv2_Event(Tanalyse_R * treeObject,const MGv2_Detector * const det, long entry, bool use_srf_ = false);
+		MGv2_Event(const Tanalyse_R * const treeObject,const MGv2_Detector * const det, bool use_srf_ = false);
 		MGv2_Event(const MGv2_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, bool use_srf_ = false);
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		~MGv2_Event();
@@ -136,8 +140,9 @@ class CosmicBenchEvent{
 		CosmicBenchEvent();
 		CosmicBenchEvent(const CosmicBenchEvent& other);
 		CosmicBenchEvent& operator=(const CosmicBenchEvent& other);
-		CosmicBenchEvent(const CosmicBench * const detectors, Tanalyse_R * treeObject, long entry = -1);
-		CosmicBenchEvent(const CosmicBench * const detectors, vector<Event*> events_);
+		CosmicBenchEvent(const CosmicBench * const detectors, Tanalyse_R * treeObject, long entry);
+		CosmicBenchEvent(const CosmicBench * const detectors, const Tanalyse_R * const treeObject);
+		CosmicBenchEvent(const CosmicBench * const detectors, const vector<Event*> events_);
 		~CosmicBenchEvent();
 		void createPairs();
 		void EventDisplay(TCanvas * c1 = 0);
@@ -145,7 +150,7 @@ class CosmicBenchEvent{
 		unsigned int get_rayPairs_N() const;
 		unsigned int get_event_N() const;
 		unsigned int get_clus_N() const;
-		unsigned int get_clus_N_by_det(Detector * det) const;
+		unsigned int get_clus_N_by_det(const Detector * const det) const;
 		void Demux_CM();
 		void do_cuts();
 		vector<Ray> get_absorption_rays(double chiSquare_threshold = Tomography::chisquare_threshold);
