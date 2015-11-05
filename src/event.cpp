@@ -143,6 +143,16 @@ Event::Event(Tanalyse_R * treeObject, const Detector * const det,long entry){
 	//if(detector != NULL) delete detector;
 	detector = det->Clone();
 }
+Event::Event(const Tanalyse_R * const treeObject, const Detector * const det){
+	evn = treeObject->evn;
+	has_spark = true;
+	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
+		delete *clus_it;
+	}
+	clusters.clear();
+	//if(detector != NULL) delete detector;
+	detector = det->Clone();
+}
 Event::Event(const Detector * const detector_,int evn_){
 	evn = evn_;
 	has_spark = true;
@@ -222,7 +232,18 @@ CM_Event::CM_Event(Tanalyse_R * treeObject, const CM_Detector * const det,long e
 		treeObject->GetEntry(entry);
 	}
 	for(int i=0;i<treeObject->CM_NClus[detector->get_n_in_tree()];i++){
-		clusters.push_back(new CM_Cluster(treeObject,i,det,-1));
+		clusters.push_back(new CM_Cluster(treeObject,i,det));
+		if(!(det->is_suitable(clusters.back()))){
+			delete clusters.back();
+			clusters.pop_back();
+		}
+	}
+	has_spark = (treeObject->CM_Spark[detector->get_n_in_tree()]==1) ? true : false;
+	type = Tomography::CM;
+}
+CM_Event::CM_Event(const Tanalyse_R * const treeObject, const CM_Detector * const det): Event(treeObject,det){
+	for(int i=0;i<treeObject->CM_NClus[detector->get_n_in_tree()];i++){
+		clusters.push_back(new CM_Cluster(treeObject,i,det));
 		if(!(det->is_suitable(clusters.back()))){
 			delete clusters.back();
 			clusters.pop_back();
@@ -348,7 +369,19 @@ MG_Event::MG_Event(Tanalyse_R * treeObject, const MG_Detector * const det,long e
 		treeObject->GetEntry(entry);
 	}
 	for(int i=0;i<treeObject->MG_NClus[detector->get_n_in_tree()];i++){
-		clusters.push_back(new MG_Cluster(treeObject,i,det,-1));
+		clusters.push_back(new MG_Cluster(treeObject,i,det));
+		if(!(det->is_suitable(clusters.back()))){
+			delete clusters.back();
+			clusters.pop_back();
+		}
+	}
+	use_srf = use_srf_;
+	has_spark = (treeObject->MG_Spark[detector->get_n_in_tree()]==1) ? true : false;
+	type = Tomography::MG;
+}
+MG_Event::MG_Event(const Tanalyse_R * const treeObject, const MG_Detector * const det, bool use_srf_): Event(treeObject,det){
+	for(int i=0;i<treeObject->MG_NClus[detector->get_n_in_tree()];i++){
+		clusters.push_back(new MG_Cluster(treeObject,i,det));
 		if(!(det->is_suitable(clusters.back()))){
 			delete clusters.back();
 			clusters.pop_back();
@@ -422,6 +455,7 @@ void MG_Event::MultiCluster(){
 		double mean_xy = 0;
 		double mean_x = 0;
 		double mean_y = 0;
+		int point_n = 0;
 		/*
 		while(k>=SampleMin && strip_ampl[i][k]>(sigma*(detector->get_RMS(i)))){
 			mean_xx += k*k;
@@ -431,17 +465,29 @@ void MG_Event::MultiCluster(){
 			k--;
 		}
 		*/
+		/*
 		while(k>=SampleMin && strip_ampl[i][k]>(sigma*(detector->get_RMS(i)))){
 			k--;
 		}
 		k++;
-		int point_n = 0;
 		while(point_n<4 && strip_ampl[i][k]<current_strip.MaxAmpl){
 			mean_xx += k*k;
 			mean_x += k;
 			mean_xy += k*strip_ampl[i][k];
 			mean_y += strip_ampl[i][k];
 			k++;
+			point_n++;
+		}
+		*/
+		while(k>=SampleMin && strip_ampl[i][k]>0.9*current_strip.MaxAmpl){
+			k--;
+		}
+		while(k>=SampleMin && strip_ampl[i][k]>0.1*current_strip.MaxAmpl){
+			mean_xx += k*k;
+			mean_x += k;
+			mean_xy += k*strip_ampl[i][k];
+			mean_y += strip_ampl[i][k];
+			k--;
 			point_n++;
 		}
 		if(point_n>0){
@@ -865,7 +911,19 @@ MGv2_Event::MGv2_Event(Tanalyse_R * treeObject, const MGv2_Detector * const det,
 		treeObject->GetEntry(entry);
 	}
 	for(int i=0;i<treeObject->MGv2_NClus[detector->get_n_in_tree()];i++){
-		clusters.push_back(new MGv2_Cluster(treeObject,i,det,-1));
+		clusters.push_back(new MGv2_Cluster(treeObject,i,det));
+		if(!(det->is_suitable(clusters.back()))){
+			delete clusters.back();
+			clusters.pop_back();
+		}
+	}
+	use_srf = use_srf_;
+	has_spark = (treeObject->MGv2_Spark[detector->get_n_in_tree()]==1) ? true : false;
+	type = Tomography::MGv2;
+}
+MGv2_Event::MGv2_Event(const Tanalyse_R * const treeObject, const MGv2_Detector * const det, bool use_srf_): Event(treeObject,det){
+	for(int i=0;i<treeObject->MGv2_NClus[detector->get_n_in_tree()];i++){
+		clusters.push_back(new MGv2_Cluster(treeObject,i,det));
 		if(!(det->is_suitable(clusters.back()))){
 			delete clusters.back();
 			clusters.pop_back();
@@ -1351,10 +1409,22 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors, Tanalyse
 	events.clear();
 	int det_N = detectors->get_det_N_tot();
 	for(int i=0;i<det_N;i++){
-		events.push_back(detectors->get_detector(i)->build_event(treeObject,entry));
+		events.push_back(detectors->get_detector(i)->build_event(treeObject));
 	}
 }
-CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors, vector<Event*> events_){
+CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors, const Tanalyse_R * const treeObject){
+	evn = treeObject->evn;
+	rayPairs.clear();
+	for(unsigned int i=0;i<events.size();i++){
+		delete events[i];
+	}
+	events.clear();
+	int det_N = detectors->get_det_N_tot();
+	for(int i=0;i<det_N;i++){
+		events.push_back(detectors->get_detector(i)->build_event(treeObject));
+	}
+}
+CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors,const vector<Event*> events_){
 	rayPairs.clear();
 	events.clear();
 	unsigned int det_N = detectors->get_det_N_tot();
@@ -1364,7 +1434,7 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors, vector<E
 	}
 	evn = (events_.front())->get_evn();
 	set<pair<Tomography::det_type,int> > det_is_used;
-	for(vector<Event*>::iterator it = events_.begin();it!=events_.end();++it){
+	for(vector<Event*>::const_iterator it = events_.begin();it!=events_.end();++it){
 		if((*it)->get_evn() != evn){
 			cout << "attempt to merge event with different number in cosmicbench event" << endl;
 			return;
@@ -1409,6 +1479,226 @@ void CosmicBenchEvent::createPairs(){
 			vector<Cluster*> temp_clusters((*it)->get_clusters());
 			for(vector<Cluster*>::iterator jt=temp_clusters.begin();jt!=temp_clusters.end();++jt){
 				z = (*jt)->get_z();
+				is_X = (*jt)->get_is_X();
+				is_up = (*jt)->get_is_up();
+				if(z>max_z) max_z = z;
+				if(z<min_z) min_z = z;
+				currentClusters[is_up][is_X][z].push_back((*jt)->Clone());
+				sizes[is_up][is_X][z]++;
+				delete *jt;
+			}
+		}
+	}
+
+	if(currentClusters[true][true].size() == 2 && currentClusters[true][false].size() == 2 && currentClusters[false][true].size() == 2 && currentClusters[false][false].size() == 2){
+		vector<RayPair> suitableRays;
+		bool b=true;
+		while(b){
+			b = false;
+			double bestDoca = 50;
+			map<bool, map<bool, vector<map<double,int> > > > comb;
+			comb[true][true] = combinaisons(sizes[true][true]);
+			comb[true][false] = combinaisons(sizes[true][false]);
+			comb[false][true] = combinaisons(sizes[false][true]);
+			comb[false][false] = combinaisons(sizes[false][false]);
+			double current_chiSquare = chiSquare_threshold;
+			map<bool, map<bool, map<double,int> > > best_comb;
+			RayPair bestRay = RayPair();
+			map<bool,map<bool,Ray_2D> > currentRay_2D;
+			for(vector<map<double,int> >::iterator it = comb[true][true].begin();it!=comb[true][true].end();++it){
+				currentRay_2D[true][true] = Ray_2D('X');
+				for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[true][true].begin();clus_it!= currentClusters[true][true].end();++clus_it){
+					currentRay_2D[true][true].add_cluster(clus_it->second[(*it)[clus_it->first]]);
+				}
+				currentRay_2D[true][true].process();
+				if(currentRay_2D[true][true].get_chiSquare()<0 || currentRay_2D[true][true].get_chiSquare()>chiSquare_threshold) continue;
+				for(vector<map<double,int> >::iterator jt = comb[true][false].begin();jt!=comb[true][false].end();++jt){
+					currentRay_2D[true][false] = Ray_2D('Y');
+					for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[true][false].begin();clus_it!= currentClusters[true][false].end();++clus_it){
+						currentRay_2D[true][false].add_cluster(clus_it->second[(*jt)[clus_it->first]]);
+					}
+					currentRay_2D[true][false].process();
+					if(currentRay_2D[true][false].get_chiSquare()<0 || currentRay_2D[true][false].get_chiSquare()>chiSquare_threshold) continue;
+					for(vector<map<double,int> >::iterator kt = comb[false][true].begin();kt!=comb[false][true].end();++kt){
+						currentRay_2D[false][true] = Ray_2D('X');
+						for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[false][true].begin();clus_it!= currentClusters[false][true].end();++clus_it){
+							currentRay_2D[false][true].add_cluster(clus_it->second[(*kt)[clus_it->first]]);
+						}
+						currentRay_2D[false][true].process();
+						if(currentRay_2D[false][true].get_chiSquare()<0 || currentRay_2D[false][true].get_chiSquare()>chiSquare_threshold) continue;
+						for(vector<map<double,int> >::iterator nt = comb[false][false].begin();nt!=comb[false][false].end();++nt){
+							currentRay_2D[false][false] = Ray_2D('Y');
+							for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[false][false].begin();clus_it!= currentClusters[false][false].end();++clus_it){
+								currentRay_2D[false][false].add_cluster(clus_it->second[(*nt)[clus_it->first]]);
+							}
+							currentRay_2D[false][false].process();
+							if(currentRay_2D[false][false].get_chiSquare()<0 || currentRay_2D[false][false].get_chiSquare()>chiSquare_threshold) continue;
+							RayPair currentRayPair = RayPair(Ray(currentRay_2D[true][true],currentRay_2D[true][false]),Ray(currentRay_2D[false][true],currentRay_2D[false][false]));
+							double currentDoca = currentRayPair.get_doca();
+							Point currentPoCA = currentRayPair.get_PoCA();
+							if(currentPoCA.get_Z()>max_z || currentPoCA.get_Z()<min_z) continue;
+							if(currentPoCA.get_X()>6.*Tomography::XY_size/10. || currentPoCA.get_X()<-6.*Tomography::XY_size/10.) continue;
+							if(currentPoCA.get_Y()>6.*Tomography::XY_size/10. || currentPoCA.get_Y()<-6.*Tomography::XY_size/10.) continue;
+							if(currentDoca<bestDoca){
+								bestDoca = currentDoca;
+								bestRay = currentRayPair;
+								best_comb[true][true] = *it;
+								best_comb[true][false] = *jt;
+								best_comb[false][true] = *kt;
+								best_comb[false][false] = *nt;
+								b = true;
+							}
+						}
+					}
+				}
+			}
+			if(b){
+				suitableRays.push_back(bestRay);
+				for(map<bool, map<bool, map<double,int> > >::iterator it = best_comb.begin();it!=best_comb.end();++it){
+					for(map<bool, map<double,int> >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+						for(map<double,int>::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+							delete currentClusters[it->first][jt->first][kt->first][kt->second];
+							currentClusters[it->first][jt->first][kt->first].erase(currentClusters[it->first][jt->first][kt->first].begin()+kt->second);
+							sizes[it->first][jt->first][kt->first]--;
+							if(sizes[it->first][jt->first][kt->first]<1){
+								currentClusters[it->first][jt->first].erase(currentClusters[it->first][jt->first].find(kt->first));
+								sizes[it->first][jt->first].erase(sizes[it->first][jt->first].find(kt->first));
+							}
+						}
+					}
+				}
+			}
+			if(currentClusters[true][true].size() != 2) b = false;
+			if(currentClusters[true][false].size() != 2) b = false;
+			if(currentClusters[false][true].size() != 2) b = false;
+			if(currentClusters[false][false].size() != 2) b = false;
+		}
+		rayPairs = suitableRays;
+	}
+	//---------------------------------------------------------------------------------------------------------------------
+	else{
+		map<bool, map<bool, vector<Ray_2D> > > suitableRays;
+		//compute for both and down sensitive areas
+		for(map<bool, map<bool, map<double,vector<Cluster*> > > >::iterator it = currentClusters.begin();it!=currentClusters.end();++it){
+			//compute for both coordinates
+			for(map<bool, map<double,vector<Cluster*> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+				bool b = true;
+				
+				//get size
+				//for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+				//	if((kt->second).size()==0) b = false;
+				//	sizes[it->first][jt->first][kt->first] = (kt->second).size();
+				//}
+				
+				//find the biggest number of good clusters combinaisons
+				while(b && (jt->second).size()>1){
+					b = false;
+					//find best combinaison of clusters
+					vector<map<double,int> > comb = combinaisons(sizes[it->first][jt->first]);
+					double current_chiSquare = chiSquare_threshold;
+					map<double,int> best_comb;
+					char coord = (jt->first) ? 'X' : 'Y';
+					Ray_2D bestRay = Ray_2D(coord);
+					for(vector<map<double,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
+						//try a comb
+						Ray_2D currentRay = Ray_2D(coord);
+						for(map<double,vector<Cluster*> >::iterator nt = (jt->second).begin();nt!= (jt->second).end();++nt){
+							currentRay.add_cluster(nt->second[(*kt)[nt->first]]);
+						}
+						currentRay.process();
+						if(currentRay.get_chiSquare()<current_chiSquare && currentRay.get_chiSquare()>-1){
+							bestRay = Ray_2D(currentRay);
+							current_chiSquare = currentRay.get_chiSquare();
+							best_comb = *kt;
+							b = true;
+						}
+					}
+					if(b){
+						suitableRays[it->first][jt->first].push_back(Ray_2D(bestRay));
+						for(map<double,int>::iterator kt = best_comb.begin();kt!=best_comb.end();++kt){
+							delete (jt->second)[kt->first][kt->second];
+							(jt->second)[kt->first].erase((jt->second)[kt->first].begin()+kt->second);
+							sizes[it->first][jt->first][kt->first]--;
+							if(sizes[it->first][jt->first][kt->first]<1){
+								//b = false;
+								(jt->second).erase((jt->second).find(kt->first));
+								sizes[it->first][jt->first].erase(sizes[it->first][jt->first].find(kt->first));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		//cout << Max(Max(suitableRays[true][true].size(),suitableRays[true][false].size()),Max(suitableRays[false][true].size(),suitableRays[false][false].size())) << endl;
+		int min_size = Min(Min(suitableRays[true][true].size(),suitableRays[true][false].size()),Min(suitableRays[false][true].size(),suitableRays[false][false].size()));
+		
+		while(min_size>0){
+			double bestDoca = 50;//numeric_limits<double>::max();
+			vector<Ray_2D>::iterator best_it = suitableRays[true][true].end();
+			vector<Ray_2D>::iterator best_jt = suitableRays[true][false].end();
+			vector<Ray_2D>::iterator best_kt = suitableRays[false][true].end();
+			vector<Ray_2D>::iterator best_lt = suitableRays[false][false].end();
+			for(vector<Ray_2D>::iterator it = suitableRays[true][true].begin(); it!= suitableRays[true][true].end();++it){
+				for(vector<Ray_2D>::iterator jt = suitableRays[true][false].begin(); jt!= suitableRays[true][false].end();++jt){
+					for(vector<Ray_2D>::iterator kt = suitableRays[false][true].begin(); kt!= suitableRays[false][true].end();++kt){
+						for(vector<Ray_2D>::iterator lt = suitableRays[false][false].begin(); lt!= suitableRays[false][false].end();++lt){
+							RayPair currentRayPair(Ray(*it,*jt),Ray(*kt,*lt));
+							double currentDoca = currentRayPair.get_doca();
+							Point currentPoCA = currentRayPair.get_PoCA();
+							if(currentPoCA.get_Z()>max_z || currentPoCA.get_Z()<min_z) continue;
+							if(currentPoCA.get_X()>6.*Tomography::XY_size/10. || currentPoCA.get_X()<-6.*Tomography::XY_size/10.) continue;
+							if(currentPoCA.get_Y()>6.*Tomography::XY_size/10. || currentPoCA.get_Y()<-6.*Tomography::XY_size/10.) continue;
+							
+							if(currentDoca<bestDoca){
+								bestDoca = currentDoca;
+								best_it = vector<Ray_2D>::iterator(it);
+								best_jt = vector<Ray_2D>::iterator(jt);
+								best_kt = vector<Ray_2D>::iterator(kt);
+								best_lt = vector<Ray_2D>::iterator(lt);
+							}
+						}
+					}
+				}
+			}
+			if(best_it == suitableRays[true][true].end() || best_jt == suitableRays[true][false].end() || best_kt == suitableRays[false][true].end() || best_lt == suitableRays[false][false].end()) break;
+			rayPairs.push_back(RayPair(Ray(*best_it,*best_jt),Ray(*best_kt,*best_lt)));
+			rayPairs.back().upRay.angle_correction();
+			rayPairs.back().downRay.angle_correction();
+			suitableRays[true][true].erase(best_it);
+			suitableRays[true][false].erase(best_jt);
+			suitableRays[false][true].erase(best_kt);
+			suitableRays[false][false].erase(best_lt);
+			min_size--;
+		}
+	}
+
+	for(map<bool, map<bool, map<double,vector<Cluster*> > > >::iterator it = currentClusters.begin();it!=currentClusters.end();++it){
+		for(map<bool, map<double,vector<Cluster*> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+			for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+				for(unsigned int i=0;i<(kt->second).size();i++){
+					delete kt->second[i];
+				}
+			}
+		}
+	}
+}
+/*
+void CosmicBenchEvent::createPairs(){
+	this->Demux_CM();
+	double chiSquare_threshold = numeric_limits<double>::max();
+	map<bool, map<bool, map<double,vector<Cluster*> > > > currentClusters;
+	map<bool, map<bool, map<double,int> > > sizes;
+	double max_z = numeric_limits<double>::min();
+	double min_z = numeric_limits<double>::max();
+	for(vector<Event*>::iterator it=events.begin();it!=events.end();++it){
+		double z;
+		bool is_up;
+		bool is_X;
+		if((*it)->get_is_ref()){
+			vector<Cluster*> temp_clusters((*it)->get_clusters());
+			for(vector<Cluster*>::iterator jt=temp_clusters.begin();jt!=temp_clusters.end();++jt){
+				z = (*jt)->get_z();
 				is_up = (*jt)->get_is_up();
 				is_X = (*jt)->get_is_X();
 				if(z>max_z) max_z = z;
@@ -1425,13 +1715,13 @@ void CosmicBenchEvent::createPairs(){
 		//compute for both coordinates
 		for(map<bool, map<double,vector<Cluster*> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			bool b = true;
-			/*
+			
 			//get size
-			for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
-				if((kt->second).size()==0) b = false;
-				sizes[it->first][jt->first][kt->first] = (kt->second).size();
-			}
-			*/
+			//for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+			//	if((kt->second).size()==0) b = false;
+			//	sizes[it->first][jt->first][kt->first] = (kt->second).size();
+			//}
+			
 			//find the biggest number of good clusters combinaisons
 			while(b && (jt->second).size()>1){
 				b = false;
@@ -1524,6 +1814,7 @@ void CosmicBenchEvent::createPairs(){
 		}
 	}
 }
+*/
 RayPair CosmicBenchEvent::get_rayPair(unsigned int i) const{
 	return rayPairs[i];
 }
@@ -1540,7 +1831,7 @@ unsigned int CosmicBenchEvent::get_clus_N() const{
 	}
 	return clus_N;
 }
-unsigned int CosmicBenchEvent::get_clus_N_by_det(Detector * det) const{
+unsigned int CosmicBenchEvent::get_clus_N_by_det(const Detector * const det) const{
 	for(vector<Event*>::const_iterator it=events.begin();it!=events.end();++it){
 		Detector * currentDet = (*it)->get_det();
 		if((*currentDet) == (*det)){
