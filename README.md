@@ -1,3 +1,7 @@
+### Remarks
+
+If you are using ROOT6 or C++11, apply cpp11.patch before build : `patch -p1 < cpp11.patch`
+
 ### Use this soft
 
 * Datareader :
