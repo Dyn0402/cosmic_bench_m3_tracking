@@ -52,7 +52,6 @@ carac_all_obj_tmp = carac_all.o carac.o Tanalyse_R.o event.o ray.o cluster.o det
 carac_all_obj = $(patsubst %, $(ODIR)/%, $(carac_all_obj_tmp))
 
 $(shell mkdir -p $(ODIR))
-$(shell echo blah)
 #------------------------------------------------------------------------------
 
 default: msg
