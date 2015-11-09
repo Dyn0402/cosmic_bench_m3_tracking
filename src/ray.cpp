@@ -523,8 +523,8 @@ RayPair::~RayPair(){
 	
 }
 void RayPair::process(){
-	upRay.process();
-	downRay.process();
+	//upRay.process();
+	//downRay.process();
 	double theta_up_x = ATan(upRay.slope_X);
 	double theta_up_y = ATan(upRay.slope_Y);
 	double theta_down_x = ATan(downRay.slope_X);
@@ -580,7 +580,7 @@ double RayPair::get_y_down(double z) const{
 	return downRay.eval_Y(z);
 }
 double RayPair::get_doca(){
-	this->process();
+	//this->process();
 	double perp_x = upRay.slope_Y-downRay.slope_X;
 	double perp_y = downRay.slope_X-upRay.slope_Y;
 	double perp_z = upRay.slope_X*downRay.slope_Y - upRay.slope_Y*downRay.slope_X;

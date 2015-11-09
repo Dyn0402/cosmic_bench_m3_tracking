@@ -1504,6 +1504,47 @@ void CosmicBenchEvent::createPairs(){
 			double current_chiSquare = chiSquare_threshold;
 			map<bool, map<bool, map<double,int> > > best_comb;
 			RayPair bestRay = RayPair();
+
+			map<bool,map<bool,map<int,Ray_2D> > > possibleRay_2D;
+			for(map<bool, map<bool, vector<map<double,int> > > >::iterator it = comb.begin();it!=comb.end();++it){
+				for(map<bool, vector<map<double,int> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+					for(unsigned int i=0;i<(jt->second).size();i++){
+						possibleRay_2D[it->first][jt->first][i] = Ray_2D(Ray_2D((jt->first) ? 'X' : 'Y'));
+						for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[it->first][jt->first].begin();clus_it!= currentClusters[it->first][jt->first].end();++clus_it){
+							possibleRay_2D[it->first][jt->first][i].add_cluster(clus_it->second[(jt->second)[i][clus_it->first]]);
+						}
+						possibleRay_2D[it->first][jt->first][i].process();
+						if(possibleRay_2D[it->first][jt->first][i].get_chiSquare()<0 || possibleRay_2D[it->first][jt->first][i].get_chiSquare()>chiSquare_threshold){
+							possibleRay_2D[it->first][jt->first].erase(i);
+						}
+					}
+				}
+			}
+			for(map<int,Ray_2D>::iterator HX_it = possibleRay_2D[true][true].begin();HX_it!=possibleRay_2D[true][true].end();++HX_it){
+				for(map<int,Ray_2D>::iterator HY_it = possibleRay_2D[true][false].begin();HY_it!=possibleRay_2D[true][false].end();++HY_it){
+					for(map<int,Ray_2D>::iterator BX_it = possibleRay_2D[false][true].begin();BX_it!=possibleRay_2D[false][true].end();++BX_it){
+						for(map<int,Ray_2D>::iterator BY_it = possibleRay_2D[false][false].begin();BY_it!=possibleRay_2D[false][false].end();++BY_it){
+							RayPair currentRayPair = RayPair(Ray(HX_it->second,HY_it->second),Ray(BX_it->second,BY_it->second));
+							currentRayPair.process();
+							double currentDoca = currentRayPair.get_doca();
+							Point currentPoCA = currentRayPair.get_PoCA();
+							if(currentPoCA.get_Z()>max_z || currentPoCA.get_Z()<min_z) continue;
+							if(currentPoCA.get_X()>6.*Tomography::XY_size/10. || currentPoCA.get_X()<-6.*Tomography::XY_size/10.) continue;
+							if(currentPoCA.get_Y()>6.*Tomography::XY_size/10. || currentPoCA.get_Y()<-6.*Tomography::XY_size/10.) continue;
+							if(currentDoca<bestDoca){
+								bestDoca = currentDoca;
+								bestRay = currentRayPair;
+								best_comb[true][true] = comb[true][true][HX_it->first];
+								best_comb[true][false] = comb[true][false][HY_it->first];
+								best_comb[false][true] = comb[false][true][BX_it->first];
+								best_comb[false][false] = comb[false][false][BY_it->first];
+								b = true;
+							}
+						}
+					}
+				}
+			}
+			/*
 			map<bool,map<bool,Ray_2D> > currentRay_2D;
 			for(vector<map<double,int> >::iterator it = comb[true][true].begin();it!=comb[true][true].end();++it){
 				currentRay_2D[true][true] = Ray_2D('X');
@@ -1534,6 +1575,7 @@ void CosmicBenchEvent::createPairs(){
 							currentRay_2D[false][false].process();
 							if(currentRay_2D[false][false].get_chiSquare()<0 || currentRay_2D[false][false].get_chiSquare()>chiSquare_threshold) continue;
 							RayPair currentRayPair = RayPair(Ray(currentRay_2D[true][true],currentRay_2D[true][false]),Ray(currentRay_2D[false][true],currentRay_2D[false][false]));
+							currentRayPair.process();
 							double currentDoca = currentRayPair.get_doca();
 							Point currentPoCA = currentRayPair.get_PoCA();
 							if(currentPoCA.get_Z()>max_z || currentPoCA.get_Z()<min_z) continue;
@@ -1552,6 +1594,8 @@ void CosmicBenchEvent::createPairs(){
 					}
 				}
 			}
+			*/
+
 			if(b){
 				suitableRays.push_back(bestRay);
 				for(map<bool, map<bool, map<double,int> > >::iterator it = best_comb.begin();it!=best_comb.end();++it){
