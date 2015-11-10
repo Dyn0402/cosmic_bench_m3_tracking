@@ -155,6 +155,8 @@ int main(int argc, char ** argv){
 		return 1;
 	}
 	ptree configTree;
+	configTree.put("batch",true);
+	Tomography::Init(configTree);
 	read_json(argv[1], configTree);
 	Minimizer current_minimizer(configTree, argv[2]);
 	ROOT::Minuit2::Minuit2Minimizer min ( ROOT::Minuit2::kMigrad );
@@ -203,5 +205,6 @@ int main(int argc, char ** argv){
 
 	min.Minimize(); 
 	write_json((argv[2] + string("_final.cfg")).c_str(), current_minimizer.get_tree_current());
+	Tomography::Quit();
 	return 1;
 }

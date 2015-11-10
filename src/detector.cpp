@@ -22,7 +22,7 @@ using std::pair;
 
 using TMath::Exp;
 using TMath::Log;
-
+/*
 static map<const Tomography::det_type,const Detector* const> Static_Detector_build(){
 	map<const Tomography::det_type,const Detector* const> return_map;
 	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::CM,new CM_Detector()));
@@ -32,7 +32,7 @@ static map<const Tomography::det_type,const Detector* const> Static_Detector_bui
 }
 
 map<const Tomography::det_type,const Detector* const> Tomography::Static_Detector = Static_Detector_build();
-
+*/
 bool operator==(Detector const &det1, Detector const &det2){
 	return ((det1.get_type() == det2.get_type()) && det1.get_n_in_tree() == det1.get_n_in_tree());
 }

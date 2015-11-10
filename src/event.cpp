@@ -407,10 +407,10 @@ void MG_Event::MultiCluster(){
 	}
 	clusters.clear();
 	//first loop : find channels with signal and store them with their caracteristics
-	double sigma = Tomography::sigma;
-	int SampleMin = Tomography::SampleMin;
-	int SampleMax = Tomography::SampleMax;
-	int TOTCut = Tomography::TOTCut;
+	double sigma = Tomography::get_instance()->get_sigma();
+	int SampleMin = Tomography::get_instance()->get_SampleMin();
+	int SampleMax = Tomography::get_instance()->get_SampleMax();
+	int TOTCut = Tomography::get_instance()->get_TOTCut();
 	int p = 61;
 	int n = 1024;
 	map<int,bool> channelOverThreshold;
@@ -421,10 +421,11 @@ void MG_Event::MultiCluster(){
 		current_strip.MaxSample = 0;
 		current_strip.TOT = 0;
 		current_strip.Time = 0;
+		current_strip.signal_sample = new bool[Tomography::get_instance()->get_Nsample()];
 		for(int j=0;j<SampleMin;j++){
 			current_strip.signal_sample[j] = false;
 		}
-		for(int j=SampleMax;j<Tomography::Nsample;j++){
+		for(int j=SampleMax;j<Tomography::get_instance()->get_Nsample();j++){
 			current_strip.signal_sample[j] = false;
 		}
 		for(int j=SampleMin;j<SampleMax;j++){
@@ -576,9 +577,9 @@ void MG_Event::MultiCluster(){
 		double ClusTOT = 0;
 		//Micro TPC
 		
-		vector<double> pos_TPC(Tomography::Nsample,0);
-		vector<double> ampl_TPC(Tomography::Nsample,0);
-		vector<bool> used_sample_TPC(Tomography::Nsample,false);
+		vector<double> pos_TPC(Tomography::get_instance()->get_Nsample(),0);
+		vector<double> ampl_TPC(Tomography::get_instance()->get_Nsample(),0);
+		vector<bool> used_sample_TPC(Tomography::get_instance()->get_Nsample(),false);
 		double first_time = numeric_limits<double>::max();
 
 		//--
@@ -592,7 +593,7 @@ void MG_Event::MultiCluster(){
 			
 			if(current_strip.Time < first_time && current_strip.TOT>0) first_time = current_strip.Time;
 
-			for(int k=0;k<Tomography::Nsample;k++){
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				if(!(current_strip.signal_sample[k])) continue;
 				double current_ampl = strip_ampl[MG_Detector::StripToChannel_a[j]][k];
 				pos_TPC[k] = (pos_TPC[k]*ampl_TPC[k] + j*current_ampl)/(ampl_TPC[k]+current_ampl);
@@ -615,6 +616,7 @@ void MG_Event::MultiCluster(){
 				SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector->get_RMS(MG_Detector::StripToChannel_a[j]));
 				graph_point_n++;
 			}
+			delete[] current_strip.signal_sample;
 		}
 
 		double mean_xx = 0;
@@ -622,7 +624,7 @@ void MG_Event::MultiCluster(){
 		double mean_x = 0;
 		double mean_y = 0;
 		unsigned short used_sample = 0;
-		for(int k=0;k<Tomography::Nsample;k++){
+		for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 			if(used_sample_TPC[k]){
 				mean_xx += k*k;
 				mean_x += k;
@@ -691,10 +693,10 @@ void MG_Event::HoughCluster(){
 	}
 	clusters.clear();
 	//first loop : find channels with signal and store them with their caracteristics
-	double sigma = Tomography::sigma;
-	int SampleMin = Tomography::SampleMin;
-	int SampleMax = Tomography::SampleMax;
-	int TOTCut = Tomography::TOTCut;
+	double sigma = Tomography::get_instance()->get_sigma();
+	int SampleMin = Tomography::get_instance()->get_SampleMin();
+	int SampleMax = Tomography::get_instance()->get_SampleMax();
+	int TOTCut = Tomography::get_instance()->get_TOTCut();
 	int p = 61;
 	int n = 1024;
 	map<int,bool> channelOverThreshold;
@@ -949,10 +951,10 @@ void MGv2_Event::MultiCluster(){
 	}
 	clusters.clear();
 	//first loop : find channels with signal and store them with their caracteristics
-	double sigma = Tomography::sigma;
-	int SampleMin = Tomography::SampleMin;
-	int SampleMax = Tomography::SampleMax;
-	int TOTCut = Tomography::TOTCut;
+	double sigma = Tomography::get_instance()->get_sigma();
+	int SampleMin = Tomography::get_instance()->get_SampleMin();
+	int SampleMax = Tomography::get_instance()->get_SampleMax();
+	int TOTCut = Tomography::get_instance()->get_TOTCut();
 	int p = 61;
 	int n = 1037;
 	map<int,bool> channelOverThreshold;
@@ -963,10 +965,11 @@ void MGv2_Event::MultiCluster(){
 		current_strip.MaxSample = 0;
 		current_strip.TOT = 0;
 		current_strip.Time = 0;
+		current_strip.signal_sample = new bool[Tomography::get_instance()->get_Nsample()];
 		for(int j=0;j<SampleMin;j++){
 			current_strip.signal_sample[j] = false;
 		}
-		for(int j=SampleMax;j<Tomography::Nsample;j++){
+		for(int j=SampleMax;j<Tomography::get_instance()->get_Nsample();j++){
 			current_strip.signal_sample[j] = false;
 		}
 		for(int j=SampleMin;j<SampleMax;j++){
@@ -1096,7 +1099,7 @@ void MGv2_Event::MultiCluster(){
 
 			//Micro TPC
 			/*
-			for(int k=0;k<Tomography::Nsample;k++){
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				if(!(current_strip.signal_sample[k])) continue;
 				double current_tot_ampl = strip_ampl[MGv2_Detector::StripToChannel_a[j]][k]/count(global_used_channel.begin(),global_used_channel.end(),MGv2_Detector::StripToChannel_a[j]);
 				pos_TPC = (pos_TPC*tot_ampl + j*current_tot_ampl)/(tot_ampl + current_tot_ampl);
@@ -1116,6 +1119,7 @@ void MGv2_Event::MultiCluster(){
 			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
 			SRFgraph->SetPointError(graph_point_n,0.5*MGv2_Detector::StripPitch,detector->get_RMS(MGv2_Detector::StripToChannel_a[j]));
 			graph_point_n++;
+			delete[] current_strip.signal_sample;
 		}
 
 		if(graph_point_n>2 && use_srf){
@@ -1165,10 +1169,10 @@ void MGv2_Event::HoughCluster(){
 	}
 	clusters.clear();
 	//first loop : find channels with signal and store them with their caracteristics
-	double sigma = Tomography::sigma;
-	int SampleMin = Tomography::SampleMin;
-	int SampleMax = Tomography::SampleMax;
-	int TOTCut = Tomography::TOTCut;
+	double sigma = Tomography::get_instance()->get_sigma();
+	int SampleMin = Tomography::get_instance()->get_SampleMin();
+	int SampleMax = Tomography::get_instance()->get_SampleMax();
+	int TOTCut = Tomography::get_instance()->get_TOTCut();
 	int p = 61;
 	int n = 1037;
 	map<int,bool> channelOverThreshold;
@@ -1539,8 +1543,8 @@ void CosmicBenchEvent::createPairs(){
 							double currentDoca = currentRayPair.get_doca();
 							Point currentPoCA = currentRayPair.get_PoCA();
 							if(currentPoCA.get_Z()>max_z || currentPoCA.get_Z()<min_z) continue;
-							if(currentPoCA.get_X()>6.*Tomography::XY_size/10. || currentPoCA.get_X()<-6.*Tomography::XY_size/10.) continue;
-							if(currentPoCA.get_Y()>6.*Tomography::XY_size/10. || currentPoCA.get_Y()<-6.*Tomography::XY_size/10.) continue;
+							if(currentPoCA.get_X()>6.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_X()<-6.*Tomography::get_instance()->get_XY_size()/10.) continue;
+							if(currentPoCA.get_Y()>6.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_Y()<-6.*Tomography::get_instance()->get_XY_size()/10.) continue;
 							if(currentDoca<bestDoca){
 								bestDoca = currentDoca;
 								bestRay = currentRayPair;
@@ -1650,8 +1654,8 @@ void CosmicBenchEvent::createPairs(){
 							double currentDoca = currentRayPair.get_doca();
 							Point currentPoCA = currentRayPair.get_PoCA();
 							if(currentPoCA.get_Z()>max_z || currentPoCA.get_Z()<min_z) continue;
-							if(currentPoCA.get_X()>6.*Tomography::XY_size/10. || currentPoCA.get_X()<-6.*Tomography::XY_size/10.) continue;
-							if(currentPoCA.get_Y()>6.*Tomography::XY_size/10. || currentPoCA.get_Y()<-6.*Tomography::XY_size/10.) continue;
+							if(currentPoCA.get_X()>6.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_X()<-6.*Tomography::get_instance()->get_XY_size()/10.) continue;
+							if(currentPoCA.get_Y()>6.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_Y()<-6.*Tomography::get_instance()->get_XY_size()/10.) continue;
 							
 							if(currentDoca<bestDoca){
 								bestDoca = currentDoca;
@@ -1782,8 +1786,8 @@ void CosmicBenchEvent::createPairs(){
 						double currentDoca = currentRayPair.get_doca();
 						Point currentPoCA = currentRayPair.get_PoCA();
 						if(currentPoCA.get_Z()>max_z || currentPoCA.get_Z()<min_z) continue;
-						if(currentPoCA.get_X()>6.*Tomography::XY_size/10. || currentPoCA.get_X()<-6.*Tomography::XY_size/10.) continue;
-						if(currentPoCA.get_Y()>6.*Tomography::XY_size/10. || currentPoCA.get_Y()<-6.*Tomography::XY_size/10.) continue;
+						if(currentPoCA.get_X()>6.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_X()<-6.*Tomography::get_instance()->get_XY_size()/10.) continue;
+						if(currentPoCA.get_Y()>6.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_Y()<-6.*Tomography::get_instance()->get_XY_size()/10.) continue;
 						
 						if(currentDoca<bestDoca){
 							bestDoca = currentDoca;
@@ -1847,6 +1851,7 @@ unsigned int CosmicBenchEvent::get_clus_N_by_det(const Detector * const det) con
 }
 vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 	this->Demux_CM();
+	if(chiSquare_threshold<0) chiSquare_threshold = Tomography::get_instance()->get_chisquare_threshold();
 	map<bool, map<double,vector<Cluster*> > > currentClusters;
 	map<bool, map<double,int> > sizes;
 	for(vector<Event*>::iterator it=events.begin();it!=events.end();++it){
@@ -1953,6 +1958,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 }
 
 vector<Ray> CosmicBenchEvent::get_hough_rays(double chiSquare_threshold){
+	if(chiSquare_threshold<0) chiSquare_threshold = Tomography::get_instance()->get_chisquare_threshold();
 	vector<Ray> returnRays;
 }
 
@@ -1998,7 +2004,7 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 			}
 			vector<Cluster*> current_clusters = (*event_it)->get_clusters();
 			for(vector<Cluster*>::iterator clus_it = current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
-				clus_pos_X[(*event_it)->get_z()].push_back((*clus_it)->get_pos()*(*event_it)->get_StripPitch() - Tomography::XY_size/2.);
+				clus_pos_X[(*event_it)->get_z()].push_back((*clus_it)->get_pos()*(*event_it)->get_StripPitch() - Tomography::get_instance()->get_XY_size()/2.);
 				delete *clus_it;
 			}
 		}
@@ -2012,7 +2018,7 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 			}
 			vector<Cluster*> current_clusters = (*event_it)->get_clusters();
 			for(vector<Cluster*>::iterator clus_it = current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
-				clus_pos_Y[(*event_it)->get_z()].push_back((*clus_it)->get_pos()*(*event_it)->get_StripPitch() - Tomography::XY_size/2.);
+				clus_pos_Y[(*event_it)->get_z()].push_back((*clus_it)->get_pos()*(*event_it)->get_StripPitch() - Tomography::get_instance()->get_XY_size()/2.);
 				delete *clus_it;
 			}
 		}
@@ -2034,7 +2040,7 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
 		//map_it->second->Scale(scale_factor);
 		if(map_it->second->GetMaximum() > 0) map_it->second->Scale(min_dist/(scale*map_it->second->GetMaximum()));
-		TF1 * offset = new TF1("offset","[0]",-Tomography::XY_size/2.,Tomography::XY_size/2.);
+		TF1 * offset = new TF1("offset","[0]",-Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.);
 		offset->SetParameter(0,map_it->first);
 		map_it->second->Add(offset);
 		delete offset;
@@ -2044,7 +2050,7 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_Y.begin();map_it!=ampl_hists_Y.end();++map_it){
 		//map_it->second->Scale(scale_factor);
 		if(map_it->second->GetMaximum() > 0) map_it->second->Scale(min_dist/(scale*map_it->second->GetMaximum()));
-		TF1 * offset = new TF1("offset","[0]",-Tomography::XY_size/2.,Tomography::XY_size/2.);
+		TF1 * offset = new TF1("offset","[0]",-Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.);
 		offset->SetParameter(0,map_it->first);
 		map_it->second->Add(offset);
 		delete offset;
@@ -2085,22 +2091,22 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	vector<TLine*> det_X;
 	vector<TLine*> det_Y;
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
-		det_X.push_back(new TLine(-Tomography::XY_size/2.,map_it->first,Tomography::XY_size/2.,map_it->first));
-		det_Y.push_back(new TLine(-Tomography::XY_size/2.,map_it->first,Tomography::XY_size/2.,map_it->first));
+		det_X.push_back(new TLine(-Tomography::get_instance()->get_XY_size()/2.,map_it->first,Tomography::get_instance()->get_XY_size()/2.,map_it->first));
+		det_Y.push_back(new TLine(-Tomography::get_instance()->get_XY_size()/2.,map_it->first,Tomography::get_instance()->get_XY_size()/2.,map_it->first));
 		(det_X.back())->SetLineColor(detector_color);
 		(det_Y.back())->SetLineColor(detector_color);
 
 	}
-	TH1D * bg_X = new TH1D("XZ plane","XZ plane",2,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.);
-	TH1D * bg_Y = new TH1D("YZ plane","YZ plane",2,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.);
-	//bg_X->Fill(-Tomography::XY_size/2.,min_z);
-	//bg_X->Fill(Tomography::XY_size/2.,max_z);
+	TH1D * bg_X = new TH1D("XZ plane","XZ plane",2,-6*Tomography::get_instance()->get_XY_size()/10.,6*Tomography::get_instance()->get_XY_size()/10.);
+	TH1D * bg_Y = new TH1D("YZ plane","YZ plane",2,-6*Tomography::get_instance()->get_XY_size()/10.,6*Tomography::get_instance()->get_XY_size()/10.);
+	//bg_X->Fill(-Tomography::get_instance()->get_XY_size()/2.,min_z);
+	//bg_X->Fill(Tomography::get_instance()->get_XY_size()/2.,max_z);
 	bg_X->SetAxisRange(min_z,max_z,"Y");
 	bg_X->GetXaxis()->SetTitle("X [mm]");
 	bg_X->GetYaxis()->SetTitle("Z [mm]");
 	bg_X->SetDirectory(0);
-	//bg_Y->Fill(-Tomography::XY_size/2.,min_z);
-	//bg_Y->Fill(Tomography::XY_size/2.,max_z);
+	//bg_Y->Fill(-Tomography::get_instance()->get_XY_size()/2.,min_z);
+	//bg_Y->Fill(Tomography::get_instance()->get_XY_size()/2.,max_z);
 	bg_Y->SetAxisRange(min_z,max_z,"Y");
 	bg_Y->GetXaxis()->SetTitle("Y [mm]");
 	bg_Y->GetYaxis()->SetTitle("Z [mm]");

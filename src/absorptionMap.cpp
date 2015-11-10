@@ -14,11 +14,8 @@ using std::endl;
 using std::ostringstream;
 using TMath::Sqrt;
 
-int main(int /*argc*/, char ** argv){
-	int argcR = 1;
-	char * argvR[1];
-	argvR[0] = argv[0];
-	TRint * theApp = new TRint("Rint",&argcR,argvR,0,0,true);
+int main(){
+	Tomography::Init("/home/irfulx176/mnt/sbouteil/Documents/deviation/config_Pb.cfg");
 	Analyse * analysePb = new Analyse("/home/irfulx176/mnt/sbouteil/Documents/deviation/config_Pb.cfg");
 	Analyse * analyseNoPb = new Analyse("/home/irfulx176/mnt/sbouteil/Documents/deviation/config_noPb.cfg");
 	double z_Pb = 1553;
@@ -36,10 +33,10 @@ int main(int /*argc*/, char ** argv){
 	TCanvas * cSigma = new TCanvas("fluxMap_Sigma","fluxMap_Sigma");
 	analysePb->AbsorptionFluxMapNorm(z_Pb,fluxMapNoPb, nbins, cPb, cDiff, cSigma);
 	
-	theApp->Run(true);
+	Tomography::get_instance()->Run();
 	delete analysePb; delete analyseNoPb;
 	delete fluxMapNoPb;
 	delete cNoPb; delete cPb; delete cSigma; delete cDiff;
-	delete theApp;
+	Tomography::Quit();
 	return 0;
 }

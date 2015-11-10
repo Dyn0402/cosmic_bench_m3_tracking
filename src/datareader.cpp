@@ -58,7 +58,7 @@ void DataReader::Init(map<int,Tomography::det_type> det_type_by_asic_, map<int,i
 	evttime = 0;
 	for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
 		if(type_it->second > 0){
-			StripAmpl[type_it->first] = vector<vector<vector<float> > >(type_it->second,vector<vector<float> >(Tomography::Static_Detector[type_it->first]->get_Nchannel(),vector<float>(Tomography::Nsample,0)));
+			StripAmpl[type_it->first] = vector<vector<vector<float> > >(type_it->second,vector<vector<float> >(Tomography::Static_Detector[type_it->first]->get_Nchannel(),vector<float>(Tomography::get_instance()->get_Nsample(),0)));
 			Ped[type_it->first] = vector<vector<float> >(type_it->second,vector<float>(Tomography::Static_Detector[type_it->first]->get_Nchannel(),0));
 		}
 	}
@@ -127,7 +127,7 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk){
 	evttime = 0;
 	for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
 		if(type_it->second > 0){
-			StripAmpl[type_it->first] = vector<vector<vector<float> > >(type_it->second,vector<vector<float> >(Tomography::Static_Detector[type_it->first]->get_Nchannel(),vector<float>(Tomography::Nsample,0)));
+			StripAmpl[type_it->first] = vector<vector<vector<float> > >(type_it->second,vector<vector<float> >(Tomography::Static_Detector[type_it->first]->get_Nchannel(),vector<float>(Tomography::get_instance()->get_Nsample(),0)));
 			Ped[type_it->first] = vector<vector<float> >(type_it->second,vector<float>(Tomography::Static_Detector[type_it->first]->get_Nchannel(),0));
 		}
 	}
@@ -159,7 +159,7 @@ void DataReader::process(){
 	if(outTree != NULL){
 		outTree->Reset_raw();
 	}
-	while((!(reader->is_end())) && !((event_nb>max_event)*(max_event>0)) && Tomography::can_continue){
+	while((!(reader->is_end())) && !((event_nb>max_event)*(max_event>0)) && Tomography::get_instance()->get_can_continue()){
 		if((event_nb%100) == 0) cout << "\r" << "event processed : " << event_nb << flush;
 		process_event();
 		event_nb++;
@@ -182,7 +182,7 @@ void DataReader::process_event(){
 			int channel = mapping(det_type_by_asic[map_it->first],j);
 			if(channel<0) continue;
 			if(static_cast<unsigned int>(channel)>=StripAmpl[det_type_by_asic[map_it->first]][map_it->second].size()) continue;
-			for(int k=0;k<Tomography::Nsample;k++){
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				StripAmpl[det_type_by_asic[map_it->first]][map_it->second][channel][k] = reader->get_data(map_it->first,j,k);
 			}
 		}
@@ -202,17 +202,17 @@ void DataReader::compute_ped(){
 	long nentries = outTree->T->GetEntriesFast();
 	outTree->disable_data_branches();
 	outTree->enable_raw_branches();
-	for(long n=0;n<nentries && Tomography::can_continue;n++){
+	for(long n=0;n<nentries && Tomography::get_instance()->get_can_continue();n++){
 		StripAmpl = outTree->read_raw(n);
 		for(map<Tomography::det_type,vector<vector<float> > >::iterator type_it=Ped.begin();type_it!=Ped.end();++type_it){
 			for(unsigned int i=0;i<(type_it->second).size();i++){
 				for(unsigned int j=0;j<(type_it->second)[i].size();j++){
-					vector<float> current_strip(Tomography::Nsample,0);
-					for(int k=0;k<Tomography::Nsample;k++){
+					vector<float> current_strip(Tomography::get_instance()->get_Nsample(),0);
+					for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 						current_strip[k] = StripAmpl[type_it->first][i][j][k];
 					}
 					sort(current_strip.begin(),current_strip.end());
-					(type_it->second)[i][j] += current_strip[Tomography::Nsample/2];
+					(type_it->second)[i][j] += current_strip[Tomography::get_instance()->get_Nsample()/2];
 				}
 			}
 		}
@@ -250,7 +250,7 @@ void DataReader::compute_RMSPed(){
 	double Ymax=500;
 	int bin_n = 500;
 	int sample_min = 1;
-	int sample_max = Tomography::Nsample-1;//Min(Nsample,4);
+	int sample_max = Tomography::get_instance()->get_Nsample()-1;//Min(Nsample,4);
 	Long64_t tot_event = 1000;
 	long nentries = Min(outTree->T->GetEntries(),tot_event);
 	map<Tomography::det_type,vector<vector<TH1F*> > > ampl_hist;
@@ -268,7 +268,7 @@ void DataReader::compute_RMSPed(){
 	}
 	outTree->disable_data_branches();
 	outTree->enable_corr_branches();
-	for(long n=0;n<nentries && Tomography::can_continue;n++){
+	for(long n=0;n<nentries && Tomography::get_instance()->get_can_continue();n++){
 		StripAmpl = outTree->read_corr(n);
 		for(map<Tomography::det_type,vector<vector<TH1F*> > >::iterator type_it = ampl_hist.begin();type_it!=ampl_hist.end();++type_it){
 			for(unsigned int i=0;i<(type_it->second).size();i++){
@@ -306,7 +306,7 @@ void DataReader::do_ped_sub(){
 	outTree->disable_data_branches();
 	outTree->enable_raw_branches();
 	outTree->enable_ped_branches();
-	while(event_nb<total_event && Tomography::can_continue){
+	while(event_nb<total_event && Tomography::get_instance()->get_can_continue()){
 		if((event_nb%100) == 0) cout << "\rsubstracting pedestal (" << event_nb << "/" << total_event << ")" << flush;
 		StripAmpl = outTree->read_raw(event_nb);
 		do_ped_sub_event();
@@ -329,7 +329,7 @@ void DataReader::do_common_noise_sub(){
 	outTree->disable_data_branches();
 	outTree->enable_ped_branches();
 	outTree->enable_corr_branches();
-	while(event_nb<total_event && Tomography::can_continue){
+	while(event_nb<total_event && Tomography::get_instance()->get_can_continue()){
 		if((event_nb%100) == 0) cout << "\rsubstracting common noise (" << event_nb << "/" << total_event << ")" << flush;
 		StripAmpl = outTree->read_ped(event_nb);
 		do_common_noise_sub_event();
@@ -361,7 +361,7 @@ void DataReader::do_ped_sub_event(){
 void DataReader::do_common_noise_sub_event(){
 	for(map<Tomography::det_type,vector<vector<vector<float> > > >::iterator it = StripAmpl.begin();it!=StripAmpl.end();++it){
 		for(vector<vector<vector<float> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-			for(int k=0;k<Tomography::Nsample;k++){
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				for(int det_div=0;det_div<(Tomography::Static_Detector[it->first]->get_CMN_div());det_div++){
 					int strip_nb = (Tomography::Static_Detector[it->first]->get_Nchannel())/(Tomography::Static_Detector[it->first]->get_CMN_div()) + (Tomography::Static_Detector[it->first]->get_Nchannel())%(Tomography::Static_Detector[it->first]->get_CMN_div());
 					int strip_offset = det_div*strip_nb;
@@ -383,7 +383,7 @@ void DataReader::do_ped_CMN_sub_event(){
 	for(map<Tomography::det_type,vector<vector<vector<float> > > >::iterator it = StripAmpl.begin();it!=StripAmpl.end();++it){
 		vector<vector<float> >::iterator ped_jt = Ped[it->first].begin();
 		for(vector<vector<vector<float> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-			for(int k=0;k<Tomography::Nsample;k++){
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				for(int det_div=0;det_div<(Tomography::Static_Detector[it->first]->get_CMN_div());det_div++){
 					int strip_nb = (Tomography::Static_Detector[it->first]->get_Nchannel())/(Tomography::Static_Detector[it->first]->get_CMN_div()) + (Tomography::Static_Detector[it->first]->get_Nchannel())%(Tomography::Static_Detector[it->first]->get_CMN_div());
 					int strip_offset = det_div*strip_nb;

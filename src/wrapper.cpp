@@ -39,6 +39,7 @@ int main(int argc, char ** argv){
 		config_file_CB = argv[2];
 	}
 	read_json(config_file_CB, config_tree_bench);
+	Tomography::Init(config_tree_bench);
 	config_tree_bench.put<string>("Ped",config_tree_wrapper.get<string>("Ped"));
 	config_tree_bench.put<string>("RMSPed",config_tree_wrapper.get<string>("RMSPed"));
 	remove((config_tree_bench.get<string>("signal_file")).c_str());
@@ -111,4 +112,5 @@ int main(int argc, char ** argv){
 	rayFile->CloseFile();
 	delete rayFile;
 	delete bench;
+	Tomography::Quit();
 }

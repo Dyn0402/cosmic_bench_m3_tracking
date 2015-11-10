@@ -1,5 +1,6 @@
 #define tomography_cpp
 #include "tomography.h"
+#include "detector.h"
 
 #include <sstream>
 #include <iomanip>
@@ -10,6 +11,7 @@
 #include <TCanvas.h>
 
 #include <boost/foreach.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 using std::ostringstream;
 using std::setw;
@@ -17,33 +19,37 @@ using std::setfill;
 using std::string;
 using std::pair;
 
+/*
+bool Tomography::get_instance()->get_can_continue() = true;
+bool Tomography::get_instance()->get_is_batch() = gROOT->IsBatch();
+bool Tomography::get_instance()->get_live_graphic_display() = !Tomography::get_instance()->get_is_batch();
+*/
+Tomography* Tomography::singleton_instance = 0;
+const string Tomography::DreamExt = "fdf";
+const string Tomography::FeminosExt = "aqs";
 
-bool Tomography::can_continue = true;
-bool Tomography::is_batch = gROOT->IsBatch();
-bool Tomography::live_graphic_display = !Tomography::is_batch;
-
-ostream& Tomography::operator<<(ostream& os, const det_type& det){
+ostream& operator<<(ostream& os, const Tomography::det_type& det){
 	switch(det){
-		case CM : os << "CM"; break;
-		case MG : os << "MG"; break;
-		case MGv2 : os << "MGv2"; break;
+		case Tomography::CM : os << "CM"; break;
+		case Tomography::MG : os << "MG"; break;
+		case Tomography::MGv2 : os << "MGv2"; break;
 		default : os << "unknown det";
 	}
 	return os;
 }
-ostream& Tomography::operator<<(ostream& os, const strip_type& strip){
+ostream& operator<<(ostream& os, const Tomography::strip_type& strip){
 	switch(strip){
-		case Wide : os << "Wide"; break;
-		case Thin : os << "Thin"; break;
-		case Demux : os << "Demux"; break;
+		case Tomography::Wide : os << "Wide"; break;
+		case Tomography::Thin : os << "Thin"; break;
+		case Tomography::Demux : os << "Demux"; break;
 		default : os << "unknown strip type";
 	}
 	return os;
 }
-ostream& Tomography::operator<<(ostream& os, const elec_type& elec){
+ostream& operator<<(ostream& os, const Tomography::elec_type& elec){
 	switch(elec){
-		case Dream : os << "Dream"; break;
-		case Feminos : os << "Feminos"; break;
+		case Tomography::Dream : os << "Dream"; break;
+		case Tomography::Feminos : os << "Feminos"; break;
 		default : os << "unknown electronic type";
 	}
 	return os;
@@ -85,25 +91,18 @@ ostream& operator<<(ostream& os,const vector<T>& vec_){
 	return os;
 }
 
-//template ostream& operator<<(ostream& os, const map<int,int>& map_);
 template ostream& operator<<(ostream& os, const map<int,double>& map_);
 template ostream& operator<<(ostream& os, const map<double,int>& map_);
 template ostream& operator<<(ostream& os, const map<int,int>& map_);
 template ostream& operator<<(ostream& os, const map<bool,map<int,int> >& map_);
-/*
-void Tomography::signal_handler(int s){
-	cout << "\nCaught signal " << s << endl;
-	cout << endl;
-	can_continue = false;
-}
-*/
+
 Tomography::elec_type Tomography::str_to_elec(string str){
 	elec_type return_value = unknown_elec;
 	if(str == "dream") return_value = Dream;
 	else if(str == "feminos") return_value = Feminos;
 	return return_value;
 }
-/*
+
 static map<const Tomography::det_type,const Detector* const> Static_Detector_build(){
 	map<const Tomography::det_type,const Detector* const> return_map;
 	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::CM,new CM_Detector()));
@@ -113,78 +112,123 @@ static map<const Tomography::det_type,const Detector* const> Static_Detector_bui
 }
 
 map<const Tomography::det_type,const Detector* const> Tomography::Static_Detector = Static_Detector_build();
-*/
-/*
-void Tomography::process_elec_files(ptree config_tree){
-	int total_CM_N = config_tree.get<int>("total_CM_N");
-	int total_MG_N = config_tree.get<int>("total_MG_N");
-	int CM_N = 0;
-	int MG_N = 0;
-	map<int,Tomography::det_type> det_type_by_asic;
-	map<int,int> det_n_by_asic;
-	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.CosMultis")){
-		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::CM;
-		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("cm_n");
-		CM_N++;
-	}
-	BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("CosmicBench.MultiGens")){
-		det_type_by_asic[child.second.get<int>("asic_n")] = Tomography::MG;
-		det_n_by_asic[child.second.get<int>("asic_n")] = child.second.get<int>("mg_n");
-		MG_N++;
-	}
-	if((total_CM_N!=CM_N) || (total_MG_N!=MG_N)){
-		cout << "problem in detectors number" << endl;
-		return;
-	}
-	Tomography::elec_type electronic_type = Tomography::str_to_elec(config_tree.get<string>("electronic_type"));
-	string data_file_basename = config_tree.get<string>("data_file_basename");
-	string signalName = config_tree.get<string>("signal_file");
-	string PedName = config_tree.get<string>("Ped");
-	string RMSName = config_tree.get<string>("RMSPed");
-	int max_event = config_tree.get<int>("max_event");
-	ifstream file;
-	file.open(signalName.c_str(),ifstream::in);
-	bool exists = file.good();
-	file.close();
-	file.open(PedName.c_str(),ifstream::in);
-	bool ped_done = file.good();
-	file.close();
-	file.open(RMSName.c_str(),ifstream::in);
-	bool compute_rms = !(file.good());
-	file.close();
-	DataReader * blah = NULL;
-	if(electronic_type == Tomography::Dream){
-		blah = new DreamDataReader(signalName,PedName,RMSName,det_type_by_asic,det_n_by_asic,exists,exists,exists,max_event);
-	}
-	else if(electronic_type == Tomography::Feminos){
-		blah = new FeminosDataReader(signalName,PedName,RMSName,det_type_by_asic,det_n_by_asic,exists,exists,exists,max_event);
+
+Tomography::Tomography(){
+	cout << "Warning ! Dummy Tomography instanciated" << endl;
+	root_interpreter = 0;
+	config_tree = ptree();
+	Nsample = -1;
+	XY_size = 0;
+	SampleMin = -1;
+	SampleMax = -1;
+	sigma = 0;
+	TOTCut = -1;
+	chisquare_threshold = 0;
+	live_graphic_display = false;
+	is_batch = true;
+	sigIntHandler.sa_handler = signal_handler;
+	gROOT->SetBatch(true);
+	sigemptyset(&sigIntHandler.sa_mask);
+	sigIntHandler.sa_flags = 0;
+	sigaction(SIGINT, &sigIntHandler, NULL);
+}
+Tomography::Tomography(ptree config_tree_){
+	config_tree = config_tree_;
+	Nsample = config_tree.get<int>("Nsample");
+	XY_size = config_tree.get<double>("XY_size");
+	SampleMin = config_tree.get<int>("SampleMin");
+	SampleMax = config_tree.get<int>("SampleMax");
+	sigma = config_tree.get<double>("sigma");
+	TOTCut = config_tree.get<int>("TOTCut");
+	chisquare_threshold = config_tree.get<double>("chisquare_threshold");
+	if(gROOT->IsBatch()) is_batch = true;
+	else is_batch = config_tree.get<bool>("batch");
+	if(!is_batch){
+		live_graphic_display = config_tree.get<bool>("live_graphic_display");
+		root_interpreter = new TRint("Rint",0,0,0,0,true);
 	}
 	else{
-		cout << "electronic type : " << electronic_type << " unknown !" << endl;
-		return;
+		gROOT->SetBatch(true);
+		live_graphic_display = false;
+		root_interpreter = 0;
 	}
-	int first_data_file = config_tree.get<int>("data_file_first");
-	int last_data_file = config_tree.get<int>("data_file_last") + 1;
-	for(int i=first_data_file;i<last_data_file;i++){
-		ostringstream dataFileName;
-		dataFileName << data_file_basename << setw(3) << setfill('0') << i;
-		if(electronic_type == Tomography::Dream) dataFileName << "_01.fdf";
-		else if(electronic_type == Tomography::Feminos) dataFileName << ".aqs";
-		else dataFileName << ".txt";
-		blah->add_file_to_process(dataFileName.str());
-	}
-	blah->process();
-	if(!ped_done) blah->compute_ped();
-	blah->do_ped_sub();
-	blah->do_common_noise_sub();
-	if(compute_rms) blah->compute_RMSPed();
+	sigIntHandler.sa_handler = signal_handler;
+	sigemptyset(&sigIntHandler.sa_mask);
+	sigIntHandler.sa_flags = 0;
+	sigaction(SIGINT, &sigIntHandler, NULL);
 }
-*/
+Tomography::~Tomography(){
+	save_canvases();
+	if(root_interpreter) delete root_interpreter;
+	is_batch = true;
+	live_graphic_display = false;
+	singleton_instance = 0;
+}
+void Tomography::Quit(){
+	if(singleton_instance != 0){
+		delete singleton_instance;
+		singleton_instance = 0;
+	}
+}
+Tomography * Tomography::get_instance(){
+	if(!singleton_instance){
+		singleton_instance = new Tomography();
+	}
+	return singleton_instance;
+}
+void Tomography::Init(ptree config_tree_){
+	if(!singleton_instance){
+		singleton_instance = new Tomography(config_tree_);
+	}
+}
+void Tomography::Init(string config_tree_file){
+	if(!singleton_instance){
+		ptree config_tree_;
+		read_json(config_tree_file,config_tree_);
+		singleton_instance = new Tomography(config_tree_);
+	}
+}
+void Tomography::signal_handler(int s){
+	cout << "\nCaught signal " << s << endl;
+	cout << endl;
+	get_instance()->can_continue = false;
+}
+int Tomography::get_Nsample() const{
+	return Nsample;
+}
+double Tomography::get_XY_size() const{
+	return XY_size;
+}
+int Tomography::get_SampleMin() const{
+	return SampleMin;
+}
+int Tomography::get_SampleMax() const{
+	return SampleMax;
+}
+int Tomography::get_TOTCut() const{
+	return TOTCut;
+}
+double Tomography::get_chisquare_threshold() const{
+	return chisquare_threshold;
+}
+double Tomography::get_sigma() const{
+	return sigma;
+}
+bool Tomography::get_live_graphic_display() const{
+	return live_graphic_display;
+}
+bool Tomography::get_is_bacth() const{
+	return is_batch;
+}
+bool Tomography::get_can_continue() const{
+	return can_continue;
+}
 void Tomography::save_canvases(){
 	time_t current_time = time(NULL);
 	char buffer[100];
 	strftime(buffer,100,"%y%m%d_%HH%M",localtime(&current_time));
-	string base_name = "canvas_";
+	string base_name = config_tree.get<string>("metadata");
+	base_name += "_";
 	base_name += buffer;
 	base_name += "_";
 	for(int i=0;i<gROOT->GetListOfCanvases()->GetSize();i++){
@@ -192,5 +236,8 @@ void Tomography::save_canvases(){
 		current_canvas->SaveAs((base_name + current_canvas->GetName() + ".png").c_str());
 		current_canvas->SaveAs((base_name + current_canvas->GetName() + ".C").c_str());
 	}
-
+	if(gROOT->GetListOfCanvases()->GetSize() > 0) write_json(base_name + ".json",config_tree);
+}
+void Tomography::Run(){
+	if(root_interpreter) root_interpreter->Run(true);
 }

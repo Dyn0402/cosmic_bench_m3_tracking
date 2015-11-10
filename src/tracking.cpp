@@ -22,11 +22,6 @@ using std::ostringstream;
 using TMath::Pi;
 
 int main(int argc, char ** argv){
-	struct sigaction sigIntHandler;
-	sigIntHandler.sa_handler = Tomography::signal_handler;
-	sigemptyset(&sigIntHandler.sa_mask);
-	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);
 	if(argc<3){
 		cout << "You must indicate a config file which contains the Cosmic Bench caracs and what you want to plot" << endl;
 		return 1;
@@ -35,15 +30,7 @@ int main(int argc, char ** argv){
 	char path[n];
 	ostringstream config_file;
 	config_file << getcwd(path,n) << "/" << argv[1];
-	int argcR = 1;
-	char * argvR[1];
-	argvR[0] = argv[0];
-	TRint * theApp;
-	if(!Tomography::is_batch) theApp = new TRint("Rint",&argcR,argvR,0,0,true);
-	sigIntHandler.sa_handler = Tomography::signal_handler;
-	sigemptyset(&sigIntHandler.sa_mask);
-	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);
+	Tomography::Init(config_file.str());
 	Analyse * blah = new Analyse(config_file.str());//"/home/irfulx176/mnt/sbouteil/Documents/deviation/config.cfg");
 	string efficacity = "efficacity";
 	string eff2D = "eff2D";
@@ -72,7 +59,8 @@ int main(int argc, char ** argv){
 	else if(argv[2] == fluxMap){
 		if(argc<4){
 			cout << "you must indicate the altitude of the flux map" << endl;
-			delete blah; delete theApp;
+			Tomography::Quit();
+			delete blah;
 			return 1;
 		}
 		else{
@@ -90,7 +78,8 @@ int main(int argc, char ** argv){
 	else if(argv[2] == tomoAbs){
 		if(argc<4){
 			cout << "you must indicate the altitude of the flux map" << endl;
-			delete blah; delete theApp;
+			Tomography::Quit();
+			delete blah;
 			return 1;
 		}
 		else{
@@ -101,7 +90,8 @@ int main(int argc, char ** argv){
 	else if(argv[2] == raypairs){
 		if(argc<4){
 			cout << "you must indicate the output file name" << endl;
-			delete blah; delete theApp;
+			Tomography::Quit();
+			delete blah;
 			return 1;
 		}
 		else{
@@ -124,7 +114,8 @@ int main(int argc, char ** argv){
 	else if(argv[2] == eventdisplaymult){
 		if(argc<4){
 			cout << "you must indicate the number of the event you wanna see" << endl;
-			delete blah; delete theApp;
+			Tomography::Quit();
+			delete blah;
 			return 1;
 		}
 		else{
@@ -141,7 +132,8 @@ int main(int argc, char ** argv){
 	else if(argv[2] == eventdisplay){
 		if(argc<4){
 			cout << "you must indicate the index of the event you wanna see" << endl;
-			delete blah; delete theApp;
+			Tomography::Quit();
+			delete blah;
 			return 1;
 		}
 		else{
@@ -163,7 +155,8 @@ int main(int argc, char ** argv){
 	else if(argv[2] == watto){
 		if(argc<9){
 			cout << "you must indicate in order : flux map altitude, ellipse x center, ellipse y center, ellipse x axis length, ellipse y axis length, ellipse rotation angle" << endl;
-			delete blah; delete theApp;
+			Tomography::Quit();
+			delete blah;
 			return 1;
 		}
 		else{
@@ -183,14 +176,12 @@ int main(int argc, char ** argv){
 		cout << blah->get_z_Up() << endl;
 		cout << blah ->get_z_Down() << endl;
 		//blah->MultiGenDebug(0);
-		delete blah; delete theApp;
+		Tomography::Quit();
+		delete blah;
 		return 1;
 	}
-	if(Tomography::is_batch) Tomography::save_canvases();
-	else {
-		theApp->Run(true);
-		delete theApp;
-	}
+	Tomography::get_instance()->Run();
+	Tomography::Quit();
 	delete blah;
 	return 0;
 }

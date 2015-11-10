@@ -181,14 +181,14 @@ void liveDisplay::flux_map(double z){
 		if(current_z>z_max) z_max = current_z;
 		if(current_z<z_min) z_min = current_z;
 	}
-	double x_min = -Tomography::XY_size/2.;
-	double x_max = Tomography::XY_size/2.;
+	double x_min = -Tomography::get_instance()->get_XY_size()/2.;
+	double x_max = Tomography::get_instance()->get_XY_size()/2.;
 	if(z>z_max){
-		x_min -= Tomography::XY_size*(z - z_max)/(z_max - z_min);
+		x_min -= Tomography::get_instance()->get_XY_size()*(z - z_max)/(z_max - z_min);
 		x_max = - x_min;
 	}
 	else if(z<z_min){
-		x_min -= Tomography::XY_size*(z_min - z)/(z_max - z_min);
+		x_min -= Tomography::get_instance()->get_XY_size()*(z_min - z)/(z_max - z_min);
 		x_max = - x_min;
 	}
 	double width = x_max - x_min;
@@ -218,7 +218,7 @@ void liveDisplay::flux_map(double z){
 	}
 	else return;
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for(vector<string>::iterator filename_it = filenames.begin();filename_it!=filenames.end() && Tomography::can_continue;++filename_it){
+	for(vector<string>::iterator filename_it = filenames.begin();filename_it!=filenames.end() && Tomography::get_instance()->get_can_continue();++filename_it){
 		cout << *filename_it << endl;
 		ifstream data_file(filename_it->c_str(),ifstream::binary);
 		bool is_open = data_file.is_open();
@@ -228,7 +228,7 @@ void liveDisplay::flux_map(double z){
 		}
 		start_inotify(*filename_it);
 		int current_pos = data_file.tellg();
-		while(is_open && Tomography::can_continue){
+		while(is_open && Tomography::get_instance()->get_can_continue()){
 			if(max_event>0 && processed>max_event) break;
 			current_pos = data_file.tellg();
 			data_file.seekg(0,data_file.end);
@@ -239,7 +239,7 @@ void liveDisplay::flux_map(double z){
 			else read_mask = IN_MODIFY | IN_CLOSE;
 			if((read_mask & IN_CLOSE) || is_complete) is_open = false;
 			if(!(read_mask & IN_MODIFY)) continue;
-			while(data_file.good() && Tomography::can_continue){
+			while(data_file.good() && Tomography::get_instance()->get_can_continue()){
 				current_pos = data_file.tellg();
 				map<Tomography::det_type,vector<vector<vector<double> > > > event_ampl = current_data_reader->read_event(&data_file,event_nb,evttime);
 				if(event_ampl.size()==0){

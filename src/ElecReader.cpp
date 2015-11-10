@@ -36,7 +36,9 @@ FeuData::FeuData(): RawData(){
 	current_index = -1;
 	for(int i=0;i<Tomography::Nasic_FEU;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			for(int k=0;k<Tomography::Nsample;k++){
+			if(data[i][j]) delete[] data[i][j];
+			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = 0;
 			}
 		}
@@ -47,6 +49,11 @@ FeuData::~FeuData(){
 		file->close();
 		delete file;
 	}
+	for(int i=0;i<Tomography::Nasic_FEU;i++){
+		for(int j=0;j<Tomography::Nchannel;j++){
+			delete[] data[i][j];
+		}
+	}
 }
 FeuData::FeuData(const FeuData& other): RawData(other){
 	Nevent = other.Nevent;
@@ -55,7 +62,9 @@ FeuData::FeuData(const FeuData& other): RawData(other){
 	current_index = other.current_index;
 	for(int i=0;i<Tomography::Nasic_FEU;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			for(int k=0;k<Tomography::Nsample;k++){
+			if(data[i][j]) delete[] data[i][j];
+			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = other.data[i][j][k];
 			}
 		}
@@ -69,7 +78,9 @@ FeuData& FeuData::operator=(const FeuData& other){
 	current_index = other.current_index;
 	for(int i=0;i<Tomography::Nasic_FEU;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			for(int k=0;k<Tomography::Nsample;k++){
+			if(data[i][j]) delete[] data[i][j];
+			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = other.data[i][j][k];
 			}
 		}
@@ -80,19 +91,27 @@ FeuData& FeuData::operator=(const FeuData& other){
 FeminosData::FeminosData(): RawData(){
 	for(int i=0;i<Tomography::Nasic_Feminos;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			for(int k=0;k<Tomography::Nsample;k++){
+			if(data[i][j]) delete[] data[i][j];
+			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = 0;
 			}
 		}
 	}
 }
 FeminosData::~FeminosData(){
-
+	for(int i=0;i<Tomography::Nasic_Feminos;i++){
+		for(int j=0;j<Tomography::Nchannel;j++){
+			delete[] data[i][j];
+		}
+	}
 }
 FeminosData::FeminosData(const FeminosData& other): RawData(other){
 	for(int i=0;i<Tomography::Nasic_Feminos;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			for(int k=0;k<Tomography::Nsample;k++){
+			if(data[i][j]) delete[] data[i][j];
+			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = other.data[i][j][k];
 			}
 		}
@@ -102,7 +121,9 @@ FeminosData& FeminosData::operator=(const FeminosData& other){
 	RawData::operator=(other);
 	for(int i=0;i<Tomography::Nasic_Feminos;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			for(int k=0;k<Tomography::Nsample;k++){
+			if(data[i][j]) delete[] data[i][j];
+			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = other.data[i][j][k];
 			}
 		}
@@ -155,7 +176,7 @@ DreamElecReader::DreamElecReader(string base_name_,map<int,int> feu_id_to_n_,int
 		else cout << "\ncan't load : " << current_name.str() << endl;
 		for(int i=0;i<Tomography::Nasic_FEU;i++){
 			for(int j=0;j<Tomography::Nchannel;j++){
-				for(int k=0;k<Tomography::Nsample;k++){
+				for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 					feu_data[feu_it->first].data[i][j][k] = 0;
 				}
 			}
@@ -363,7 +384,7 @@ void DreamElecReader::read_next_event_file(int feu_id){
 					FeuHeaderLine=0;
 					(feu_data[feu_id].file)->ignore(sizeof(current_data));
 					if(current_data.is_EOE()){
-						if(isample_nb!=Tomography::Nsample) cout << "Reached EOE with less than " << Tomography::Nsample << " samples (" << isample_nb << ")" << endl;
+						if(isample_nb!=Tomography::get_instance()->get_Nsample()) cout << "Reached EOE with less than " << Tomography::get_instance()->get_Nsample() << " samples (" << isample_nb << ")" << endl;
 						isample=-1; isample_prev=-2;
 						event_complete = true;
 						break;
@@ -424,7 +445,7 @@ void DreamElecReader::seek_next_EOE(int feu_id){
 			if(current_data.is_EOE()) eoe_reached = true;
 		} while((feu_data[feu_id].file)->good() && !eoe_reached);
 	}
-	cout << "    skipped " << line_skipped << " lines (approx. " << line_skipped/(((74*Tomography::Nasic_FEU)+10)*Tomography::Nsample) << " events) to realign with dream packet" << endl;
+	cout << "    skipped " << line_skipped << " lines (approx. " << line_skipped/(((74*Tomography::Nasic_FEU)+10)*Tomography::get_instance()->get_Nsample()) << " events) to realign with dream packet" << endl;
 }
 double DreamElecReader::get_data(int asic_n,int channel_n,int sample_n){
 	if(!(feu_data.count(asic_n/Tomography::Nasic_FEU)>0)){
@@ -452,7 +473,7 @@ void DreamElecReader::reset_data(){
 		(data_it->second).evttime = 0;
 		for(int i=0;i<Tomography::Nasic_FEU;i++){
 			for(int j=0;j<Tomography::Nchannel;j++){
-				for(int k=0;k<Tomography::Nsample;k++){
+				for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 					(data_it->second).data[i][j][k] = 0;
 				}
 			}
@@ -468,7 +489,7 @@ void DreamElecReader::reset_data(int feu_id){
 	feu_data[feu_id].evttime = 0;
 	for(int i=0;i<Tomography::Nasic_FEU;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			for(int k=0;k<Tomography::Nsample;k++){
+			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				feu_data[feu_id].data[i][j][k] = 0;
 			}
 		}
@@ -515,7 +536,7 @@ FeminosElecReader::FeminosElecReader(string base_name_,vector<int> fem_id,int fi
 	for(vector<int>::iterator fem_it=fem_id.begin();fem_it!=fem_id.end();++fem_it){
 		for(int i=0;i<Tomography::Nasic_Feminos;i++){
 			for(int j=0;j<Tomography::Nchannel;j++){
-				for(int k=0;k<Tomography::Nsample;k++){
+				for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 					feminos_data[*fem_it].data[i][j][k] = 0;
 				}
 			}
@@ -663,7 +684,7 @@ void FeminosElecReader::reset_data(){
 	for(map<int, FeminosData>::iterator data_it=feminos_data.begin();data_it!=feminos_data.end();++data_it){
 		for(int i=0;i<Tomography::Nasic_Feminos;i++){
 			for(int j=0;j<Tomography::Nchannel;j++){
-				for(int k=0;k<Tomography::Nsample;k++){
+				for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 					(data_it->second).data[i][j][k] = 0;
 				}
 			}

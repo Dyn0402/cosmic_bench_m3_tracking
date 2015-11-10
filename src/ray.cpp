@@ -119,12 +119,12 @@ void Ray_2D::process(){
 	pos->Sort();
 	TF1 * line = new TF1("line","pol1(0)",minZ-10,maxZ+10);
 	//TF1 * line = new TF1("line","[0] + [1]*x",minZ-10,maxZ+10);
-	double maxSlope = Tomography::XY_size/(maxZ-minZ);
+	double maxSlope = Tomography::get_instance()->get_XY_size()/(maxZ-minZ);
 	line->SetParameters(0,0);
 	
-	if(minZ>0) line->SetParLimits(0,-(Tomography::XY_size/2.)-(maxSlope*minZ),(Tomography::XY_size/2.)+maxSlope*minZ);
-	else if(maxZ<0) line->SetParLimits(0,-(Tomography::XY_size/2.)+(maxSlope*maxZ),(Tomography::XY_size/2.)-maxSlope*maxZ);
-	else line->SetParLimits(0,-(Tomography::XY_size/2.),Tomography::XY_size/2.);
+	if(minZ>0) line->SetParLimits(0,-(Tomography::get_instance()->get_XY_size()/2.)-(maxSlope*minZ),(Tomography::get_instance()->get_XY_size()/2.)+maxSlope*minZ);
+	else if(maxZ<0) line->SetParLimits(0,-(Tomography::get_instance()->get_XY_size()/2.)+(maxSlope*maxZ),(Tomography::get_instance()->get_XY_size()/2.)-maxSlope*maxZ);
+	else line->SetParLimits(0,-(Tomography::get_instance()->get_XY_size()/2.),Tomography::get_instance()->get_XY_size()/2.);
 	line->SetParLimits(1,-maxSlope,maxSlope);
 	pos->Fit(line,"QN");
 	chiSquare = line->GetChisquare();
@@ -198,9 +198,9 @@ double Ray_2D::get_residu(const Detector * const det) const{
 		return numeric_limits<double>::min();
 	}
 	TF1 * line = new TF1("line","[0]*x+[1]",minZ-10,maxZ+10);
-	double maxSlope = Tomography::XY_size/(maxZ-minZ);
+	double maxSlope = Tomography::get_instance()->get_XY_size()/(maxZ-minZ);
 	line->SetParameters(0,0);
-	line->SetParLimits(0,-(Tomography::XY_size/2.)-(maxSlope*minZ),(Tomography::XY_size/2.)+maxSlope*minZ);
+	line->SetParLimits(0,-(Tomography::get_instance()->get_XY_size()/2.)-(maxSlope*minZ),(Tomography::get_instance()->get_XY_size()/2.)+maxSlope*minZ);
 	line->SetParLimits(1,-maxSlope,maxSlope);
 	pos->Fit(line,"QN");
 	double residu = det_coord - line->Eval(det->get_z());

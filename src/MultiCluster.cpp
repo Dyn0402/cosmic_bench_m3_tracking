@@ -12,11 +12,6 @@ using std::endl;
 
 
 int main(int argc, char ** argv){
-	struct sigaction sigIntHandler;
-	sigIntHandler.sa_handler = Tomography::signal_handler;
-	sigemptyset(&sigIntHandler.sa_mask);
-	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);
 	if(argc<3){
 		cout << "You must indicate a config file which contains the Cosmic Bench caracs and what you want to plot" << endl;
 		return 1;
@@ -25,15 +20,7 @@ int main(int argc, char ** argv){
 	char path[n];
 	ostringstream config_file;
 	config_file << getcwd(path,n) << "/" << argv[1];
-	int argcR = 1;
-	char * argvR[1];
-	argvR[0] = argv[0];
-	TRint * theApp;
-	if(!Tomography::is_batch) theApp = new TRint("Rint",&argcR,argvR,0,0,true);
-	sigIntHandler.sa_handler = Tomography::signal_handler;
-	sigemptyset(&sigIntHandler.sa_mask);
-	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);
+	Tomography::Init(config_file.str());
 	Signal * blah = new Signal(config_file.str());
 	string multicluster = "multicluster";
 	string hough = "hough";
@@ -74,11 +61,8 @@ int main(int argc, char ** argv){
 	else if(argv[2] == dispersion){
 		blah->SignalDispersion();
 	}
-	if(Tomography::is_batch) Tomography::save_canvases();
-	else {
-		if(is_interactive) theApp->Run(true);
-		delete theApp;
-	}
+	if(is_interactive) Tomography::get_instance()->Run();
+	Tomography::Quit();
 	delete blah;
 	return 0;
 }

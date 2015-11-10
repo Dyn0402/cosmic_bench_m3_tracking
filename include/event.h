@@ -49,7 +49,7 @@ class Event{
 			int MaxSample;
 			int TOT;
 			double Time;
-			bool signal_sample[Tomography::Nsample];
+			bool * signal_sample;
 		};
 		Event(int evn_ = -1);
 		Event(const Event& other);
@@ -153,8 +153,8 @@ class CosmicBenchEvent{
 		unsigned int get_clus_N_by_det(const Detector * const det) const;
 		void Demux_CM();
 		void do_cuts();
-		vector<Ray> get_absorption_rays(double chiSquare_threshold = Tomography::chisquare_threshold);
-		vector<Ray> get_hough_rays(double chiSquare_threshold = Tomography::chisquare_threshold);
+		vector<Ray> get_absorption_rays(double chiSquare_threshold = -1);
+		vector<Ray> get_hough_rays(double chiSquare_threshold = -1);
 		template<typename T>
 		static vector<map<T,int> > combinaisons(map<T,int> sizes, bool allow_drop = false);
 		//void MultiCluster();

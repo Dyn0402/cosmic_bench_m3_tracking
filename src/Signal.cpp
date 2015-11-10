@@ -131,7 +131,7 @@ void Signal::MultiCluster(){
 	fChain->SetBranchStatus("Nevent",1);
 	fChain->SetBranchStatus("evttime",1);
 	fChain->SetBranchStatus("StripAmpl_*_corr",1);
-	for(long i=0;i<nentries && Tomography::can_continue;i++){
+	for(long i=0;i<nentries && Tomography::get_instance()->get_can_continue();i++){
 		LoadTree(i);
 		GetEntry(i);
 		map<Tomography::det_type,vector<Event*> > events;
@@ -191,8 +191,8 @@ void Signal::HoughTracking(long event_nb){
 	//max_z+=10;
 	//min_z-=10;
 	int bin_n = 500;
-	double min_coord = -6*Tomography::XY_size/10.;
-	double max_coord = 6*Tomography::XY_size/10.;
+	double min_coord = -6*Tomography::get_instance()->get_XY_size()/10.;
+	double max_coord = 6*Tomography::get_instance()->get_XY_size()/10.;
 	TH2D * hough_space_X = new TH2D("hough_space_X","hough_space_X",bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
 	TH2D * hough_space_Y = new TH2D("hough_space_Y","hough_space_Y",bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
 	int suitable_clus_n = 0;
@@ -370,7 +370,7 @@ map<Tomography::det_type,map<int,TProfile*> > Signal::SignalOverNoise(){
 		global_signal_over_noise[(*it)->get_type()][(*it)->get_n_in_tree()] = new TProfile((name.str() + "S/B").c_str(),(name.str() + "S/B").c_str(),(*it)->get_Nchannel(),0,(*it)->get_Nchannel());
 	}
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
-	for(long i=0;i<nentries && Tomography::can_continue;i++){
+	for(long i=0;i<nentries && Tomography::get_instance()->get_can_continue();i++){
 		LoadTree(i);
 		GetEntry(i);
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
@@ -411,7 +411,7 @@ void Signal::SignalOverNoiseDisplay(){
 		global_signal_over_noise[(*it)->get_type()][(*it)->get_n_in_tree()] = new TProfile((name.str() + "S/B").c_str(),(name.str() + "S/B").c_str(),(*it)->get_Nchannel(),0,(*it)->get_Nchannel());
 	}
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
-	for(long i=0;i<nentries && Tomography::can_continue;i++){
+	for(long i=0;i<nentries && Tomography::get_instance()->get_can_continue();i++){
 		LoadTree(i);
 		GetEntry(i);
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
@@ -428,7 +428,7 @@ void Signal::SignalOverNoiseDisplay(){
 			delete current_event;
 		}
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
-		if(i%5000 == 0 && Tomography::live_graphic_display){
+		if(i%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			for(map<Tomography::det_type,map<int,TCanvas*> >::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
 				for(map<int,TCanvas*>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 					jt->second->cd(1);
@@ -482,12 +482,12 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 	for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
 		for(int i=0;i<(*det_it)->get_Nchannel();i++){
 			signal_shape[pair<Tomography::det_type,int>((*det_it)->get_type(),(*det_it)->get_n_in_tree())].push_back(new TGraph());
-			rising_fit[pair<Tomography::det_type,int>((*det_it)->get_type(),(*det_it)->get_n_in_tree())].push_back(new TF1("rising_fit","pol1(0)",0,Tomography::Nsample));
+			rising_fit[pair<Tomography::det_type,int>((*det_it)->get_type(),(*det_it)->get_n_in_tree())].push_back(new TF1("rising_fit","pol1(0)",0,Tomography::get_instance()->get_Nsample()));
 		}
 	}
 	long nentries = Min(fChain->GetEntriesFast(),static_cast<Long64_t>(evn_max));
 	if(evn_min>nentries) return;
-	for(long i=evn_min;i<nentries && Tomography::can_continue;i++){
+	for(long i=evn_min;i<nentries && Tomography::get_instance()->get_can_continue();i++){
 		LoadTree(i);
 		GetEntry(i);
 		int det_id = 1;
@@ -497,7 +497,7 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 			for(int j=0;j<(*det_it)->get_Nchannel();j++){
 				double max_ampl = -Tomography::ADC_max;
 				double sample_max = -1;
-				for(int k=0;k<Tomography::Nsample;k++){
+				for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 					signal_shape[current_key][j]->SetPoint(k,k,current_ampl[j][k]);
 					if(current_ampl[j][k]>max_ampl){
 						max_ampl = current_ampl[j][k];
@@ -510,7 +510,7 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 				double mean_xy = 0;
 				double mean_x = 0;
 				double mean_y = 0;
-				while(k>=Tomography::SampleMin && current_ampl[j][k]>(Tomography::sigma*(*det_it)->get_RMS(j))){
+				while(k>=Tomography::get_instance()->get_SampleMin() && current_ampl[j][k]>(Tomography::get_instance()->get_sigma()*(*det_it)->get_RMS(j))){
 					mean_xx += k*k;
 					mean_x += k;
 					mean_xy += k*current_ampl[j][k];
@@ -553,7 +553,7 @@ void Signal::SignalDispersion(){
 	cControl->Divide(2,2);
 	TCanvas * cAnalyse = new TCanvas("cAnalyse");
 	cAnalyse->Divide(2,2);
-	int nbin_time = Tomography::Nsample;
+	int nbin_time = Tomography::get_instance()->get_Nsample();
 	TH2D * signalShape_X_pos = new TH2D("signalShape_X_pos","signalShape_X_pos",60,-6,6,nbin_time,0,nbin_time);
 	TH2D * signalShape_Y_pos = new TH2D("signalShape_Y_pos","signalShape_Y_pos",60,-15,15,nbin_time,0,nbin_time);
 	TH2D * signalShape_X_neg = new TH2D("signalShape_X_neg","signalShape_X_neg",60,-6,6,nbin_time,0,nbin_time);
@@ -572,7 +572,7 @@ void Signal::SignalDispersion(){
 	TH2D * slope_corr_X = new TH2D("slope_corr_X","slope_corr_X",50,-1,1,50,-1,1);
 	TH2D * slope_corr_Y = new TH2D("slope_corr_Y","slope_corr_Y",50,-1,1,50,-1,1);
 
-	TH1D * clus_pos = new TH1D("clus_pos","clus_pos",1024,0,Tomography::XY_size);
+	TH1D * clus_pos = new TH1D("clus_pos","clus_pos",1024,0,Tomography::get_instance()->get_XY_size());
 	TH1D * clus_size = new TH1D("clus_size","clus_size",50,-1,47);
 	TH1D * ray_slope = new TH1D("slope","slope",100,0,1);
 	TH1D * ray_phi = new TH1D("phi","phi",100,-Pi(),Pi());
@@ -584,7 +584,7 @@ void Signal::SignalDispersion(){
 	double min_angle = -1;
 	double max_angle = 10;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
-	for(long ientry=0;ientry<nentries && Tomography::can_continue;ientry++){
+	for(long ientry=0;ientry<nentries && Tomography::get_instance()->get_can_continue();ientry++){
 		LoadTree(ientry);
 		GetEntry(ientry);
 
@@ -623,7 +623,7 @@ void Signal::SignalDispersion(){
 				lFit->SetParLimits(0,-10,10);
 				lFit->SetParLimits(1,-2,2);
 				vector<vector<double> > det_ampl = get_ampl((*clus_it)->get_type(),current_n);
-				for(int j=0;j<Tomography::Nsample;j++){
+				for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
 					double mean = 0;
 					double ampl = 0;
 					double max_ampl = 0;
@@ -680,7 +680,7 @@ void Signal::SignalDispersion(){
 		}
 		events.clear();
 		if(ientry%100 == 0) cout << "\r" << ientry << "/" << nentries << flush;
-		if((ientry%5000 == 0) && Tomography::live_graphic_display){
+		if((ientry%5000 == 0) && Tomography::get_instance()->get_live_graphic_display()){
 			for(int i=1;i<=nbin_time;i++){
 				mean_X_pos->SetPoint(i-1,signalShape_X_pos->ProjectionX("_px",i,i)->GetMean(),i-0.5);
 				mean_Y_pos->SetPoint(i-1,signalShape_Y_pos->ProjectionX("_px",i,i)->GetMean(),i-0.5);

@@ -32,15 +32,15 @@ public :
    map<Tomography::det_type,unsigned short> det_N;
    Int_t           Nevent;
    Double_t        evttime;
-   Float_t         (*StripAmpl_MG)[MG_Detector::Nchannel][Tomography::Nsample];
-   Float_t         (*StripAmpl_MG_ped)[MG_Detector::Nchannel][Tomography::Nsample];
-   Float_t         (*StripAmpl_MG_corr)[MG_Detector::Nchannel][Tomography::Nsample];
-   Float_t         (*StripAmpl_MGv2)[MGv2_Detector::Nchannel][Tomography::Nsample];
-   Float_t         (*StripAmpl_MGv2_ped)[MGv2_Detector::Nchannel][Tomography::Nsample];
-   Float_t         (*StripAmpl_MGv2_corr)[MGv2_Detector::Nchannel][Tomography::Nsample];
-   Float_t         (*StripAmpl_CM)[CM_Detector::Nchannel][Tomography::Nsample];
-   Float_t         (*StripAmpl_CM_ped)[CM_Detector::Nchannel][Tomography::Nsample];
-   Float_t         (*StripAmpl_CM_corr)[CM_Detector::Nchannel][Tomography::Nsample];
+   Float_t *       (*StripAmpl_MG)[MG_Detector::Nchannel];
+   Float_t *       (*StripAmpl_MG_ped)[MG_Detector::Nchannel];
+   Float_t *       (*StripAmpl_MG_corr)[MG_Detector::Nchannel];
+   Float_t *       (*StripAmpl_MGv2)[MGv2_Detector::Nchannel];
+   Float_t *       (*StripAmpl_MGv2_ped)[MGv2_Detector::Nchannel];
+   Float_t *       (*StripAmpl_MGv2_corr)[MGv2_Detector::Nchannel];
+   Float_t *       (*StripAmpl_CM)[CM_Detector::Nchannel];
+   Float_t *       (*StripAmpl_CM_ped)[CM_Detector::Nchannel];
+   Float_t *       (*StripAmpl_CM_corr)[CM_Detector::Nchannel];
 
    // List of branches
    TBranch        *b_Nevent;   //!

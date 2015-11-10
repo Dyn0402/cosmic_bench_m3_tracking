@@ -100,16 +100,16 @@ void Analyse::Residus(){
 			name << type_it->first << "_" << i;
 			c_MM[type_it->first][i] = new TCanvas(name.str().c_str(),name.str().c_str());
 			name << "_residu";
-			hist_residus[type_it->first][i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-Tomography::XY_size,Tomography::XY_size);
+			hist_residus[type_it->first][i] = new TH1D(name.str().c_str(),name.str().c_str(),nbins,-Tomography::get_instance()->get_XY_size(),Tomography::get_instance()->get_XY_size());
 		}
 	}
 	TCanvas * c0 = new TCanvas("chiSquare","chiSquare");
-	TH1D * chiSquareH = new TH1D("chiSquares","chiSquares",nbins,0,3*Tomography::XY_size);
+	TH1D * chiSquareH = new TH1D("chiSquares","chiSquares",nbins,0,3*Tomography::get_instance()->get_XY_size());
 
 	if (fChain == 0) return;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -134,7 +134,7 @@ void Analyse::Residus(){
 			}
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
 				for(int i=0;i<type_it->second;i++){
 					c_MM[type_it->first][i]->cd();
@@ -216,13 +216,13 @@ void Analyse::Residus_ref(){
 			c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
 			c_MM[name.str()]->Divide(4,4);
 			MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
-			muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
-			muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
-			efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
+			muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
+			muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
+			efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
 			efficacity_2D[name.str()]->SetStats(false);
 			correlation[name.str()] = new TGraph();
-			angle_alignment[name.str()] = new TProfile((name.str()+"_resVSperpPos").c_str(),(name.str()+"_resVSperpPos").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
-			resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
+			angle_alignment[name.str()] = new TProfile((name.str()+"_resVSperpPos").c_str(),(name.str()+"_resVSperpPos").c_str(),500,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,-5,5);
+			resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,-5,5);
 			resVSampl[name.str()] = new TProfile((name.str()+"_resVSampl").c_str(),(name.str()+"_resVSampl").c_str(),500,-100,10000,-5,5);
 			resVStime[name.str()] = new TProfile((name.str()+"_resVStime").c_str(),(name.str()+"_resVStime").c_str(),38,-2,34,-5,5);
 			resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
@@ -282,7 +282,7 @@ void Analyse::Residus_ref(){
 	ray_slope_Y->SetLineColor(3);
 	if (fChain == 0) return;
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -370,7 +370,7 @@ void Analyse::Residus_ref(){
 		}
 		delete currentCBEvent;
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
 				it->second->cd(1);
 				MM_residus[it->first]->Draw();
@@ -447,7 +447,7 @@ void Analyse::Residus_ref(){
 				efficacity_2D[it->first]->SetBinContent(binN,binContent);
 				double pos_X = muon_total[it->first]->GetXaxis()->GetBinCenter(i);
 				double pos_Y = muon_total[it->first]->GetYaxis()->GetBinCenter(j);
-				if(pos_X<=2*Tomography::XY_size/5. && pos_X>=-2*Tomography::XY_size/5. && pos_Y<=2*Tomography::XY_size/5. && pos_Y>=-2*Tomography::XY_size/5.){
+				if(pos_X<=2*Tomography::get_instance()->get_XY_size()/5. && pos_X>=-2*Tomography::get_instance()->get_XY_size()/5. && pos_Y<=2*Tomography::get_instance()->get_XY_size()/5. && pos_Y>=-2*Tomography::get_instance()->get_XY_size()/5.){
 					total_seen += muon_seen[it->first]->GetBinContent(binN);
 					total_passed += muon_total[it->first]->GetBinContent(binN);
 				}
@@ -536,7 +536,7 @@ double Analyse::Residus_ref_cost(){
 			name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
 			if((*it)->get_perp_n()>-1) perp_pairs[pair<Tomography::det_type,int>((*it)->get_type(),(*it)->get_n_in_tree())] = pair<Tomography::det_type,int>((*it)->get_perp_type(),(*it)->get_perp_n());
 			MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
-			angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
+			angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,-5,5);
 			resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
 			offset_fit[name.str()] = new TF1("offset_fit","[3]*exp(-(x-[0])*(x-[0])/(2*[1]*[1])) + [4]*exp(-(x-[0])*(x-[0])/(2*[2]*[2]))",-5,5);
 			offset_fit[name.str()]->SetParameters(0,0.5,2,nentries/10);
@@ -580,7 +580,7 @@ double Analyse::Residus_ref_cost(){
 
 	if (fChain == 0) return 0;
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -714,9 +714,9 @@ void Analyse::Residus_ref_2D(){
 
 	c_MM = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
 	c_MM->Divide(2);
-	muon_seen = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
-	muon_total = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
-	efficacity_2D = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
+	muon_seen = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
+	muon_total = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
+	efficacity_2D = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
 	efficacity_2D->SetStats(false);
 
 	TCanvas * c0 = new TCanvas("stats","stats");
@@ -727,7 +727,7 @@ void Analyse::Residus_ref_2D(){
 	if (fChain == 0) return;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -800,7 +800,7 @@ void Analyse::Residus_ref_2D(){
 			delete *it;
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			for(int i=1;i<=nbins_2D;i++){
 				for(int j=1;j<=nbins_2D;j++){
 					int binN = muon_total->GetBin(i,j);
@@ -834,7 +834,7 @@ void Analyse::Residus_ref_2D(){
 			efficacity_2D->SetBinContent(binN,binContent);
 			double pos_X = muon_total->GetXaxis()->GetBinCenter(i);
 			double pos_Y = muon_total->GetYaxis()->GetBinCenter(j);
-			if(pos_X<=2*Tomography::XY_size/5. && pos_X>=-2*Tomography::XY_size/5. && pos_Y<=2*Tomography::XY_size/5. && pos_Y>=-2*Tomography::XY_size/5.){
+			if(pos_X<=2*Tomography::get_instance()->get_XY_size()/5. && pos_X>=-2*Tomography::get_instance()->get_XY_size()/5. && pos_Y<=2*Tomography::get_instance()->get_XY_size()/5. && pos_Y>=-2*Tomography::get_instance()->get_XY_size()/5.){
 				total_seen += muon_seen->GetBinContent(binN);
 				total_passed += muon_total->GetBinContent(binN);
 			}
@@ -904,7 +904,7 @@ void Analyse::Efficacity(){
 	}
 	if (fChain == 0) return;
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -961,7 +961,7 @@ void Analyse::Efficacity(){
 		}
 		delete currentCBEvent;
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << static_cast<long>(eventSuitable) << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
 				it->second->cd();
 				MM_eff[it->first]->Draw();
@@ -999,7 +999,7 @@ void Analyse::ExportAbsorptionRays(string outFileName){
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -1042,17 +1042,17 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1, double y_angle){
 		if(current_z<z_min) z_min = current_z;
 	}
 
-	double x_min = -Tomography::XY_size/2.;
-	double x_max = Tomography::XY_size/2.;
-	double y_min = -Tomography::XY_size/2.;
-	double y_max = Tomography::XY_size/2.;
+	double x_min = -Tomography::get_instance()->get_XY_size()/2.;
+	double x_max = Tomography::get_instance()->get_XY_size()/2.;
+	double y_min = -Tomography::get_instance()->get_XY_size()/2.;
+	double y_max = Tomography::get_instance()->get_XY_size()/2.;
 	Point orig(0,0,z);
 	Point norm(0,Sin(y_angle),Cos(y_angle));
 	Plane proj(norm,orig);
 	cout << proj.get_a() << "*x + " << proj.get_b() << "*y + " << proj.get_c() << "*z + " << proj.get_d() << " = 0" << endl;
 	if(z>z_max || z<z_min){
-		Line first_line(Point(-Tomography::XY_size/2.,-Tomography::XY_size/2.,z_min),Point(Tomography::XY_size/2.,Tomography::XY_size/2.,z_max));
-		Line second_line(Point(Tomography::XY_size/2.,Tomography::XY_size/2.,z_min),Point(-Tomography::XY_size/2.,-Tomography::XY_size/2.,z_max));
+		Line first_line(Point(-Tomography::get_instance()->get_XY_size()/2.,-Tomography::get_instance()->get_XY_size()/2.,z_min),Point(Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,z_max));
+		Line second_line(Point(Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,z_min),Point(-Tomography::get_instance()->get_XY_size()/2.,-Tomography::get_instance()->get_XY_size()/2.,z_max));
 		Point corner_a = proj.intersection(first_line);
 		Point corner_b = proj.intersection(second_line);
 		x_max = Max(Abs((corner_a-orig).get_X()),Abs((corner_b-orig).get_X()));
@@ -1077,7 +1077,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1, double y_angle){
 	fluxMapZ->SetStats(0);
 
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -1096,7 +1096,7 @@ TH2D * Analyse::AbsorptionFluxMap(double z, TCanvas * c1, double y_angle){
 			fluxMapZ->Fill(current_point.get_X(),current_point.get_Y()/Cos(y_angle));
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			c1->cd();
 			fluxMapZ->Draw("COLZ");
 			c1->Modified();
@@ -1134,17 +1134,17 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, TCanvas * c2, dou
 		if(current_z<z_min) z_min = current_z;
 	}
 
-	double x_min = -Tomography::XY_size/2.;
-	double x_max = Tomography::XY_size/2.;
-	double y_min = -Tomography::XY_size/2.;
-	double y_max = Tomography::XY_size/2.;
+	double x_min = -Tomography::get_instance()->get_XY_size()/2.;
+	double x_max = Tomography::get_instance()->get_XY_size()/2.;
+	double y_min = -Tomography::get_instance()->get_XY_size()/2.;
+	double y_max = Tomography::get_instance()->get_XY_size()/2.;
 	Point orig(0,0,z);
 	Point norm(0,Sin(y_angle),Cos(y_angle));
 	Plane proj(norm,orig);
 	cout << proj.get_a() << "*x + " << proj.get_b() << "*y + " << proj.get_c() << "*z + " << proj.get_d() << " = 0" << endl;
 	if(z>z_max || z<z_min){
-		Line first_line(Point(-Tomography::XY_size/2.,-Tomography::XY_size/2.,z_min),Point(Tomography::XY_size/2.,Tomography::XY_size/2.,z_max));
-		Line second_line(Point(Tomography::XY_size/2.,Tomography::XY_size/2.,z_min),Point(-Tomography::XY_size/2.,-Tomography::XY_size/2.,z_max));
+		Line first_line(Point(-Tomography::get_instance()->get_XY_size()/2.,-Tomography::get_instance()->get_XY_size()/2.,z_min),Point(Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,z_max));
+		Line second_line(Point(Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,z_min),Point(-Tomography::get_instance()->get_XY_size()/2.,-Tomography::get_instance()->get_XY_size()/2.,z_max));
 		Point corner_a = proj.intersection(first_line);
 		Point corner_b = proj.intersection(second_line);
 		x_max = Max(Abs((corner_a-orig).get_X()),Abs((corner_b-orig).get_X()));
@@ -1192,7 +1192,7 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, TCanvas * c2, dou
 	TH1D * tank_tracks_norm_H = new TH1D("tank_tracks_norm_H","tank_tracks_norm_H",nentries/interval_length,0,nentries/interval_length);
 	TH1D * tank_tracks_norm_V = new TH1D("tank_tracks_norm_V","tank_tracks_norm_V",nentries/interval_length,0,nentries/interval_length);
 	cout << setw(20) << "interval n" <<  "|" << setw(20) << "total track" <<  "|" << setw(20) << "track in ellipse" <<  "|" << setw(20) << "track in H band" <<  "|" << setw(20) << "track in V band" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -1261,7 +1261,7 @@ void Analyse::WatToFluxMap(double z,TEllipse el, TCanvas * c1, TCanvas * c2, dou
 			track_in_band = 0;
 			track_in_vertical_band = 0;
 		}
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			c1->cd(1);
 			fluxMapZ->Draw("COLZ");
 			this_el->Draw();
@@ -1355,14 +1355,14 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 		if(current_z>z_max) z_max = current_z;
 		if(current_z<z_min) z_min = current_z;
 	}
-	double x_min = -Tomography::XY_size/2.;
-	double x_max = Tomography::XY_size/2.;
+	double x_min = -Tomography::get_instance()->get_XY_size()/2.;
+	double x_max = Tomography::get_instance()->get_XY_size()/2.;
 	if(z>z_max){
-		x_min -= Tomography::XY_size*(z - z_max)/(z_max - z_min);
+		x_min -= Tomography::get_instance()->get_XY_size()*(z - z_max)/(z_max - z_min);
 		x_max = - x_min;
 	}
 	else if(z<z_min){
-		x_min -= Tomography::XY_size*(z_min - z)/(z_max - z_min);
+		x_min -= Tomography::get_instance()->get_XY_size()*(z_min - z)/(z_max - z_min);
 		x_max = - x_min;
 	}
 	double width = x_max - x_min;
@@ -1379,7 +1379,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 	TH2D * fluxMapSigma = new TH2D("fluxMapSigma","fluxMapSigma",nbins,x_min,x_max,nbins,x_min,x_max);
 	fluxMapSigma->SetStats(0);
 	if(c3 == 0) c3 = new TCanvas("fluxMap_Sigma","fluxMap_Sigma");
-	acceptanceFunction acceptanceEstimation(-Tomography::XY_size/2.,Tomography::XY_size/2.,-Tomography::XY_size/2.,Tomography::XY_size/2.,z_max,z_min,0);
+	acceptanceFunction acceptanceEstimation(-Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,-Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,z_max,z_min,0);
 	TH2D * background = new TH2D(acceptanceEstimation.plot_XY(nbins,x_min,x_max,nbins,x_min,x_max,z));
 	if(c4 == 0) c4 = new TCanvas("fluxMap_background","fluxMap_background");
 	c4->cd();
@@ -1388,7 +1388,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 	c4->Update();
 
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -1406,7 +1406,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, TCanvas * c1, TCanvas * c2, TC
 			fluxMapZ->Fill(it->eval_X(z),it->eval_Y(z));
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%10000 == 0 && Tomography::live_graphic_display){
+		if(jentry%10000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			TH2D * copy = new TH2D(*fluxMapZ);
 			copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
 			copy->SetStats(0);
@@ -1483,7 +1483,7 @@ void Analyse::AbsorptionFluxMapNorm(double z,TH2D * background, int nbins, TCanv
 	if (fChain == 0) return;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -1499,7 +1499,7 @@ void Analyse::AbsorptionFluxMapNorm(double z,TH2D * background, int nbins, TCanv
 			}
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%10000 == 0 && Tomography::live_graphic_display){
+		if(jentry%10000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			TH2D * copy = new TH2D(*fluxMapZ);
 			copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
 			copy->SetStats(0);
@@ -1575,10 +1575,10 @@ void Analyse::StoreRayPairs(string outFileName){
 	thetaYDown->SetLineColor(4);
 
 	TCanvas * c4 = new TCanvas("correlation","correlation");
-	TH2D * XY_correlation = new TH2D("correlation","correlation",70,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.,70,-6*Tomography::XY_size/10.,6*Tomography::XY_size/10.);
+	TH2D * XY_correlation = new TH2D("correlation","correlation",70,-6*Tomography::get_instance()->get_XY_size()/10.,6*Tomography::get_instance()->get_XY_size()/10.,70,-6*Tomography::get_instance()->get_XY_size()/10.,6*Tomography::get_instance()->get_XY_size()/10.);
 
 	TCanvas * c3 = new TCanvas("docas","docas");
-	TH1D * doca = new TH1D("doca","doca",100,0,Tomography::XY_size);
+	TH1D * doca = new TH1D("doca","doca",100,0,Tomography::get_instance()->get_XY_size());
 
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
@@ -1609,7 +1609,7 @@ void Analyse::StoreRayPairs(string outFileName){
 	if (fChain == 0) return;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -1647,8 +1647,8 @@ void Analyse::StoreRayPairs(string outFileName){
 
 		}
 		delete currentCBEvent;
-		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		/*if(jentry%500 == 0)*/ cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			c1->cd();
 			thetaXUp->Draw();
 			thetaYUp->Draw("SAME");
@@ -1703,7 +1703,7 @@ void Analyse::StoreRayPairs(string outFileName){
 	if (fChain == 0) return;
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -1719,7 +1719,7 @@ void Analyse::StoreRayPairs(string outFileName){
 		}
 		delete currentCBEvent;
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			c1->cd();
 			mgPos->Draw();
 			c1->Modified();
@@ -1757,7 +1757,7 @@ void Analyse::bugtest(){
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	int limit = 10;
 	if(limit<nentries) nentries = limit;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -1817,8 +1817,8 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 
-	float StripAmpl_MG_corr[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::Nsample];
-	float StripAmpl_CM_corr[det_N[Tomography::CM]][CM_Detector::Nchannel][Tomography::Nsample];
+	float StripAmpl_MG_corr[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::get_instance()->get_Nsample()];
+	float StripAmpl_CM_corr[det_N[Tomography::CM]][CM_Detector::Nchannel][Tomography::get_instance()->get_Nsample()];
 	int signal_evn;
 	signal_tree->SetBranchAddress("Nevent",&signal_evn);
 	if(det_N[Tomography::CM]>0) signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
@@ -1895,7 +1895,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 		offset_graph = new TGraphErrors();
 
 		if (fChain == 0) return;
-		for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+		for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 			Long64_t ientry = LoadTree(jentry);
 			if (ientry < 0) break;
 			fChain->GetEntry(jentry);
@@ -1938,12 +1938,12 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 							for(int strip_nb=0;strip_nb<1024;strip_nb++){
 								int channel = MG_Detector::StripToChannel_a[strip_nb];
 								if(Abs(residu)<50.){
-									SRH->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
-									if(bin_nb>0) SRH_coord[Min(Max(FloorNint((bin_nb/2.)+matching_position_perp*bin_nb/Tomography::XY_size),0),bin_nb-1)]->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
+									SRH->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::get_instance()->get_Nsample()))/normalization);
+									if(bin_nb>0) SRH_coord[Min(Max(FloorNint((bin_nb/2.)+matching_position_perp*bin_nb/Tomography::get_instance()->get_XY_size()),0),bin_nb-1)]->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::get_instance()->get_Nsample()))/normalization);
 								}
-								//SRH2D[i]->SetPoint(graph_point_nb, matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
+								//SRH2D[i]->SetPoint(graph_point_nb, matching_position - matching_cluster->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::get_instance()->get_Nsample()))/normalization);
 								//graph_point_nb++;
-								SRH2D->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::Nsample))/normalization);
+								SRH2D->Fill(matching_position - (*matching_cluster)->correct_strip_nb(strip_nb), (*max_element(StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel],StripAmpl_MG_corr[(*it)->get_n_in_tree()][channel]+Tomography::get_instance()->get_Nsample()))/normalization);
 							}
 							delete *matching_cluster;
 							current_clusters.erase(matching_cluster);
@@ -1958,7 +1958,7 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 			delete currentCBEvent;
 
 			if(jentry%500 == 0) cout << "\r" << setw(20) << i << "|" << setw(20) << jentry << flush;
-			if(jentry%10000 == 0 && Tomography::live_graphic_display){
+			if(jentry%10000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 				c->cd();
 				SRH->Draw();
 				c->Modified();
@@ -2020,12 +2020,12 @@ void Analyse::CalcStripResponseFunction(int bin_nb){
 			SRH_coord[i_coord]->Scale(1./scaling_function->GetParameter(0));
 			delete scaling_function;
 			SRH_coord[i_coord]->Fit(SRF_coord[i_coord],"QN");
-			gauss_width_graph->SetPoint(i_coord,(Tomography::XY_size/(bin_nb*2.))+(i_coord*Tomography::XY_size/bin_nb),SRF_coord[i_coord]->GetParameter(1));
-			gauss_width_graph->SetPointError(i_coord,(Tomography::XY_size/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(1));
-			lorentz_width_graph->SetPoint(i_coord,(Tomography::XY_size/(bin_nb*2.))+(i_coord*Tomography::XY_size/bin_nb),SRF_coord[i_coord]->GetParameter(2));
-			lorentz_width_graph->SetPointError(i_coord,(Tomography::XY_size/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(2));
-			offset_graph->SetPoint(i_coord,(Tomography::XY_size/(bin_nb*2.))+(i_coord*Tomography::XY_size/bin_nb),SRF_coord[i_coord]->GetParameter(3));
-			offset_graph->SetPointError(i_coord,(Tomography::XY_size/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(3));
+			gauss_width_graph->SetPoint(i_coord,(Tomography::get_instance()->get_XY_size()/(bin_nb*2.))+(i_coord*Tomography::get_instance()->get_XY_size()/bin_nb),SRF_coord[i_coord]->GetParameter(1));
+			gauss_width_graph->SetPointError(i_coord,(Tomography::get_instance()->get_XY_size()/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(1));
+			lorentz_width_graph->SetPoint(i_coord,(Tomography::get_instance()->get_XY_size()/(bin_nb*2.))+(i_coord*Tomography::get_instance()->get_XY_size()/bin_nb),SRF_coord[i_coord]->GetParameter(2));
+			lorentz_width_graph->SetPointError(i_coord,(Tomography::get_instance()->get_XY_size()/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(2));
+			offset_graph->SetPoint(i_coord,(Tomography::get_instance()->get_XY_size()/(bin_nb*2.))+(i_coord*Tomography::get_instance()->get_XY_size()/bin_nb),SRF_coord[i_coord]->GetParameter(3));
+			offset_graph->SetPointError(i_coord,(Tomography::get_instance()->get_XY_size()/(bin_nb*2.)),SRF_coord[i_coord]->GetParError(3));
 			c_coord[i_coord]->cd();
 			SRH_coord[i_coord]->Draw();
 			SRF_coord[i_coord]->Draw("SAME");
@@ -2100,8 +2100,8 @@ void Analyse::EventDisplay(long event_nb, TCanvas * c1){
 		return;
 	}
 
-	float StripAmpl_MG_corr[MG_N][MG_Detector::Nchannel][Tomography::Nsample];
-	float StripAmpl_CM_corr[CM_N][CM_Detector::Nchannel][Tomography::Nsample];
+	float StripAmpl_MG_corr[MG_N][MG_Detector::Nchannel][Tomography::get_instance()->get_Nsample()];
+	float StripAmpl_CM_corr[CM_N][CM_Detector::Nchannel][Tomography::get_instance()->get_Nsample()];
 	int signal_evn;
 	signal_tree->SetBranchAddress("Nevent",&signal_evn);
 	if(CM_N>0) signal_tree->SetBranchAddress("StripAmpl_CM_corr",StripAmpl_CM_corr);
@@ -2188,7 +2188,7 @@ void Analyse::EventDisplay(long event_nb, TCanvas * c1){
 					double current_strip_pos = clus_it->correct_strip_nb(i_strip);
 					if(current_strip_pos>current_clus_pos+(1.*current_clus_size)) continue;
 					if(current_strip_pos<current_clus_pos-(1.*current_clus_size)) continue;
-					double current_ampl = *max_element(StripAmpl_MG_corr[det_n_in_tree][channel],StripAmpl_MG_corr[det_n_in_tree][channel]+Tomography::Nsample);
+					double current_ampl = *max_element(StripAmpl_MG_corr[det_n_in_tree][channel],StripAmpl_MG_corr[det_n_in_tree][channel]+Tomography::get_instance()->get_Nsample());
 					if(current_ampl>max_ampl) max_ampl = current_ampl;
 					if(current_ampl<min_ampl) min_ampl = current_ampl;
 					if(clus_it->get_is_X()){
@@ -2263,13 +2263,13 @@ void Analyse::Correlation(){
 	TCanvas * cDisplay = new TCanvas();
 	cDisplay->Divide(4,3);
 	TH2D * correlation_X_ampl = new TH2D("correlation_X_ampl","correlation_X_ampl",1000,0,5000,1000,0,5000);
-	TH2D * correlation_X_t = new TH2D("correlation_X_t","correlation_X_t",100,0,Tomography::Nsample,100,0,Tomography::Nsample);
+	TH2D * correlation_X_t = new TH2D("correlation_X_t","correlation_X_t",100,0,Tomography::get_instance()->get_Nsample(),100,0,Tomography::get_instance()->get_Nsample());
 	TH2D * correlation_Y_ampl = new TH2D("correlation_Y_ampl","correlation_Y_ampl",1000,0,50000,1000,0,50000);
-	TH2D * correlation_Y_t = new TH2D("correlation_Y_t","correlation_Y_t",100,0,Tomography::Nsample,100,0,Tomography::Nsample);
+	TH2D * correlation_Y_t = new TH2D("correlation_Y_t","correlation_Y_t",100,0,Tomography::get_instance()->get_Nsample(),100,0,Tomography::get_instance()->get_Nsample());
 	TH1D * sigma_X_ampl = new TH1D("sigma_X_ampl","sigma_X_ampl",100,0,5000);
-	TH1D * sigma_X_t = new TH1D("sigma_X_t","sigma_X_t",100,0,Tomography::Nsample);
+	TH1D * sigma_X_t = new TH1D("sigma_X_t","sigma_X_t",100,0,Tomography::get_instance()->get_Nsample());
 	TH1D * sigma_Y_ampl = new TH1D("sigma_Y_ampl","sigma_Y_ampl",100,0,50000);
-	TH1D * sigma_Y_t = new TH1D("sigma_Y_t","sigma_Y_t",100,0,Tomography::Nsample);
+	TH1D * sigma_Y_t = new TH1D("sigma_Y_t","sigma_Y_t",100,0,Tomography::get_instance()->get_Nsample());
 	TH1D * corr_X_ampl = new TH1D("corr_X_ampl","corr_X_ampl",100,-1,1);
 	TH1D * corr_X_t = new TH1D("corr_X_t","corr_X_t",100,-1,1);
 	TH1D * corr_Y_ampl = new TH1D("corr_Y_ampl","corr_Y_ampl",100,-1,1);
@@ -2277,7 +2277,7 @@ void Analyse::Correlation(){
 	TCanvas * cCorrXY = new TCanvas();
 	cCorrXY->Divide(2,2);
 	TH2D * correlation_XY_ampl = new TH2D("correlation_XY_ampl","correlation_XY_ampl",1000,0,50000,1000,0,5000);
-	TH2D * correlation_XY_t = new TH2D("correlation_XY_t","correlation_XY_t",100,0,Tomography::Nsample,100,0,Tomography::Nsample);
+	TH2D * correlation_XY_t = new TH2D("correlation_XY_t","correlation_XY_t",100,0,Tomography::get_instance()->get_Nsample(),100,0,Tomography::get_instance()->get_Nsample());
 	TH1D * corr_XY_ampl = new TH1D("corr_XY_ampl","corr_XY_ampl",100,-1,1);
 	TH1D * corr_XY_t = new TH1D("corr_XY_t","corr_XY_t",100,-1,1);
 	if (fChain == 0) return;
@@ -2295,7 +2295,7 @@ void Analyse::Correlation(){
 	double global_corrXY_ampl = 0;
 	double global_corrXY_t = 0;
 	int global_sizeXY = 0;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -2514,7 +2514,7 @@ void Analyse::Correlation(){
 		}
 
 		if(jentry%500 == 0) cout << "\r" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			cDisplay->cd(1);
 			correlation_X_ampl->Draw("colz");
 			cDisplay->cd(2);
@@ -2624,7 +2624,7 @@ void Analyse::SignalOverNoise(){
 		global_signal_over_noise[name.str()] = new TProfile((name.str() + "_SoB").c_str(),(name.str() + "_SoB").c_str(),(*it)->get_Nchannel(),0,(*it)->get_Nchannel());
 	}
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
-	for(long i=0;i<nentries && Tomography::can_continue;i++){
+	for(long i=0;i<nentries && Tomography::get_instance()->get_can_continue();i++){
 		LoadTree(i);
 		GetEntry(i);
 
@@ -2644,7 +2644,7 @@ void Analyse::SignalOverNoise(){
 			delete current_event;
 		}
 		if(i%100 == 0) cout << "\r" << i << "/" << nentries << flush;
-		if(i%5000 == 0 && Tomography::live_graphic_display){
+		if(i%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			for(map<string,TCanvas*>::iterator it = cDisplay.begin();it!=cDisplay.end();++it){
 				it->second->cd(1);
 				global_signal[it->first]->Draw();

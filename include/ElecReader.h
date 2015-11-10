@@ -23,7 +23,7 @@ class FeuData: public RawData{
 		~FeuData();
 		FeuData(const FeuData& other);
 		FeuData& operator=(const FeuData& other);
-		double data[Tomography::Nasic_FEU][Tomography::Nchannel][Tomography::Nsample];
+		double * data[Tomography::Nasic_FEU][Tomography::Nchannel];
 		long Nevent;
 		double evttime;
 		ifstream * file;
@@ -36,7 +36,7 @@ class FeminosData: public RawData{
 		~FeminosData();
 		FeminosData(const FeminosData& other);
 		FeminosData& operator=(const FeminosData& other);
-		double data[Tomography::Nasic_Feminos][Tomography::Nchannel][Tomography::Nsample];
+		double * data[Tomography::Nasic_Feminos][Tomography::Nchannel];
 };
 
 class ElecReader{

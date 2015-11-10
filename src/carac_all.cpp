@@ -13,11 +13,6 @@ using std::endl;
 using std::ostringstream;
 
 int main(int argc, char ** argv){
-	struct sigaction sigIntHandler;
-	sigIntHandler.sa_handler = Tomography::signal_handler;
-	sigemptyset(&sigIntHandler.sa_mask);
-	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);
 	if(argc<3){
 		cout << "You must indicate a config file which contains the Cosmic Bench caracs and what you want to plot" << endl;
 		return 1;
@@ -26,15 +21,7 @@ int main(int argc, char ** argv){
 	char path[n];
 	ostringstream config_file;
 	config_file << getcwd(path,n) << "/" << argv[1];
-	int argcR = 1;
-	char * argvR[1];
-	argvR[0] = argv[0];
-	TRint * theApp;
-	if(!Tomography::is_batch) theApp = new TRint("Rint",&argcR,argvR,0,0,true);
-	sigIntHandler.sa_handler = Tomography::signal_handler;
-	sigemptyset(&sigIntHandler.sa_mask);
-	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);
+	Tomography::Init(config_file.str());
 	Carac * blah = new Carac(config_file.str());//"/home/irfulx176/mnt/sbouteil/Documents/deviation/config.cfg");
 	string residus = "residus";
 	if(argv[2] == residus){
@@ -43,14 +30,12 @@ int main(int argc, char ** argv){
 	}
 	else{
 		cout << "function not found" << endl;
-		delete blah; delete theApp;
+		Tomography::Quit();
+		delete blah;
 		return 1;
 	}
-	if(Tomography::is_batch) Tomography::save_canvases();
-	else {
-		theApp->Run(true);
-		delete theApp;
-	}
+	Tomography::get_instance()->Run();
+	Tomography::Quit();
 	delete blah;
 	return 0;
 }

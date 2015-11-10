@@ -107,13 +107,13 @@ void Carac::Residus_ref(){
 		c_MM[name.str()] = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
 		c_MM[name.str()]->Divide(4,4);
 		MM_residus[name.str()] = new TH1D((name.str()+"_residu").c_str(),(name.str()+"_residu").c_str(),nbins,-5,5);
-		muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
-		muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
-		efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,nbins_2D,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2);
+		muon_seen[name.str()] = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
+		muon_total[name.str()] = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
+		efficacity_2D[name.str()] = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
 		efficacity_2D[name.str()]->SetStats(false);
 		correlation[name.str()] = new TGraph();
-		angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
-		resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-(1+marge)*Tomography::XY_size/2,(1+marge)*Tomography::XY_size/2,-5,5);
+		angle_alignment[name.str()] = new TProfile((name.str()+"_angle").c_str(),(name.str()+"_angle").c_str(),500,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,-5,5);
+		resVSpos[name.str()] = new TProfile((name.str()+"_resVSpos").c_str(),(name.str()+"_resVSpos").c_str(),500,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,-5,5);
 		resVSampl[name.str()] = new TProfile((name.str()+"_resVSampl").c_str(),(name.str()+"_resVSampl").c_str(),500,-100,10000,-5,5);
 		resVStime[name.str()] = new TProfile((name.str()+"_resVStime").c_str(),(name.str()+"_resVStime").c_str(),38,-2,34,-5,5);
 		resVSangle[name.str()] = new TProfile((name.str()+"_resVSangle").c_str(),(name.str()+"_resVSangle").c_str(),50,-0.6,0.6,-5,5);
@@ -194,7 +194,7 @@ void Carac::Residus_ref(){
 	}
 	if (fChain == 0) return;
 	cout << setw(20) << "total processed" << endl;
-	for (Long64_t jentry=0; jentry<nentries && Tomography::can_continue;jentry++){
+	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
 		fChain->GetEntry(jentry);
@@ -281,7 +281,7 @@ void Carac::Residus_ref(){
 			delete currentCBEvent;
 		}
 		if(jentry%500 == 0) cout << "\r" << setw(20) << jentry << flush;
-		if(jentry%5000 == 0 && Tomography::live_graphic_display){
+		if(jentry%5000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			for(map<string,TCanvas*>::iterator it = c_MM.begin();it!=c_MM.end();++it){
 				it->second->cd(1);
 				MM_residus[it->first]->Draw();
@@ -362,7 +362,7 @@ void Carac::Residus_ref(){
 				efficacity_2D[it->first]->SetBinContent(binN,binContent);
 				double pos_X = muon_total[it->first]->GetXaxis()->GetBinCenter(i);
 				double pos_Y = muon_total[it->first]->GetYaxis()->GetBinCenter(j);
-				if(pos_X<=2*Tomography::XY_size/5. && pos_X>=-2*Tomography::XY_size/5. && pos_Y<=2*Tomography::XY_size/5. && pos_Y>=-2*Tomography::XY_size/5.){
+				if(pos_X<=2*Tomography::get_instance()->get_XY_size()/5. && pos_X>=-2*Tomography::get_instance()->get_XY_size()/5. && pos_Y<=2*Tomography::get_instance()->get_XY_size()/5. && pos_Y>=-2*Tomography::get_instance()->get_XY_size()/5.){
 					total_seen += muon_seen[it->first]->GetBinContent(binN);
 					total_passed += muon_total[it->first]->GetBinContent(binN);
 				}

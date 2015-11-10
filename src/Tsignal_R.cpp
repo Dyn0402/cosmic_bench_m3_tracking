@@ -22,19 +22,40 @@ Tsignal_R::Tsignal_R(TTree *tree, map<Tomography::det_type,unsigned short> det_N
 Tsignal_R::~Tsignal_R()
 {
    if(det_N[Tomography::MG]>0){
-      delete StripAmpl_MG;
-      delete StripAmpl_MG_ped;
-      delete StripAmpl_MG_corr;
+      for(unsigned int i = 0;i<det_N[Tomography::MG];i++){
+         for(unsigned int j=0;j<MG_Detector::Nchannel;j++){
+            delete[] StripAmpl_MG[i][j];
+            delete[] StripAmpl_MG_ped[i][j];
+            delete[] StripAmpl_MG_corr[i][j];
+         }
+      }
+      delete[] StripAmpl_MG;
+      delete[] StripAmpl_MG_ped;
+      delete[] StripAmpl_MG_corr;
    }
    if(det_N[Tomography::MGv2]>0){
-      delete StripAmpl_MGv2;
-      delete StripAmpl_MGv2_ped;
-      delete StripAmpl_MGv2_corr;
+      for(unsigned int i = 0;i<det_N[Tomography::MGv2];i++){
+         for(unsigned int j=0;j<MGv2_Detector::Nchannel;j++){
+            delete[] StripAmpl_MGv2[i][j];
+            delete[] StripAmpl_MGv2_ped[i][j];
+            delete[] StripAmpl_MGv2_corr[i][j];
+         }
+      }
+      delete[] StripAmpl_MGv2;
+      delete[] StripAmpl_MGv2_ped;
+      delete[] StripAmpl_MGv2_corr;
    }
    if(det_N[Tomography::CM]>0){
-      delete StripAmpl_CM;
-      delete StripAmpl_CM_ped;
-      delete StripAmpl_CM_corr;
+      for(unsigned int i = 0;i<det_N[Tomography::CM];i++){
+         for(unsigned int j=0;j<CM_Detector::Nchannel;j++){
+            delete[] StripAmpl_CM[i][j];
+            delete[] StripAmpl_CM_ped[i][j];
+            delete[] StripAmpl_CM_corr[i][j];
+         }
+      }
+      delete[] StripAmpl_CM;
+      delete[] StripAmpl_CM_ped;
+      delete[] StripAmpl_CM_corr;
    }
    if (!fChain) return;
    delete fChain->GetCurrentFile();
@@ -70,19 +91,40 @@ void Tsignal_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N
    // (once per file to be processed).
    det_N = det_N_;
    if(det_N[Tomography::MG]>0){
-      StripAmpl_MG = new Float_t[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::Nsample];
-      StripAmpl_MG_ped = new Float_t[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::Nsample];
-      StripAmpl_MG_corr = new Float_t[det_N[Tomography::MG]][MG_Detector::Nchannel][Tomography::Nsample];
+      StripAmpl_MG = new Float_t*[det_N[Tomography::MG]][MG_Detector::Nchannel];
+      StripAmpl_MG_ped = new Float_t*[det_N[Tomography::MG]][MG_Detector::Nchannel];
+      StripAmpl_MG_corr = new Float_t*[det_N[Tomography::MG]][MG_Detector::Nchannel];
+      for(unsigned int i = 0;i<det_N[Tomography::MG];i++){
+         for(unsigned int j=0;j<MG_Detector::Nchannel;j++){
+            StripAmpl_MG[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+            StripAmpl_MG_ped[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+            StripAmpl_MG_corr[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+         }
+      }
    }
    if(det_N[Tomography::MGv2]>0){
-      StripAmpl_MGv2 = new Float_t[det_N[Tomography::MGv2]][MGv2_Detector::Nchannel][Tomography::Nsample];
-      StripAmpl_MGv2_ped = new Float_t[det_N[Tomography::MGv2]][MGv2_Detector::Nchannel][Tomography::Nsample];
-      StripAmpl_MGv2_corr = new Float_t[det_N[Tomography::MGv2]][MGv2_Detector::Nchannel][Tomography::Nsample];
+      StripAmpl_MGv2 = new Float_t*[det_N[Tomography::MGv2]][MGv2_Detector::Nchannel];
+      StripAmpl_MGv2_ped = new Float_t*[det_N[Tomography::MGv2]][MGv2_Detector::Nchannel];
+      StripAmpl_MGv2_corr = new Float_t*[det_N[Tomography::MGv2]][MGv2_Detector::Nchannel];
+      for(unsigned int i = 0;i<det_N[Tomography::MGv2];i++){
+         for(unsigned int j=0;j<MGv2_Detector::Nchannel;j++){
+            StripAmpl_MGv2[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+            StripAmpl_MGv2_ped[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+            StripAmpl_MGv2_corr[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+         }
+      }
    }
    if(det_N[Tomography::CM]>0){
-      StripAmpl_CM = new Float_t[det_N[Tomography::MG]][CM_Detector::Nchannel][Tomography::Nsample];
-      StripAmpl_CM_ped = new Float_t[det_N[Tomography::MG]][CM_Detector::Nchannel][Tomography::Nsample];
-      StripAmpl_CM_corr = new Float_t[det_N[Tomography::MG]][CM_Detector::Nchannel][Tomography::Nsample];
+      StripAmpl_CM = new Float_t*[det_N[Tomography::MG]][CM_Detector::Nchannel];
+      StripAmpl_CM_ped = new Float_t*[det_N[Tomography::MG]][CM_Detector::Nchannel];
+      StripAmpl_CM_corr = new Float_t*[det_N[Tomography::MG]][CM_Detector::Nchannel];
+      for(unsigned int i = 0;i<det_N[Tomography::CM];i++){
+         for(unsigned int j=0;j<CM_Detector::Nchannel;j++){
+            StripAmpl_CM[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+            StripAmpl_CM_ped[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+            StripAmpl_CM_corr[i][j] = new Float_t[Tomography::get_instance()->get_Nsample()];
+         }
+      }
    }
 
    // Set branch addresses and branch pointers
@@ -140,25 +182,25 @@ Int_t Tsignal_R::Cut(Long64_t /*entry*/)
 vector<vector<double> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned short det_n_){
    vector<vector<double> > return_array;
    if(type_ == Tomography::MG){
-      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MG_Detector::Nchannel;i++){
-         for(int j=0;j<Tomography::Nsample;j++){
+         for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = StripAmpl_MG_corr[det_n_][i][j];
          }
       }
    }
    else if(type_ == Tomography::MGv2){
-      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MGv2_Detector::Nchannel;i++){
-         for(int j=0;j<Tomography::Nsample;j++){
+         for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = StripAmpl_MGv2_corr[det_n_][i][j];
          }
       }
    }
    else if(type_ == Tomography::CM){
-      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
          for(int i=0;i<CM_Detector::Nchannel;i++){
-            for(int j=0;j<Tomography::Nsample;j++){
+            for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
                return_array[i][j] = StripAmpl_CM_corr[det_n_][i][j];
             }
          }
@@ -171,25 +213,25 @@ vector<vector<double> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned
 vector<vector<double> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsigned short det_n_){
    vector<vector<double> > return_array;
    if(type_ == Tomography::MG){
-      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MG_Detector::Nchannel;i++){
-         for(int j=0;j<Tomography::Nsample;j++){
+         for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = StripAmpl_MG_ped[det_n_][i][j];
          }
       }
    }
    else if(type_ == Tomography::MGv2){
-      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MGv2_Detector::Nchannel;i++){
-         for(int j=0;j<Tomography::Nsample;j++){
+         for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = StripAmpl_MGv2_ped[det_n_][i][j];
          }
       }
    }
    else if(type_ == Tomography::CM){
-      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
          for(int i=0;i<CM_Detector::Nchannel;i++){
-            for(int j=0;j<Tomography::Nsample;j++){
+            for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
                return_array[i][j] = StripAmpl_CM_ped[det_n_][i][j];
             }
          }
@@ -202,25 +244,25 @@ vector<vector<double> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsi
 vector<vector<double> > Tsignal_R::get_ampl_raw(Tomography::det_type type_, unsigned short det_n_){
    vector<vector<double> > return_array;
    if(type_ == Tomography::MG){
-      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MG_Detector::Nchannel;i++){
-         for(int j=0;j<Tomography::Nsample;j++){
+         for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = StripAmpl_MG[det_n_][i][j];
          }
       }
    }
    else if(type_ == Tomography::MGv2){
-      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MGv2_Detector::Nchannel;i++){
-         for(int j=0;j<Tomography::Nsample;j++){
+         for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = StripAmpl_MGv2[det_n_][i][j];
          }
       }
    }
    else if(type_ == Tomography::CM){
-      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::Nsample,0));
+      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
          for(int i=0;i<CM_Detector::Nchannel;i++){
-            for(int j=0;j<Tomography::Nsample;j++){
+            for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
                return_array[i][j] = StripAmpl_CM[det_n_][i][j];
             }
          }
