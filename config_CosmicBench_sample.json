@@ -5,10 +5,11 @@
 	"SampleMin" : 5, //Min sample used in clustering
 	"SampleMax" : 21, //Max sample used in clustering
 	"sigma" : 4, //significance needed for the signal to be considered in clustering
-	"TOTcut" : 3, //signal min TOT to be considered in clustering
+	"TOTCut" : 3, //signal min TOT to be considered in clustering
 	"chisquare_threshold" : 100, //quality cut of tracks
 	"live_graphic_display" : true, //set true if you want the plot to be updated during processing, if false, the plot will only be shown at the end of the process
 	"batch" : false, //set true if you don't want any graphic display
+	"metadata" : "test", //base name of some ouput files (images, config, etc), leave blank to disable these outputs
 	"electronic_type" : "dream", // must be "feminos" or "dream"
 	"max_file_size" : "1073743748", //maximum size of 1 data file (used for live display)
 	"data_file_basename" : "root_files/Cos_Run4Absorption_4MG2Dv1_141212_17H44_", //must not contain the n° of the file in the run

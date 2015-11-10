@@ -228,6 +228,7 @@ void Tomography::save_canvases(){
 	char buffer[100];
 	strftime(buffer,100,"%y%m%d_%HH%M",localtime(&current_time));
 	string base_name = config_tree.get<string>("metadata");
+	if(base_name.size() == 0) return;
 	base_name += "_";
 	base_name += buffer;
 	base_name += "_";
@@ -236,7 +237,7 @@ void Tomography::save_canvases(){
 		current_canvas->SaveAs((base_name + current_canvas->GetName() + ".png").c_str());
 		current_canvas->SaveAs((base_name + current_canvas->GetName() + ".C").c_str());
 	}
-	if(gROOT->GetListOfCanvases()->GetSize() > 0) write_json(base_name + ".json",config_tree);
+	if(gROOT->GetListOfCanvases()->GetSize() > 0) write_json(base_name + "config.json",config_tree);
 }
 void Tomography::Run(){
 	if(root_interpreter) root_interpreter->Run(true);
