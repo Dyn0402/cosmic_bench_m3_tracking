@@ -29,6 +29,7 @@ using std::flush;
 using std::ostringstream;
 using std::max_element;
 using std::set;
+using std::multimap;
 
 using TMath::Min;
 using TMath::Max;
@@ -1492,34 +1493,43 @@ void CosmicBenchEvent::createPairs(){
 
 	if(currentClusters[true][true].size() == 2 && currentClusters[true][false].size() == 2 && currentClusters[false][true].size() == 2 && currentClusters[false][false].size() == 2){
 		vector<RayPair> suitableRays;
+		map<bool, map<bool, vector<map<double,int> > > > comb;
+		comb[true][true] = combinaisons(sizes[true][true]);
+		comb[true][false] = combinaisons(sizes[true][false]);
+		comb[false][true] = combinaisons(sizes[false][true]);
+		comb[false][false] = combinaisons(sizes[false][false]);
+		map<bool,map<bool,map<int,Ray_2D> > > possibleRay_2D;
+		map<bool,map<bool,multimap<pair<double,int>,int> > > clus_to_ray;
+		map<bool,map<bool,multimap<int,pair<double,int> > > > ray_to_clus;
+		for(map<bool, map<bool, vector<map<double,int> > > >::iterator it = comb.begin();it!=comb.end();++it){
+			for(map<bool, vector<map<double,int> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+				for(unsigned int i=0;i<(jt->second).size();i++){
+					possibleRay_2D[it->first][jt->first][i] = Ray_2D(Ray_2D((jt->first) ? 'X' : 'Y'));
+					for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[it->first][jt->first].begin();clus_it!= currentClusters[it->first][jt->first].end();++clus_it){
+						possibleRay_2D[it->first][jt->first][i].add_cluster(clus_it->second[(jt->second)[i][clus_it->first]]);
+					}
+					possibleRay_2D[it->first][jt->first][i].process();
+					if(possibleRay_2D[it->first][jt->first][i].get_chiSquare()<0 || possibleRay_2D[it->first][jt->first][i].get_chiSquare()>chiSquare_threshold){
+						possibleRay_2D[it->first][jt->first].erase(i);
+						continue;
+					}
+					for(map<double,int>::iterator id_it = (jt->second)[i].begin();id_it!=(jt->second)[i].end();++id_it){
+						clus_to_ray[it->first][jt->first].insert(pair<pair<double,int>,int>(*id_it,i));
+						ray_to_clus[it->first][jt->first].insert(pair<int, pair<double,int> >(i,*id_it));
+					}
+				}
+			}
+		}
+
 		bool b=true;
 		while(b){
 			b = false;
 			double bestDoca = 50;
-			map<bool, map<bool, vector<map<double,int> > > > comb;
-			comb[true][true] = combinaisons(sizes[true][true]);
-			comb[true][false] = combinaisons(sizes[true][false]);
-			comb[false][true] = combinaisons(sizes[false][true]);
-			comb[false][false] = combinaisons(sizes[false][false]);
 			double current_chiSquare = chiSquare_threshold;
-			map<bool, map<bool, map<double,int> > > best_comb;
+			map<bool, map<bool, int > > best_comb;
 			RayPair bestRay = RayPair();
 
-			map<bool,map<bool,map<int,Ray_2D> > > possibleRay_2D;
-			for(map<bool, map<bool, vector<map<double,int> > > >::iterator it = comb.begin();it!=comb.end();++it){
-				for(map<bool, vector<map<double,int> > >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-					for(unsigned int i=0;i<(jt->second).size();i++){
-						possibleRay_2D[it->first][jt->first][i] = Ray_2D(Ray_2D((jt->first) ? 'X' : 'Y'));
-						for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[it->first][jt->first].begin();clus_it!= currentClusters[it->first][jt->first].end();++clus_it){
-							possibleRay_2D[it->first][jt->first][i].add_cluster(clus_it->second[(jt->second)[i][clus_it->first]]);
-						}
-						possibleRay_2D[it->first][jt->first][i].process();
-						if(possibleRay_2D[it->first][jt->first][i].get_chiSquare()<0 || possibleRay_2D[it->first][jt->first][i].get_chiSquare()>chiSquare_threshold){
-							possibleRay_2D[it->first][jt->first].erase(i);
-						}
-					}
-				}
-			}
+			
 			for(map<int,Ray_2D>::iterator HX_it = possibleRay_2D[true][true].begin();HX_it!=possibleRay_2D[true][true].end();++HX_it){
 				for(map<int,Ray_2D>::iterator HY_it = possibleRay_2D[true][false].begin();HY_it!=possibleRay_2D[true][false].end();++HY_it){
 					for(map<int,Ray_2D>::iterator BX_it = possibleRay_2D[false][true].begin();BX_it!=possibleRay_2D[false][true].end();++BX_it){
@@ -1534,88 +1544,37 @@ void CosmicBenchEvent::createPairs(){
 							if(currentDoca<bestDoca){
 								bestDoca = currentDoca;
 								bestRay = currentRayPair;
-								best_comb[true][true] = comb[true][true][HX_it->first];
-								best_comb[true][false] = comb[true][false][HY_it->first];
-								best_comb[false][true] = comb[false][true][BX_it->first];
-								best_comb[false][false] = comb[false][false][BY_it->first];
+								best_comb[true][true] = HX_it->first;
+								best_comb[true][false] = HY_it->first;
+								best_comb[false][true] = BX_it->first;
+								best_comb[false][false] = BY_it->first;
 								b = true;
 							}
 						}
 					}
 				}
 			}
-			/*
-			map<bool,map<bool,Ray_2D> > currentRay_2D;
-			for(vector<map<double,int> >::iterator it = comb[true][true].begin();it!=comb[true][true].end();++it){
-				currentRay_2D[true][true] = Ray_2D('X');
-				for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[true][true].begin();clus_it!= currentClusters[true][true].end();++clus_it){
-					currentRay_2D[true][true].add_cluster(clus_it->second[(*it)[clus_it->first]]);
-				}
-				currentRay_2D[true][true].process();
-				if(currentRay_2D[true][true].get_chiSquare()<0 || currentRay_2D[true][true].get_chiSquare()>chiSquare_threshold) continue;
-				for(vector<map<double,int> >::iterator jt = comb[true][false].begin();jt!=comb[true][false].end();++jt){
-					currentRay_2D[true][false] = Ray_2D('Y');
-					for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[true][false].begin();clus_it!= currentClusters[true][false].end();++clus_it){
-						currentRay_2D[true][false].add_cluster(clus_it->second[(*jt)[clus_it->first]]);
-					}
-					currentRay_2D[true][false].process();
-					if(currentRay_2D[true][false].get_chiSquare()<0 || currentRay_2D[true][false].get_chiSquare()>chiSquare_threshold) continue;
-					for(vector<map<double,int> >::iterator kt = comb[false][true].begin();kt!=comb[false][true].end();++kt){
-						currentRay_2D[false][true] = Ray_2D('X');
-						for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[false][true].begin();clus_it!= currentClusters[false][true].end();++clus_it){
-							currentRay_2D[false][true].add_cluster(clus_it->second[(*kt)[clus_it->first]]);
-						}
-						currentRay_2D[false][true].process();
-						if(currentRay_2D[false][true].get_chiSquare()<0 || currentRay_2D[false][true].get_chiSquare()>chiSquare_threshold) continue;
-						for(vector<map<double,int> >::iterator nt = comb[false][false].begin();nt!=comb[false][false].end();++nt){
-							currentRay_2D[false][false] = Ray_2D('Y');
-							for(map<double,vector<Cluster*> >::iterator clus_it = currentClusters[false][false].begin();clus_it!= currentClusters[false][false].end();++clus_it){
-								currentRay_2D[false][false].add_cluster(clus_it->second[(*nt)[clus_it->first]]);
-							}
-							currentRay_2D[false][false].process();
-							if(currentRay_2D[false][false].get_chiSquare()<0 || currentRay_2D[false][false].get_chiSquare()>chiSquare_threshold) continue;
-							RayPair currentRayPair = RayPair(Ray(currentRay_2D[true][true],currentRay_2D[true][false]),Ray(currentRay_2D[false][true],currentRay_2D[false][false]));
-							currentRayPair.process();
-							double currentDoca = currentRayPair.get_doca();
-							Point currentPoCA = currentRayPair.get_PoCA();
-							if(currentPoCA.get_Z()>max_z || currentPoCA.get_Z()<min_z) continue;
-							if(currentPoCA.get_X()>6.*Tomography::XY_size/10. || currentPoCA.get_X()<-6.*Tomography::XY_size/10.) continue;
-							if(currentPoCA.get_Y()>6.*Tomography::XY_size/10. || currentPoCA.get_Y()<-6.*Tomography::XY_size/10.) continue;
-							if(currentDoca<bestDoca){
-								bestDoca = currentDoca;
-								bestRay = currentRayPair;
-								best_comb[true][true] = *it;
-								best_comb[true][false] = *jt;
-								best_comb[false][true] = *kt;
-								best_comb[false][false] = *nt;
-								b = true;
-							}
-						}
-					}
-				}
-			}
-			*/
 
 			if(b){
 				suitableRays.push_back(bestRay);
-				for(map<bool, map<bool, map<double,int> > >::iterator it = best_comb.begin();it!=best_comb.end();++it){
-					for(map<bool, map<double,int> >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-						for(map<double,int>::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
-							delete currentClusters[it->first][jt->first][kt->first][kt->second];
-							currentClusters[it->first][jt->first][kt->first].erase(currentClusters[it->first][jt->first][kt->first].begin()+kt->second);
-							sizes[it->first][jt->first][kt->first]--;
-							if(sizes[it->first][jt->first][kt->first]<1){
-								currentClusters[it->first][jt->first].erase(currentClusters[it->first][jt->first].find(kt->first));
-								sizes[it->first][jt->first].erase(sizes[it->first][jt->first].find(kt->first));
+				for(map<bool, map<bool, int> >::iterator it = best_comb.begin();it!=best_comb.end();++it){
+					for(map<bool, int>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+						pair<multimap<int,pair<double,int> >::iterator,multimap<int,pair<double,int> >::iterator > clus_of_best_ray = ray_to_clus[it->first][jt->first].equal_range(best_comb[it->first][jt->first]);
+						for(multimap<int,pair<double,int> >::iterator clus_it=clus_of_best_ray.first;clus_it!=clus_of_best_ray.second;++clus_it){
+							pair<multimap<pair<double,int>,int >::iterator,multimap<pair<double,int>,int >::iterator > ray_using_best_clus = clus_to_ray[it->first][jt->first].equal_range(clus_it->second);
+							for(multimap<pair<double,int>,int>::iterator ray_it=ray_using_best_clus.first;ray_it!=ray_using_best_clus.second;++ray_it){
+								if(possibleRay_2D[it->first][jt->first].find(ray_it->second)!=possibleRay_2D[it->first][jt->first].end()) possibleRay_2D[it->first][jt->first].erase(ray_it->second);
 							}
+							clus_to_ray[it->first][jt->first].erase(ray_using_best_clus.first,ray_using_best_clus.second);
 						}
+						ray_to_clus[it->first][jt->first].erase(clus_of_best_ray.first,clus_of_best_ray.second);
 					}
 				}
 			}
-			if(currentClusters[true][true].size() != 2) b = false;
-			if(currentClusters[true][false].size() != 2) b = false;
-			if(currentClusters[false][true].size() != 2) b = false;
-			if(currentClusters[false][false].size() != 2) b = false;
+			if(possibleRay_2D[true][true].size() < 1) b = false;
+			if(possibleRay_2D[true][false].size() < 1) b = false;
+			if(possibleRay_2D[false][true].size() < 1) b = false;
+			if(possibleRay_2D[false][false].size() < 1) b = false;
 		}
 		rayPairs = suitableRays;
 	}
