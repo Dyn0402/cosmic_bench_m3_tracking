@@ -128,11 +128,13 @@ Tomography::Tomography(){
 	is_batch = true;
 	sigIntHandler.sa_handler = signal_handler;
 	gROOT->SetBatch(true);
+	can_continue = true;
 	sigemptyset(&sigIntHandler.sa_mask);
 	sigIntHandler.sa_flags = 0;
 	sigaction(SIGINT, &sigIntHandler, NULL);
 }
 Tomography::Tomography(ptree config_tree_){
+	cout << "Loading Tomography !" << endl;
 	config_tree = config_tree_;
 	Nsample = config_tree.get<int>("Nsample");
 	XY_size = config_tree.get<double>("XY_size");
@@ -152,6 +154,7 @@ Tomography::Tomography(ptree config_tree_){
 		live_graphic_display = false;
 		root_interpreter = 0;
 	}
+	can_continue = true;
 	sigIntHandler.sa_handler = signal_handler;
 	sigemptyset(&sigIntHandler.sa_mask);
 	sigIntHandler.sa_flags = 0;
@@ -163,6 +166,8 @@ Tomography::~Tomography(){
 	is_batch = true;
 	live_graphic_display = false;
 	singleton_instance = 0;
+	can_continue = false;
+	cout << "Terminating Tomography !" << endl;
 }
 void Tomography::Quit(){
 	if(singleton_instance != 0){
