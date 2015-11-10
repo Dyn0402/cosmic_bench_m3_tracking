@@ -1,5 +1,5 @@
 diff --git a/include/detector.h b/include/detector.h
-index d23291a..b15c6bb 100644
+index 4860075..09302c0 100644
 --- a/include/detector.h
 +++ b/include/detector.h
 @@ -86,12 +86,12 @@ class CM_Detector: public Detector{
@@ -21,7 +21,7 @@ index d23291a..b15c6bb 100644
  		unsigned int StripToChannel(unsigned int i) const;
  		double get_size() const;
  		int get_Nchannel() const;
-@@ -136,11 +136,11 @@ class MG_Detector: public Detector{
+@@ -137,11 +137,11 @@ class MG_Detector: public Detector{
  		static const vector<unsigned int> StripToChannel_a;
  		static vector<unsigned int> ChannelToStrip(unsigned int channel_nb);
  		//MultiGen general charac
@@ -38,7 +38,7 @@ index d23291a..b15c6bb 100644
  		double get_size() const;
  		int get_Nchannel() const;
  		int get_Nstrip() const;
-@@ -188,11 +188,11 @@ class MGv2_Detector: public Detector{
+@@ -190,11 +190,11 @@ class MGv2_Detector: public Detector{
  		static const vector<unsigned int> StripToChannel_a;
  		static vector<unsigned int> ChannelToStrip(unsigned int channel_nb);
  		//MultiGen general charac
@@ -55,10 +55,36 @@ index d23291a..b15c6bb 100644
  		double get_size() const;
  		int get_Nchannel() const;
  		int get_Nstrip() const;
-@@ -250,4 +250,4 @@ class CosmicBench{
+@@ -255,4 +255,4 @@ class CosmicBench{
  bool operator==(Detector const &det1, Detector const &det2);
  bool operator!=(Detector const &det1, Detector const &det2);
  
+-#endif
+\ No newline at end of file
++#endif
+diff --git a/include/tomography.h b/include/tomography.h
+index be8f595..c05d11a 100644
+--- a/include/tomography.h
++++ b/include/tomography.h
+@@ -52,10 +52,10 @@ class Tomography{
+ 		};
+ 		static elec_type str_to_elec(string str);
+ 
+-		static const double ADC_max = 4096;
+-		static const int Nchannel = 64;
+-		static const int Nasic_FEU = 8;
+-		static const int Nasic_Feminos = 4;
++		static constexpr const double ADC_max = 4096;
++		static constexpr const int Nchannel = 64;
++		static constexpr const int Nasic_FEU = 8;
++		static constexpr const int Nasic_Feminos = 4;
+ 		static const string DreamExt;
+ 		static const string FeminosExt;
+ 		//TODO : make this map const
+@@ -171,4 +171,4 @@ namespace Tomography{
+ 	//void process_elec_files(ptree config_tree);
+ }
+ */
 -#endif
 \ No newline at end of file
 +#endif
