@@ -1582,7 +1582,19 @@ void Analyse::StoreRayPairs(string outFileName){
 	c2->Divide(3);
 	TH1D * pocaX = new TH1D("pocaX","pocaX",100,-Tomography::get_instance()->get_XY_size(),Tomography::get_instance()->get_XY_size());
 	TH1D * pocaY = new TH1D("pocaY","pocaY",100,-Tomography::get_instance()->get_XY_size(),Tomography::get_instance()->get_XY_size());
-	TH1D * pocaZ = new TH1D("pocaZ","pocaZ",100,z_Down - (z_Up-z_Down),z_Up + (z_Up-z_Down));
+	double z_Up_tot = numeric_limits<double>::min();
+	for(vector<Detector*>::const_iterator it = detectors.begin();it!=detectors.end();++it){
+		if((*it)->get_z()>z_Up_tot){
+			z_Up_tot = (*it)->get_z();
+		}
+	}
+	double z_Down_tot = numeric_limits<double>::max();
+	for(vector<Detector*>::const_iterator it = detectors.begin();it!=detectors.end();++it){
+		if((*it)->get_z()<z_Down){
+			z_Down_tot = (*it)->get_z();
+		}
+	}
+	TH1D * pocaZ = new TH1D("pocaZ","pocaZ",100,z_Down_tot - (z_Up_tot-z_Down_tot),z_Up_tot + (z_Up_tot-z_Down_tot));
 
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
