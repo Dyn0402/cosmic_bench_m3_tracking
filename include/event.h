@@ -49,7 +49,7 @@ class Event{
 			int MaxSample;
 			int TOT;
 			double Time;
-			bool * signal_sample;
+			bool signal_sample[Tomography::Max_Nsample];
 		};
 		Event(int evn_ = -1);
 		Event(const Event& other);

@@ -36,7 +36,6 @@ FeuData::FeuData(): RawData(){
 	current_index = -1;
 	for(int i=0;i<Tomography::Nasic_FEU;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			if(data[i][j]) delete[] data[i][j];
 			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
 			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = 0;
@@ -62,7 +61,6 @@ FeuData::FeuData(const FeuData& other): RawData(other){
 	current_index = other.current_index;
 	for(int i=0;i<Tomography::Nasic_FEU;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			if(data[i][j]) delete[] data[i][j];
 			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
 			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = other.data[i][j][k];
@@ -78,7 +76,6 @@ FeuData& FeuData::operator=(const FeuData& other){
 	current_index = other.current_index;
 	for(int i=0;i<Tomography::Nasic_FEU;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			if(data[i][j]) delete[] data[i][j];
 			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
 			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = other.data[i][j][k];
@@ -91,7 +88,6 @@ FeuData& FeuData::operator=(const FeuData& other){
 FeminosData::FeminosData(): RawData(){
 	for(int i=0;i<Tomography::Nasic_Feminos;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			if(data[i][j]) delete[] data[i][j];
 			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
 			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = 0;
@@ -109,7 +105,6 @@ FeminosData::~FeminosData(){
 FeminosData::FeminosData(const FeminosData& other): RawData(other){
 	for(int i=0;i<Tomography::Nasic_Feminos;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			if(data[i][j]) delete[] data[i][j];
 			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
 			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = other.data[i][j][k];
@@ -121,7 +116,6 @@ FeminosData& FeminosData::operator=(const FeminosData& other){
 	RawData::operator=(other);
 	for(int i=0;i<Tomography::Nasic_Feminos;i++){
 		for(int j=0;j<Tomography::Nchannel;j++){
-			if(data[i][j]) delete[] data[i][j];
 			data[i][j] = new double[Tomography::get_instance()->get_Nsample()];
 			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
 				data[i][j][k] = other.data[i][j][k];

@@ -56,6 +56,7 @@ class Tomography{
 		static const int Nchannel = 64;
 		static const int Nasic_FEU = 8;
 		static const int Nasic_Feminos = 4;
+		static const int Max_Nsample = 512;
 		static const string DreamExt;
 		static const string FeminosExt;
 		//TODO : make this map const

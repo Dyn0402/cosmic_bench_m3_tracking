@@ -137,6 +137,10 @@ Tomography::Tomography(ptree config_tree_){
 	cout << "Loading Tomography !" << endl;
 	config_tree = config_tree_;
 	Nsample = config_tree.get<int>("Nsample");
+	if(Nsample>Max_Nsample){
+		cout << "Warning ! Nsample (" << Nsample << ") superior to max Nsample allowed (" << Max_Nsample << ")" << endl;
+		Nsample = Max_Nsample;
+	}
 	XY_size = config_tree.get<double>("XY_size");
 	SampleMin = config_tree.get<int>("SampleMin");
 	SampleMax = config_tree.get<int>("SampleMax");

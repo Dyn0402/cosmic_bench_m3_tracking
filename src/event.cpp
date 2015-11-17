@@ -421,7 +421,6 @@ void MG_Event::MultiCluster(){
 		current_strip.MaxSample = 0;
 		current_strip.TOT = 0;
 		current_strip.Time = 0;
-		current_strip.signal_sample = new bool[Tomography::get_instance()->get_Nsample()];
 		for(int j=0;j<SampleMin;j++){
 			current_strip.signal_sample[j] = false;
 		}
@@ -616,7 +615,6 @@ void MG_Event::MultiCluster(){
 				SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector->get_RMS(MG_Detector::StripToChannel_a[j]));
 				graph_point_n++;
 			}
-			delete[] current_strip.signal_sample;
 		}
 
 		double mean_xx = 0;
@@ -965,7 +963,6 @@ void MGv2_Event::MultiCluster(){
 		current_strip.MaxSample = 0;
 		current_strip.TOT = 0;
 		current_strip.Time = 0;
-		current_strip.signal_sample = new bool[Tomography::get_instance()->get_Nsample()];
 		for(int j=0;j<SampleMin;j++){
 			current_strip.signal_sample[j] = false;
 		}
@@ -1119,7 +1116,6 @@ void MGv2_Event::MultiCluster(){
 			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
 			SRFgraph->SetPointError(graph_point_n,0.5*MGv2_Detector::StripPitch,detector->get_RMS(MGv2_Detector::StripToChannel_a[j]));
 			graph_point_n++;
-			delete[] current_strip.signal_sample;
 		}
 
 		if(graph_point_n>2 && use_srf){
