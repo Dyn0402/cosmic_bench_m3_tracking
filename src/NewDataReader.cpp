@@ -244,10 +244,10 @@ int main(int argc, char ** argv){
 		if(thread_launched){
 			cout << setw(15) << "event read" << "|" << setw(15) << "queue for corr" << "|" << setw(15) << "event corr" << "|" << setw(15) << "queue for demux" << "|" << setw(15) << "event demux" << "|" << setw(15) << "queue for write" << "|" << setw(15) << "event written" << endl;
 			while(reader_active || ped_active || multicluster_active || writer_active){
-				cout << "\r" << setw(15) << event_read << "|" << setw(15) << event_corr << "|" << setw(15) << event_demux << "|" << setw(15) << event_written << flush;
+				cout << "\r" << setw(15) << event_read << "|" << setw(15) << event_raw_data_queue.size() << "|" << setw(15) << event_corr << "|" << setw(15) << event_ped_data_queue.size() << "|" << setw(15) << event_demux << "|" << setw(15) << event_objects_queue.size() << "|" << setw(15) << event_written << flush;
 				usleep(100000);
 			}
-			cout << "\r" << setw(15) << event_read << "|" << setw(15) << event_corr << "|" << setw(15) << event_demux << "|" << setw(15) << event_written << endl;
+			cout << "\r" << setw(15) << event_read << "|" << setw(15) << event_raw_data_queue.size() << "|" << setw(15) << event_corr << "|" << setw(15) << event_ped_data_queue.size() << "|" << setw(15) << event_demux << "|" << setw(15) << event_objects_queue.size() << "|" << setw(15) << event_written << flush;
 			void * status;
 			result = pthread_join(reader_id,&status);
 			if(result !=0){
