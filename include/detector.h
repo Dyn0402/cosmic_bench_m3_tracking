@@ -50,7 +50,7 @@ class Detector{
 		virtual Detector * Clone() const = 0;
 		virtual Event * build_event(Tanalyse_R * treeObject, int entry) const = 0;
 		virtual Event * build_event(const Tanalyse_R * const treeObject) const = 0;
-		virtual Event * build_event(vector<vector<double> > strip_ampl_, int evn_) const = 0;
+		virtual Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const = 0;
 		virtual Detector * build_det(const ptree::value_type& child) const = 0;
 		virtual int feminos_mapping(int channel) const = 0;
 		virtual int dream_mapping(int channel) const = 0;
@@ -112,7 +112,7 @@ class CM_Detector: public Detector{
 		Detector * Clone() const;
 		Event * build_event(Tanalyse_R * treeObject, int entry) const;
 		Event * build_event(const Tanalyse_R * const treeObject) const;
-		Event * build_event(vector<vector<double> > strip_ampl_, int evn_) const;
+		Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const;
 		int feminos_mapping(int channel) const;
 		int dream_mapping(int channel) const;
 	protected:
@@ -162,7 +162,7 @@ class MG_Detector: public Detector{
 		Detector * Clone() const;
 		Event * build_event(Tanalyse_R * treeObject, int entry) const;
 		Event * build_event(const Tanalyse_R * const treeObject) const;
-		Event * build_event(vector<vector<double> > strip_ampl_, int evn_) const;
+		Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const;
 		int feminos_mapping(int channel) const;
 		int dream_mapping(int channel) const;
 	protected:
@@ -215,7 +215,7 @@ class MGv2_Detector: public Detector{
 		Detector * Clone() const;
 		Event * build_event(Tanalyse_R * treeObject, int entry) const;
 		Event * build_event(const Tanalyse_R * const treeObject) const;
-		Event * build_event(vector<vector<double> > strip_ampl_, int evn_) const;
+		Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const;
 		int feminos_mapping(int channel) const;
 		int dream_mapping(int channel) const;
 	protected:

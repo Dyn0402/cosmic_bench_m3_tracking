@@ -489,15 +489,15 @@ void DreamElecReader::reset_data(int feu_id){
 		}
 	}
 }
-bool DreamElecReader::is_end(){
-	for(map<int, FeuData>::iterator data_it=feu_data.begin();data_it!=feu_data.end();++data_it){
+bool DreamElecReader::is_end() const{
+	for(map<int, FeuData>::const_iterator data_it=feu_data.begin();data_it!=feu_data.end();++data_it){
 		if(is_end_feu(data_it->first)) return true;
 	}
 	return false;
 }
-bool DreamElecReader::is_end_feu(int feu_id){
-	if(feu_data[feu_id].current_index<last_index) return false;
-	if(!((feu_data[feu_id].file)->eof())) return false;
+bool DreamElecReader::is_end_feu(int feu_id) const{
+	if(((feu_data.find(feu_id))->second).current_index<last_index) return false;
+	if(!((((feu_data.find(feu_id))->second).file)->eof())) return false;
 	return true;
 }
 
@@ -685,7 +685,7 @@ void FeminosElecReader::reset_data(){
 		}
 	}
 }
-bool FeminosElecReader::is_end(){
+bool FeminosElecReader::is_end() const{
 	if(current_index<last_index) return false;
 	if(!(file->eof())) return false;
 	return true;

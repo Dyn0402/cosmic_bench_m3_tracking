@@ -50,7 +50,7 @@ class ElecReader{
 		virtual double get_data(int asic_n,int channel_n,int sample_n) = 0;
 		virtual long get_event_n() = 0;
 		virtual double get_evttime() = 0;
-		virtual bool is_end() = 0;
+		virtual bool is_end() const = 0;
 	protected:
 		int first_index;
 		int last_index;
@@ -68,8 +68,8 @@ class DreamElecReader: public ElecReader{
 		double get_data(int asic_n,int channel_n,int sample_n); // asic_n = 8*feu_n + asic_n_in_feu
 		long get_event_n();
 		double get_evttime();
-		bool is_end();
-		bool is_end_feu(int feu_id);
+		bool is_end() const;
+		bool is_end_feu(int feu_id) const;
 	protected:
 		void reset_data();
 		void reset_data(int feu_id);
@@ -90,7 +90,7 @@ class FeminosElecReader: public ElecReader{
 		double get_data(int asic_n,int channel_n,int sample_n); // asic_n = 4*feminos_n + asic_n_in_feminos
 		long get_event_n();
 		double get_evttime();
-		bool is_end();
+		bool is_end() const;
 	protected:
 		void reset_data();
 		map<int,FeminosData> feminos_data;

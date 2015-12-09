@@ -27,6 +27,7 @@ class Event{
 	friend class Analyse;
 	public:
 		int get_evn() const;
+		double get_evttime() const;
 		Tomography::det_type get_type() const;
 		int get_n_in_tree() const;
 		bool get_is_ref() const;
@@ -56,8 +57,9 @@ class Event{
 		Event& operator=(const Event& other);
 		Event(Tanalyse_R * treeObject,const Detector * const det,long entry);
 		Event(const Tanalyse_R * const treeObject,const Detector * const det);
-		Event(const Detector * const detector_,int evn_);
+		Event(const Detector * const detector_,int evn_, double evttime_);
 		int evn;
+		double evttime;
 		Tomography::det_type type;
 		bool has_spark;
 		vector<vector<double> > strip_ampl;
@@ -73,7 +75,7 @@ class CM_Event: public Event{
 		CM_Event& operator=(const CM_Event& other);
 		CM_Event(Tanalyse_R * treeObject,const CM_Detector * const det, long entry);
 		CM_Event(const Tanalyse_R * const treeObject,const CM_Detector * const det);
-		CM_Event(const CM_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_);
+		CM_Event(const CM_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, double evttime_);
 		~CM_Event();
 		void MultiCluster();
 		void HoughCluster();
@@ -103,7 +105,7 @@ class MG_Event: public Event{
 		MG_Event& operator=(const MG_Event& other);
 		MG_Event(Tanalyse_R * treeObject,const MG_Detector * const det, long entry, bool use_srf_ = false);
 		MG_Event(const Tanalyse_R * const treeObject,const MG_Detector * const det, bool use_srf_ = false);
-		MG_Event(const MG_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, bool use_srf_ = false);
+		MG_Event(const MG_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, double evttime_, bool use_srf_ = false);
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		~MG_Event();
 		void MultiCluster();
@@ -121,7 +123,7 @@ class MGv2_Event: public Event{
 		MGv2_Event& operator=(const MGv2_Event& other);
 		MGv2_Event(Tanalyse_R * treeObject,const MGv2_Detector * const det, long entry, bool use_srf_ = false);
 		MGv2_Event(const Tanalyse_R * const treeObject,const MGv2_Detector * const det, bool use_srf_ = false);
-		MGv2_Event(const MGv2_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, bool use_srf_ = false);
+		MGv2_Event(const MGv2_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, double evttime_, bool use_srf_ = false);
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		~MGv2_Event();
 		void MultiCluster();
@@ -147,6 +149,7 @@ class CosmicBenchEvent{
 		void createPairs();
 		void EventDisplay(TCanvas * c1 = 0);
 		RayPair get_rayPair(unsigned int i) const;
+		vector<RayPair> get_rayPairs() const;
 		unsigned int get_rayPairs_N() const;
 		unsigned int get_event_N() const;
 		unsigned int get_clus_N() const;
@@ -158,8 +161,11 @@ class CosmicBenchEvent{
 		template<typename T>
 		static vector<map<T,int> > combinaisons(map<T,int> sizes, bool allow_drop = false);
 		//void MultiCluster();
+		int get_evn() const;
+		double get_evttime() const;
 	protected:
 		int evn;
+		double evttime;
 		vector<Event*> events;
 		//After processing
 		vector<RayPair> rayPairs;

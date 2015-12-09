@@ -10,8 +10,14 @@
 #include "event.h"
 #include "tomography.h"
 
-#include <pthread.h>
-#include <queue>
+#include "MT_tomography.h"
+#include "task/ped_task.h"
+#include "task/multicluster_task.h"
+#include "task/write_analyse_task.h"
+#include "task/read_elec_task.h"
+
+//#include <pthread.h>
+//#include <queue>
 #include <iomanip>
 
 using std::string;
@@ -21,7 +27,7 @@ using std::flush;
 using std::setw;
 
 using boost::property_tree::ptree;
-
+/*
 using std::queue;
 
 void * reader_thread(void *);
@@ -120,7 +126,7 @@ void * multicluster_thread(void *){
 			current_object_data.evttime = current_ped_data.evttime;
 			for(int i=0;i<total_det;i++){
 				Detector * det = bench->get_detector(i);
-				current_object_data.event_data[det->get_type()].push_back(det->build_event(current_ped_data.strip_data[det->get_type()][det->get_n_in_tree()],current_ped_data.Nevent));
+				current_object_data.event_data[det->get_type()].push_back(det->build_event(current_ped_data.strip_data[det->get_type()][det->get_n_in_tree()],current_ped_data.Nevent, current_ped_data.evttime));
 				(current_object_data.event_data[det->get_type()].back())->MultiCluster();
 			}
 			pthread_mutex_lock(&event_objects_mutex);
@@ -154,7 +160,7 @@ void * writer_thread(void *){
 	}
 	writer_active = false;
 }
-
+*/
 int main(int argc, char ** argv){
 	if(argc<2){
 		cout << "You must indicate a config file which contains the Run caracs" << endl;
@@ -182,7 +188,7 @@ int main(int argc, char ** argv){
 	read_json(config_file, config_tree);
 	Tomography::Init(config_tree);
 	if(operation != analysis){
-		blah = new DataReader(config_tree,true);
+		DataReader * blah = new DataReader(config_tree,true);
 		blah->process();
 		if(operation == ped_run) blah->compute_ped();
 		blah->read_ped();
@@ -192,11 +198,12 @@ int main(int argc, char ** argv){
 		delete blah;
 	}
 	else{
-		bench = new CosmicBench(config_tree);
-		analysisFile = new Tanalyse_W(config_tree.get<string>("Tree"),bench->get_det_N());
-		blah = new DataReader(config_tree,false);
+		CosmicBench * bench = new CosmicBench(config_tree);
+		Tanalyse_W * analysisFile = new Tanalyse_W(config_tree.get<string>("Tree"),bench->get_det_N());
+		DataReader * blah = new DataReader(config_tree,false);
 		blah->read_ped();
-		current_ped = blah->get_Ped();
+		map<Tomography::det_type,vector<vector<float> > > current_ped = blah->get_Ped();
+		/*
 		total_det = bench->get_det_N_tot();
 		//long event_nb = 0;
 		//int Nevent = 0;
@@ -247,7 +254,7 @@ int main(int argc, char ** argv){
 				cout << "\r" << setw(15) << event_read << "|" << setw(15) << event_raw_data_queue.size() << "|" << setw(15) << event_corr << "|" << setw(15) << event_ped_data_queue.size() << "|" << setw(15) << event_demux << "|" << setw(15) << event_objects_queue.size() << "|" << setw(15) << event_written << flush;
 				usleep(100000);
 			}
-			cout << "\r" << setw(15) << event_read << "|" << setw(15) << event_raw_data_queue.size() << "|" << setw(15) << event_corr << "|" << setw(15) << event_ped_data_queue.size() << "|" << setw(15) << event_demux << "|" << setw(15) << event_objects_queue.size() << "|" << setw(15) << event_written << flush;
+			cout << "\r" << setw(15) << event_read << "|" << setw(15) << event_raw_data_queue.size() << "|" << setw(15) << event_corr << "|" << setw(15) << event_ped_data_queue.size() << "|" << setw(15) << event_demux << "|" << setw(15) << event_objects_queue.size() << "|" << setw(15) << event_written << endl;
 			void * status;
 			result = pthread_join(reader_id,&status);
 			if(result !=0){
@@ -266,6 +273,36 @@ int main(int argc, char ** argv){
 				cout << "cannot join writer thread" << endl;
 			}
 		}
+		*/
+		Task * to_do = new Read_Elec_Task(blah, new Ped_Corr_Task(current_ped, new Multicluster_Task(bench,new Write_Analyse_Task(analysisFile))));
+		vector<Worker_Thread*> threads;
+		Task::add_task(to_do);
+		const unsigned short n_thread = Tomography::get_instance()->get_thread_number();
+		cout << n_thread << endl;
+		for(unsigned short i=0;i<n_thread;i++){
+			threads.push_back(new Worker_Thread());
+			(threads.back())->start();
+			Task::add_task(to_do);
+			Task::add_task(to_do);
+		}
+		cout << Tomography::get_instance()->init_count() << "|" << setw(7) << "tasks" << endl;
+		bool has_working_thread = true;
+		while(has_working_thread && Tomography::get_instance()->get_can_continue()){
+			cout << "\r" << Tomography::get_instance()->print_count() << "|" << setw(7) << Task::task_left() << flush;
+			has_working_thread = false;
+			for(unsigned short i=0;i<n_thread;i++){
+				if(threads[i]->is_working()){
+					has_working_thread = true;
+					break;
+				}
+			}
+			usleep(10000);
+		}
+		for(unsigned short i=0;i<n_thread;i++){
+			threads[i]->stop();
+			delete threads[i];
+		}
+		cout << "\r" << Tomography::get_instance()->print_count() << "|" << setw(7) << Task::task_left() << endl;
 		analysisFile->Write();
 		analysisFile->CloseFile();
 		delete blah;

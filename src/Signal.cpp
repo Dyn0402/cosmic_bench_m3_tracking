@@ -137,7 +137,7 @@ void Signal::MultiCluster(){
 		map<Tomography::det_type,vector<Event*> > events;
 
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			events[(*it)->get_type()].push_back((*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent));
+			events[(*it)->get_type()].push_back((*it)->build_event(get_ampl<double>((*it)->get_type(),(*it)->get_n_in_tree()),Nevent,evttime));
 			(events[(*it)->get_type()].back())->MultiCluster();
 		}
 		
@@ -169,7 +169,7 @@ void Signal::HoughTracking(long event_nb){
 	double max_z = -10000;
 	double min_z = 10000;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-		Event * current_event = (*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent);
+		Event * current_event = (*it)->build_event(get_ampl<double>((*it)->get_type(),(*it)->get_n_in_tree()),Nevent,evttime);
 		current_event->HoughCluster();
 		vector<Cluster*> current_cluster = current_event->get_clusters();
 		vector<Cluster*>::iterator clus_it = current_cluster.begin();
@@ -374,7 +374,7 @@ map<Tomography::det_type,map<int,TProfile*> > Signal::SignalOverNoise(){
 		LoadTree(i);
 		GetEntry(i);
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			Event * current_event = (*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent);
+			Event * current_event = (*it)->build_event(get_ampl<double>((*it)->get_type(),(*it)->get_n_in_tree()),Nevent,evttime);
 			current_event->MultiCluster();
 			vector<Cluster*> current_cluster = current_event->get_clusters();
 			for(vector<Cluster*>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
@@ -415,7 +415,7 @@ void Signal::SignalOverNoiseDisplay(){
 		LoadTree(i);
 		GetEntry(i);
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			Event * current_event = (*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent);
+			Event * current_event = (*it)->build_event(get_ampl<double>((*it)->get_type(),(*it)->get_n_in_tree()),Nevent,evttime);
 			current_event->MultiCluster();
 			vector<Cluster*> current_cluster = current_event->get_clusters();
 			for(vector<Cluster*>::iterator jt=current_cluster.begin();jt!=current_cluster.end();++jt){
@@ -492,7 +492,7 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 		GetEntry(i);
 		int det_id = 1;
 		for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
-			vector<vector<double> > current_ampl = get_ampl((*det_it)->get_type(),(*det_it)->get_n_in_tree());
+			vector<vector<double> > current_ampl = get_ampl<double>((*det_it)->get_type(),(*det_it)->get_n_in_tree());
 			pair<Tomography::det_type,int> current_key((*det_it)->get_type(),(*det_it)->get_n_in_tree());
 			for(int j=0;j<(*det_it)->get_Nchannel();j++){
 				double max_ampl = -Tomography::ADC_max;
@@ -526,6 +526,9 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 				rising_fit[current_key][j]->SetParameters(mean_y - slope*mean_x,slope);
 				cDisplay->cd(det_id);
 				if(j==0){
+					ostringstream current_title;
+					current_title << current_key.first << "_" << current_key.second << "_Event_" << Nevent << "_Signal";
+					signal_shape[current_key][j]->SetTitle(current_title.str().c_str());
 					signal_shape[current_key][j]->GetHistogram()->SetMinimum(-100);
 					signal_shape[current_key][j]->GetHistogram()->SetMaximum(1200);
 					signal_shape[current_key][j]->Draw("AL");
@@ -590,7 +593,7 @@ void Signal::SignalDispersion(){
 
 		vector<Event*> events;
 		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-			events.push_back((*it)->build_event(get_ampl((*it)->get_type(),(*it)->get_n_in_tree()),Nevent));
+			events.push_back((*it)->build_event(get_ampl<double>((*it)->get_type(),(*it)->get_n_in_tree()),Nevent,evttime));
 			events.back()->MultiCluster();
 			events.back()->do_cuts();
 		}
@@ -622,7 +625,7 @@ void Signal::SignalDispersion(){
 				lFit->SetParameters(0,0);
 				lFit->SetParLimits(0,-10,10);
 				lFit->SetParLimits(1,-2,2);
-				vector<vector<double> > det_ampl = get_ampl((*clus_it)->get_type(),current_n);
+				vector<vector<double> > det_ampl = get_ampl<double>((*clus_it)->get_type(),current_n);
 				for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
 					double mean = 0;
 					double ampl = 0;

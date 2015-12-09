@@ -133,12 +133,13 @@ void Tsignal_W::Write(){
 void Tsignal_W::CloseFile(){
    saveFile->Close();
 }
-void Tsignal_W::fillTree_raw(int evn_, double evttime_, map<Tomography::det_type,vector<vector<vector<float> > > > ampl){
+template<typename A>
+void Tsignal_W::fillTree_raw(int evn_, double evttime_, map<Tomography::det_type,vector<vector<vector<A> > > > ampl){
    Nevent = evn_;
    T->GetBranch("Nevent")->Fill();
    evttime = evttime_;
    T->GetBranch("evttime")->Fill();
-   for(map<Tomography::det_type,vector<vector<vector<float> > > >::const_iterator type_it=ampl.begin();type_it!=ampl.end();++type_it){
+   for(typename map<Tomography::det_type,vector<vector<vector<A> > > >::const_iterator type_it=ampl.begin();type_it!=ampl.end();++type_it){
       if((type_it->second).size() != det_N[type_it->first]){
          cout << "problem in " << type_it->first << " number" << endl;
          return;
@@ -200,8 +201,12 @@ void Tsignal_W::fillTree_raw(int evn_, double evttime_, map<Tomography::det_type
    if(det_N[Tomography::CM]>0) T->GetBranch("StripAmpl_CM")->Fill();
    T->SetEntries((T->GetEntries())+1);
 }
-void Tsignal_W::fillTree_ped(map<Tomography::det_type,vector<vector<vector<float> > > > ampl){
-   for(map<Tomography::det_type,vector<vector<vector<float> > > >::const_iterator type_it=ampl.begin();type_it!=ampl.end();++type_it){
+template void Tsignal_W::fillTree_raw(int evn_, double evttime_, map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
+template void Tsignal_W::fillTree_raw(int evn_, double evttime_, map<Tomography::det_type,vector<vector<vector<double> > > > ampl);
+
+template<typename A>
+void Tsignal_W::fillTree_ped(map<Tomography::det_type,vector<vector<vector<A> > > > ampl){
+   for(typename map<Tomography::det_type,vector<vector<vector<A> > > >::const_iterator type_it=ampl.begin();type_it!=ampl.end();++type_it){
       if((type_it->second).size() != det_N[type_it->first]){
          cout << "problem in " << type_it->first << " number" << endl;
          return;
@@ -262,8 +267,12 @@ void Tsignal_W::fillTree_ped(map<Tomography::det_type,vector<vector<vector<float
    if(det_N[Tomography::MGv2]>0) T->GetBranch("StripAmpl_MGv2_ped")->Fill();
    if(det_N[Tomography::CM]>0) T->GetBranch("StripAmpl_CM_ped")->Fill();
 }
-void Tsignal_W::fillTree_corr(map<Tomography::det_type,vector<vector<vector<float> > > > ampl){
-   for(map<Tomography::det_type,vector<vector<vector<float> > > >::const_iterator type_it=ampl.begin();type_it!=ampl.end();++type_it){
+template void Tsignal_W::fillTree_ped(map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
+template void Tsignal_W::fillTree_ped(map<Tomography::det_type,vector<vector<vector<double> > > > ampl);
+
+template<typename A>
+void Tsignal_W::fillTree_corr(map<Tomography::det_type,vector<vector<vector<A> > > > ampl){
+   for(typename map<Tomography::det_type,vector<vector<vector<A> > > >::const_iterator type_it=ampl.begin();type_it!=ampl.end();++type_it){
       if((type_it->second).size() != det_N[type_it->first]){
          cout << "problem in " << type_it->first << " number" << endl;
          return;
@@ -324,6 +333,9 @@ void Tsignal_W::fillTree_corr(map<Tomography::det_type,vector<vector<vector<floa
    if(det_N[Tomography::MGv2]>0) T->GetBranch("StripAmpl_MGv2_corr")->Fill();
    if(det_N[Tomography::CM]>0) T->GetBranch("StripAmpl_CM_corr")->Fill();
 }
+template void Tsignal_W::fillTree_corr(map<Tomography::det_type,vector<vector<vector<float> > > > ampl);
+template void Tsignal_W::fillTree_corr(map<Tomography::det_type,vector<vector<vector<double> > > > ampl);
+
 void Tsignal_W::Reset_raw(){
    if(det_N[Tomography::MG]>0) T->GetBranch("StripAmpl_MG")->Reset();
    if(det_N[Tomography::MGv2]>0) T->GetBranch("StripAmpl_MGv2")->Reset();
@@ -362,14 +374,15 @@ void Tsignal_W::enable_ped_branches(){
 void Tsignal_W::enable_corr_branches(){
 T->SetBranchStatus("StripAmpl_*_corr",1);
 }
-map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_raw(long entry){
-   map<Tomography::det_type,vector<vector<vector<float> > > > return_map;
+template<typename A>
+map<Tomography::det_type,vector<vector<vector<A> > > > Tsignal_W::read_raw(long entry){
+   map<Tomography::det_type,vector<vector<vector<A> > > > return_map;
    if(entry>= T->GetEntries()){
       return return_map;
    }
    T->LoadTree(entry);
    T->GetEntry(entry);
-   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(MG_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<A> > >(det_N[Tomography::MG],vector<vector<A> >(MG_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::MG];i++){
       for(int j=0;j<MG_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -377,7 +390,7 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_raw(l
          }
       }
    }
-   if(det_N[Tomography::MGv2]>0) return_map[Tomography::MGv2] = vector<vector<vector<float> > >(det_N[Tomography::MGv2],vector<vector<float> >(MGv2_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::MGv2]>0) return_map[Tomography::MGv2] = vector<vector<vector<A> > >(det_N[Tomography::MGv2],vector<vector<A> >(MGv2_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::MGv2];i++){
       for(int j=0;j<MGv2_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -385,7 +398,7 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_raw(l
          }
       }
    }
-   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(CM_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<A> > >(det_N[Tomography::CM],vector<vector<A> >(CM_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::CM];i++){
       for(int j=0;j<CM_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -395,14 +408,18 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_raw(l
    }
    return return_map;
 }
-map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_ped(long entry){
-   map<Tomography::det_type,vector<vector<vector<float> > > > return_map;
+template map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_raw(long entry);
+template map<Tomography::det_type,vector<vector<vector<double> > > > Tsignal_W::read_raw(long entry);
+
+template<typename A>
+map<Tomography::det_type,vector<vector<vector<A> > > > Tsignal_W::read_ped(long entry){
+   map<Tomography::det_type,vector<vector<vector<A> > > > return_map;
    if(entry>= T->GetEntries()){
       return return_map;
    }
    T->LoadTree(entry);
    T->GetEntry(entry);
-   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(MG_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<A> > >(det_N[Tomography::MG],vector<vector<A> >(MG_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::MG];i++){
       for(int j=0;j<MG_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -410,7 +427,7 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_ped(l
          }
       }
    }
-   if(det_N[Tomography::MGv2]>0) return_map[Tomography::MGv2] = vector<vector<vector<float> > >(det_N[Tomography::MGv2],vector<vector<float> >(MGv2_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::MGv2]>0) return_map[Tomography::MGv2] = vector<vector<vector<A> > >(det_N[Tomography::MGv2],vector<vector<A> >(MGv2_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::MGv2];i++){
       for(int j=0;j<MGv2_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -418,7 +435,7 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_ped(l
          }
       }
    }
-   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(CM_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<A> > >(det_N[Tomography::CM],vector<vector<A> >(CM_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::CM];i++){
       for(int j=0;j<CM_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -428,14 +445,18 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_ped(l
    }
    return return_map;
 }
-map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_corr(long entry){
-   map<Tomography::det_type,vector<vector<vector<float> > > > return_map;
+template map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_ped(long entry);
+template map<Tomography::det_type,vector<vector<vector<double> > > > Tsignal_W::read_ped(long entry);
+
+template<typename A>
+map<Tomography::det_type,vector<vector<vector<A> > > > Tsignal_W::read_corr(long entry){
+   map<Tomography::det_type,vector<vector<vector<A> > > > return_map;
    if(entry>= T->GetEntries()){
       return return_map;
    }
    T->LoadTree(entry);
    T->GetEntry(entry);
-   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<float> > >(det_N[Tomography::MG],vector<vector<float> >(MG_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::MG]>0) return_map[Tomography::MG] = vector<vector<vector<A> > >(det_N[Tomography::MG],vector<vector<A> >(MG_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::MG];i++){
       for(int j=0;j<MG_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -443,7 +464,7 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_corr(
          }
       }
    }
-   if(det_N[Tomography::MGv2]>0) return_map[Tomography::MGv2] = vector<vector<vector<float> > >(det_N[Tomography::MGv2],vector<vector<float> >(MGv2_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::MGv2]>0) return_map[Tomography::MGv2] = vector<vector<vector<A> > >(det_N[Tomography::MGv2],vector<vector<A> >(MGv2_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::MGv2];i++){
       for(int j=0;j<MGv2_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -451,7 +472,7 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_corr(
          }
       }
    }
-   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<float> > >(det_N[Tomography::CM],vector<vector<float> >(CM_Detector::Nchannel,vector<float>(Tomography::get_instance()->get_Nsample(),0)));
+   if(det_N[Tomography::CM]>0) return_map[Tomography::CM] = vector<vector<vector<A> > >(det_N[Tomography::CM],vector<vector<A> >(CM_Detector::Nchannel,vector<A>(Tomography::get_instance()->get_Nsample(),0)));
    for(int i=0;i<det_N[Tomography::CM];i++){
       for(int j=0;j<CM_Detector::Nchannel;j++){
          for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -461,3 +482,5 @@ map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_corr(
    }
    return return_map;
 }
+template map<Tomography::det_type,vector<vector<vector<float> > > > Tsignal_W::read_corr(long entry);
+template map<Tomography::det_type,vector<vector<vector<double> > > > Tsignal_W::read_corr(long entry);

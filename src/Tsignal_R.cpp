@@ -17,6 +17,7 @@ Tsignal_R::Tsignal_R(){
 Tsignal_R::Tsignal_R(TTree *tree, map<Tomography::det_type,unsigned short> det_N_) : fChain(0) 
 {
    Init(tree, det_N_);
+   current_entry = fChain->GetEntries();
 }
 
 Tsignal_R::~Tsignal_R()
@@ -43,6 +44,7 @@ Tsignal_R::~Tsignal_R()
 Int_t Tsignal_R::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
+   current_entry = entry;
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
@@ -136,11 +138,23 @@ Int_t Tsignal_R::Cut(Long64_t /*entry*/)
 // returns -1 otherwise.
    return 1;
 }
-
-vector<vector<double> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned short det_n_){
-   vector<vector<double> > return_array;
+bool Tsignal_R::GetNext(){
+   current_entry++;
+   if(current_entry<0 || current_entry>=fChain->GetEntries()){
+      current_entry = fChain->GetEntries();
+      return false;
+   }
+   else{
+      LoadTree(current_entry);
+      GetEntry(current_entry);
+      return true;
+   }
+}
+template<typename T>
+vector<vector<T> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned short det_n_){
+   vector<vector<T> > return_array;
    if(type_ == Tomography::MG){
-      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(MG_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MG_Detector::Nchannel;i++){
          for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = reinterpret_cast<Float_t(*)[MG_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_MG_corr)[det_n_][i][j];
@@ -148,7 +162,7 @@ vector<vector<double> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned
       }
    }
    else if(type_ == Tomography::MGv2){
-      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(MGv2_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MGv2_Detector::Nchannel;i++){
          for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = reinterpret_cast<Float_t(*)[MGv2_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_MGv2_corr)[det_n_][i][j];
@@ -156,7 +170,7 @@ vector<vector<double> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned
       }
    }
    else if(type_ == Tomography::CM){
-      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(CM_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
          for(int i=0;i<CM_Detector::Nchannel;i++){
             for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
                return_array[i][j] = reinterpret_cast<Float_t(*)[CM_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_CM_corr)[det_n_][i][j];
@@ -168,10 +182,14 @@ vector<vector<double> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned
    }
    return return_array;
 }
-vector<vector<double> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsigned short det_n_){
-   vector<vector<double> > return_array;
+template vector<vector<float> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned short det_n_);
+template vector<vector<double> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned short det_n_);
+
+template<typename T>
+vector<vector<T> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsigned short det_n_){
+   vector<vector<T> > return_array;
    if(type_ == Tomography::MG){
-      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(MG_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MG_Detector::Nchannel;i++){
          for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = reinterpret_cast<Float_t(*)[MG_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_MG_ped)[det_n_][i][j];
@@ -179,7 +197,7 @@ vector<vector<double> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsi
       }
    }
    else if(type_ == Tomography::MGv2){
-      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(MGv2_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MGv2_Detector::Nchannel;i++){
          for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = reinterpret_cast<Float_t(*)[MGv2_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_MGv2_ped)[det_n_][i][j];
@@ -187,7 +205,7 @@ vector<vector<double> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsi
       }
    }
    else if(type_ == Tomography::CM){
-      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(CM_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
          for(int i=0;i<CM_Detector::Nchannel;i++){
             for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
                return_array[i][j] = reinterpret_cast<Float_t(*)[CM_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_CM_ped)[det_n_][i][j];
@@ -199,10 +217,14 @@ vector<vector<double> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsi
    }
    return return_array;
 }
-vector<vector<double> > Tsignal_R::get_ampl_raw(Tomography::det_type type_, unsigned short det_n_){
-   vector<vector<double> > return_array;
+template vector<vector<float> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsigned short det_n_);
+template vector<vector<double> > Tsignal_R::get_ampl_ped(Tomography::det_type type_, unsigned short det_n_);
+
+template<typename T>
+vector<vector<T> > Tsignal_R::get_ampl_raw(Tomography::det_type type_, unsigned short det_n_){
+   vector<vector<T> > return_array;
    if(type_ == Tomography::MG){
-      return_array = vector<vector<double> >(MG_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(MG_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MG_Detector::Nchannel;i++){
          for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = reinterpret_cast<Float_t(*)[MG_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_MG)[det_n_][i][j];
@@ -210,7 +232,7 @@ vector<vector<double> > Tsignal_R::get_ampl_raw(Tomography::det_type type_, unsi
       }
    }
    else if(type_ == Tomography::MGv2){
-      return_array = vector<vector<double> >(MGv2_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(MGv2_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
       for(int i=0;i<MGv2_Detector::Nchannel;i++){
          for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
             return_array[i][j] = reinterpret_cast<Float_t(*)[MGv2_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_MGv2)[det_n_][i][j];
@@ -218,7 +240,7 @@ vector<vector<double> > Tsignal_R::get_ampl_raw(Tomography::det_type type_, unsi
       }
    }
    else if(type_ == Tomography::CM){
-      return_array = vector<vector<double> >(CM_Detector::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+      return_array = vector<vector<T> >(CM_Detector::Nchannel,vector<T>(Tomography::get_instance()->get_Nsample(),0));
          for(int i=0;i<CM_Detector::Nchannel;i++){
             for(int j=0;j<Tomography::get_instance()->get_Nsample();j++){
                return_array[i][j] = reinterpret_cast<Float_t(*)[CM_Detector::Nchannel][Tomography::get_instance()->get_Nsample()]>(StripAmpl_CM)[det_n_][i][j];
@@ -230,3 +252,5 @@ vector<vector<double> > Tsignal_R::get_ampl_raw(Tomography::det_type type_, unsi
    }
    return return_array;
 }
+template vector<vector<float> > Tsignal_R::get_ampl_raw(Tomography::det_type type_, unsigned short det_n_);
+template vector<vector<double> > Tsignal_R::get_ampl_raw(Tomography::det_type type_, unsigned short det_n_);

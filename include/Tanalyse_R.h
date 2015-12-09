@@ -20,11 +20,13 @@ using std::map;
 class CM_Detector;
 class MG_Detector;
 class MGv2_Detector;
+class CosmicBench;
 
 class Tanalyse_R{
-public :
+public:
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
+   long            current_entry;
 
    // Declaration of leaf types
    map<Tomography::det_type,unsigned short> det_N;
@@ -109,6 +111,7 @@ public :
    virtual void     Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N_);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
+   virtual bool GetNext();
 };
 
 #endif

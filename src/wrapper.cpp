@@ -96,7 +96,7 @@ int main(int argc, char ** argv){
 		vector<Event*> events;
 		for(int i=0;i<total_det;i++){
 			Detector * det = bench->get_detector(i);
-			events.push_back(det->build_event(current_data_d[det->get_type()][det->get_n_in_tree()],event_nb));
+			events.push_back(det->build_event(current_data_d[det->get_type()][det->get_n_in_tree()],Nevent,evttime));
 			(events.back())->MultiCluster();
 		}
 		CosmicBenchEvent CBEvent(bench,events);

@@ -32,9 +32,9 @@ class DataReader{
 		void do_ped_sub_event();
 		void do_common_noise_sub_event();
 		void do_ped_CMN_sub_event();
-		long get_event_n();
-		double get_evttime();
-		bool is_end();
+		long get_event_n() const;
+		double get_evttime() const;
+		bool is_end() const;
 		map<Tomography::det_type,vector<vector<vector<float> > > > get_data() const;
 		map<Tomography::det_type,vector<vector<float> > > get_Ped() const;
 		template<typename S, typename T> static map<Tomography::det_type,vector<vector<vector<S> > > > do_ped_CMN_sub_event(map<Tomography::det_type,vector<vector<vector<T> > > > data_in, map<Tomography::det_type,vector<vector<float> > > ped_in);

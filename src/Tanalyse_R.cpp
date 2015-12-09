@@ -22,6 +22,7 @@ Tanalyse_R::Tanalyse_R(TTree *tree, map<Tomography::det_type,unsigned short> det
 
    }*/
    Init(tree, det_N_);
+   current_entry = fChain->GetEntries();
 }
 
 Tanalyse_R::~Tanalyse_R()
@@ -72,6 +73,7 @@ Tanalyse_R::~Tanalyse_R()
 Int_t Tanalyse_R::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
+   current_entry = entry;
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
@@ -89,7 +91,18 @@ Long64_t Tanalyse_R::LoadTree(Long64_t entry)
    }
    return centry;
 }
-
+bool Tanalyse_R::GetNext(){
+   current_entry++;
+   if(current_entry<0 || current_entry>=fChain->GetEntries()){
+      current_entry = fChain->GetEntries();
+      return false;
+   }
+   else{
+      LoadTree(current_entry);
+      GetEntry(current_entry);
+      return true;
+   }
+}
 void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N_)
 {
    // The Init() function is called when the selector needs to initialize

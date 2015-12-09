@@ -92,6 +92,7 @@ vector<map<T,int> > CosmicBenchEvent::combinaisons(map<T,int> sizes, bool allow_
 
 Event::Event(int evn_){
 	evn = evn_;
+	evttime = 0;
 	has_spark = true;
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
@@ -101,6 +102,7 @@ Event::Event(int evn_){
 }
 Event::Event(const Event& other){
 	evn = other.evn;
+	evttime = other.evttime;
 	type = other.type;
 	has_spark = other.has_spark;
 	strip_ampl = other.strip_ampl;
@@ -116,6 +118,7 @@ Event::Event(const Event& other){
 }
 Event& Event::operator=(const Event& other){
 	evn = other.evn;
+	evttime = other.evttime;
 	type = other.type;
 	has_spark = other.has_spark;
 	strip_ampl = other.strip_ampl;
@@ -136,6 +139,7 @@ Event::Event(Tanalyse_R * treeObject, const Detector * const det,long entry){
 		treeObject->GetEntry(entry);
 	}
 	evn = treeObject->evn;
+	evttime = treeObject->evttime;
 	has_spark = true;
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
@@ -146,6 +150,7 @@ Event::Event(Tanalyse_R * treeObject, const Detector * const det,long entry){
 }
 Event::Event(const Tanalyse_R * const treeObject, const Detector * const det){
 	evn = treeObject->evn;
+	evttime = treeObject->evttime;
 	has_spark = true;
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
@@ -154,8 +159,9 @@ Event::Event(const Tanalyse_R * const treeObject, const Detector * const det){
 	//if(detector != NULL) delete detector;
 	detector = det->Clone();
 }
-Event::Event(const Detector * const detector_,int evn_){
+Event::Event(const Detector * const detector_,int evn_, double evttime_){
 	evn = evn_;
+	evttime = evttime_;
 	has_spark = true;
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
@@ -172,6 +178,9 @@ Event::~Event(){
 }
 int Event::get_evn() const{
 	return evn;
+}
+double Event::get_evttime() const{
+	return evttime;
 }
 Tomography::det_type Event::get_type() const{
 	return type;
@@ -253,7 +262,7 @@ CM_Event::CM_Event(const Tanalyse_R * const treeObject, const CM_Detector * cons
 	has_spark = (treeObject->CM_Spark[detector->get_n_in_tree()]==1) ? true : false;
 	type = Tomography::CM;
 }
-CM_Event::CM_Event(const CM_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_): Event(detector_,evn_){
+CM_Event::CM_Event(const CM_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, double evttime_): Event(detector_,evn_, evttime_){
 	if(strip_ampl_.size()!=CM_Detector::Nchannel){
 		cout << "problem in size" << endl;
 		return;
@@ -297,7 +306,7 @@ CM_Demux_Event& CM_Demux_Event::operator=(const CM_Demux_Event& other){
 	type = Tomography::CM;
 	return *this;
 }
-CM_Demux_Event::CM_Demux_Event(const CM_Event& rawEvent): Event(rawEvent.detector,rawEvent.evn){
+CM_Demux_Event::CM_Demux_Event(const CM_Event& rawEvent): Event(rawEvent.detector,rawEvent.evn, rawEvent.evttime){
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
 	}
@@ -392,7 +401,7 @@ MG_Event::MG_Event(const Tanalyse_R * const treeObject, const MG_Detector * cons
 	has_spark = (treeObject->MG_Spark[detector->get_n_in_tree()]==1) ? true : false;
 	type = Tomography::MG;
 }
-MG_Event::MG_Event(const MG_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, bool use_srf_): Event(detector_,evn_){
+MG_Event::MG_Event(const MG_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, double evttime_, bool use_srf_): Event(detector_,evn_, evttime_){
 	if(strip_ampl_.size()!=MG_Detector::Nchannel){
 		cout << "problem in size" << endl;
 		return;
@@ -559,6 +568,7 @@ void MG_Event::MultiCluster(){
 	//third loop : store the clusters and their caracteristics
 	//NClus = cluster_list.size();
 	for(unsigned int i=0;i<cluster_list.size();i++){
+		/*
 		TF1 * SRFfit;
 		TGraphErrors * SRFgraph;
 		int graph_point_n = 0;
@@ -566,6 +576,7 @@ void MG_Event::MultiCluster(){
 			SRFfit = new TF1("SRFfit",dynamic_cast<MG_Detector*>(detector),&MG_Detector::SRF_fit,0,1024,2,"MG_Detector","SRF_fit");
 			SRFgraph = new TGraphErrors();
 		}
+		*/
 		double ClusSize = 1 + cluster_list[i].second - cluster_list[i].first;
 		double ClusPos = 0;
 		double ClusAmpl = 0;
@@ -610,13 +621,16 @@ void MG_Event::MultiCluster(){
 				//ClusTOT[i] = current_strip.TOT;
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
+			/*
 			if(use_srf){
 				SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
 				SRFgraph->SetPointError(graph_point_n,0.5*MG_Detector::StripPitch,detector->get_RMS(MG_Detector::StripToChannel_a[j]));
 				graph_point_n++;
 			}
+			*/
 		}
 
+		//Micro TPC
 		double mean_xx = 0;
 		double mean_xy = 0;
 		double mean_x = 0;
@@ -641,7 +655,8 @@ void MG_Event::MultiCluster(){
 			ClusPos = mean_y + (first_time - mean_x)*(mean_xy - mean_x*mean_y)/(mean_xx - mean_x*mean_x);
 			ClusT = first_time;
 		}
-
+		//--
+		/*
 		if(graph_point_n>2 && use_srf){
 			for(int iPoint=0;iPoint<graph_point_n;iPoint++){
 				double x_current = -1;
@@ -657,7 +672,7 @@ void MG_Event::MultiCluster(){
 			SRFfit->SetParameter(1,0.25*ClusSize);
 			SRFfit->SetParLimits(1,0,ClusSize);
 			SRFgraph->Fit(SRFfit,"QN");
-			/*
+			
 			if(detector.get_n_in_tree() == 0 && i == 0){
 				TCanvas * cSRF = new TCanvas();
 				TLine * posLine = new TLine(ClusPos[i],0,ClusPos[i],1);
@@ -674,13 +689,14 @@ void MG_Event::MultiCluster(){
 				delete posLine;
 				delete cSRF;
 			}
-			*/
+			
 			ClusPos = SRFfit->GetParameter(0);
 			//ClusSize = SRFfit->GetParameter(1);
 		}
 		if(use_srf){
 			delete SRFfit; delete SRFgraph;
 		}
+		*/
 		clusters.push_back(new MG_Cluster(detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 		//clusters.push_back(MG_Cluster(&detector,i,pos_TPC,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 	}
@@ -934,7 +950,7 @@ MGv2_Event::MGv2_Event(const Tanalyse_R * const treeObject, const MGv2_Detector 
 	has_spark = (treeObject->MGv2_Spark[detector->get_n_in_tree()]==1) ? true : false;
 	type = Tomography::MGv2;
 }
-MGv2_Event::MGv2_Event(const MGv2_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, bool use_srf_): Event(detector_,evn_){
+MGv2_Event::MGv2_Event(const MGv2_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, double evttime_, bool use_srf_): Event(detector_,evn_,evttime_){
 	if(strip_ampl_.size()!=MGv2_Detector::Nchannel){
 		cout << "problem in size" << endl;
 		return;
@@ -1074,9 +1090,11 @@ void MGv2_Event::MultiCluster(){
 	//third loop : store the clusters and their caracteristics
 	//NClus = cluster_list.size();
 	for(unsigned int i=0;i<cluster_list.size();i++){
+		/*
 		TF1 * SRFfit = new TF1("SRFfit",dynamic_cast<MGv2_Detector*>(detector),&MGv2_Detector::SRF_fit,0,1037,2,"MGv2_Detector","SRF_fit");
 		TGraphErrors * SRFgraph = new TGraphErrors();
 		int graph_point_n = 0;
+		*/
 		double ClusSize = 1 + cluster_list[i].second - cluster_list[i].first;
 		double ClusPos = 0;
 		double ClusAmpl = 0;
@@ -1113,11 +1131,13 @@ void MGv2_Event::MultiCluster(){
 				//ClusTOT[i] = current_strip.TOT;
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
+			/*
 			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
 			SRFgraph->SetPointError(graph_point_n,0.5*MGv2_Detector::StripPitch,detector->get_RMS(MGv2_Detector::StripToChannel_a[j]));
 			graph_point_n++;
+			*/
 		}
-
+		/*
 		if(graph_point_n>2 && use_srf){
 			for(int iPoint=0;iPoint<graph_point_n;iPoint++){
 				double x_current = -1;
@@ -1133,7 +1153,7 @@ void MGv2_Event::MultiCluster(){
 			SRFfit->SetParameter(1,0.25*ClusSize);
 			SRFfit->SetParLimits(1,0,ClusSize);
 			SRFgraph->Fit(SRFfit,"QN");
-			/*
+			
 			if(detector.get_n_in_tree() == 0 && i == 0){
 				TCanvas * cSRF = new TCanvas();
 				TLine * posLine = new TLine(ClusPos[i],0,ClusPos[i],1);
@@ -1150,11 +1170,12 @@ void MGv2_Event::MultiCluster(){
 				delete posLine;
 				delete cSRF;
 			}
-			*/
+			
 			ClusPos = SRFfit->GetParameter(0);
 			//ClusSize = SRFfit->GetParameter(1);
 		}
 		delete SRFfit; delete SRFgraph;
+		*/
 		clusters.push_back(new MGv2_Cluster(detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 		//clusters.push_back(MGv2_Cluster(&detector,i,pos_TPC,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 	}
@@ -1259,9 +1280,11 @@ void MGv2_Event::HoughCluster(){
 	//third loop : store the clusters and their caracteristics
 	//NClus = cluster_list.size();
 	for(unsigned int i=0;i<cluster_list.size();i++){
+		/*
 		TF1 * SRFfit = new TF1("SRFfit",dynamic_cast<MGv2_Detector*>(detector),&MGv2_Detector::SRF_fit,0,1037,2,"MGv2_Detector","SRF_fit");
 		TGraphErrors * SRFgraph = new TGraphErrors();
 		int graph_point_n = 0;
+		*/
 		double ClusSize = 1 + cluster_list[i].second - cluster_list[i].first;
 		double ClusPos = 0;
 		double ClusAmpl = 0;
@@ -1283,11 +1306,13 @@ void MGv2_Event::HoughCluster(){
 				//ClusTOT[i] = current_strip.TOT;
 			}
 			if(current_strip.TOT>ClusTOT) ClusTOT = current_strip.TOT;
+			/*
 			SRFgraph->SetPoint(graph_point_n,j,effective_ampl);
 			SRFgraph->SetPointError(graph_point_n,0.5*MGv2_Detector::StripPitch,detector->get_RMS(MGv2_Detector::StripToChannel_a[j]));
 			graph_point_n++;
+			*/
 		}
-
+		/*
 		if(graph_point_n>2 && use_srf){
 			for(int iPoint=0;iPoint<graph_point_n;iPoint++){
 				double x_current = -1;
@@ -1303,7 +1328,7 @@ void MGv2_Event::HoughCluster(){
 			SRFfit->SetParameter(1,0.25*ClusSize);
 			SRFfit->SetParLimits(1,0,ClusSize);
 			SRFgraph->Fit(SRFfit,"QN");
-			/*
+			
 			if(detector.get_n_in_tree() == 0 && i == 0){
 				TCanvas * cSRF = new TCanvas();
 				TLine * posLine = new TLine(ClusPos[i],0,ClusPos[i],1);
@@ -1320,11 +1345,12 @@ void MGv2_Event::HoughCluster(){
 				delete posLine;
 				delete cSRF;
 			}
-			*/
+			
 			ClusPos = SRFfit->GetParameter(0);
 			ClusSize = SRFfit->GetParameter(1);
 		}
 		delete SRFfit; delete SRFgraph;
+		*/
 		clusters.push_back(new MGv2_Cluster(detector,i,ClusPos,ClusSize,ClusAmpl,ClusMaxSample,ClusMaxStripAmpl,ClusTOT,ClusT,ClusMaxStrip));
 	}
 }
@@ -1371,9 +1397,12 @@ CosmicBenchEvent::CosmicBenchEvent(){
 		delete events[i];
 	}
 	events.clear();
+	evn = -1;
+	evttime = 0;
 }
 CosmicBenchEvent::CosmicBenchEvent(const CosmicBenchEvent& other){
 	evn = other.evn;
+	evttime = other.evttime;
 	rayPairs.clear();
 	rayPairs.assign(other.rayPairs.begin(),other.rayPairs.end());
 	for(unsigned int i=0;i<events.size();i++){
@@ -1386,6 +1415,7 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBenchEvent& other){
 }
 CosmicBenchEvent& CosmicBenchEvent::operator=(const CosmicBenchEvent& other){
 	evn = other.evn;
+	evttime = other.evttime;
 	rayPairs.clear();
 	rayPairs.assign(other.rayPairs.begin(),other.rayPairs.end());
 	for(unsigned int i=0;i<events.size();i++){
@@ -1403,6 +1433,7 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors, Tanalyse
 		treeObject->GetEntry(entry);
 	}
 	evn = treeObject->evn;
+	evttime = treeObject->evttime;
 	rayPairs.clear();
 	for(unsigned int i=0;i<events.size();i++){
 		delete events[i];
@@ -1415,6 +1446,7 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors, Tanalyse
 }
 CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors, const Tanalyse_R * const treeObject){
 	evn = treeObject->evn;
+	evttime = treeObject->evttime;
 	rayPairs.clear();
 	for(unsigned int i=0;i<events.size();i++){
 		delete events[i];
@@ -1434,6 +1466,7 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors,const vec
 		return;
 	}
 	evn = (events_.front())->get_evn();
+	evttime = (events_.front())->get_evttime();
 	set<pair<Tomography::det_type,int> > det_is_used;
 	for(vector<Event*>::const_iterator it = events_.begin();it!=events_.end();++it){
 		if((*it)->get_evn() != evn){
@@ -1818,6 +1851,11 @@ void CosmicBenchEvent::createPairs(){
 	}
 }
 */
+
+vector<RayPair> CosmicBenchEvent::get_rayPairs() const{
+	return rayPairs;
+}
+
 RayPair CosmicBenchEvent::get_rayPair(unsigned int i) const{
 	return rayPairs[i];
 }

@@ -8,9 +8,14 @@
 #include <iostream>
 #include <csignal>
 
+#include <queue>
+#include <pthread.h>
+
 #include <TRint.h>
 
 #include <boost/property_tree/ptree.hpp>
+
+#include <ray.h>
 
 using std::cout;
 using std::endl;
@@ -19,9 +24,13 @@ using std::map;
 using std::string;
 using std::vector;
 
+using std::queue;
+
 using boost::property_tree::ptree;
 
 class Detector;
+class CosmicBenchEvent;
+class Event;
 
 template<typename T,typename R>
 ostream& operator<<(ostream& os, const map<T,R>& map_);
@@ -29,6 +38,11 @@ ostream& operator<<(ostream& os, const map<T,R>& map_);
 template<typename T>
 ostream& operator<<(ostream& os,const vector<T>& vec_);
 
+struct raw_data;
+struct ped_data;
+struct event_data;
+struct ray_data;
+struct deviation_data;
 
 class Tomography{
 	public:
@@ -49,6 +63,13 @@ class Tomography{
 			unknown_elec = 100,
 			Dream,
 			Feminos
+		};
+		enum signal_type{
+			unknown_signal = 1000,
+			raw,
+			ped,
+			corr
+
 		};
 		static elec_type str_to_elec(string str);
 
@@ -75,8 +96,32 @@ class Tomography{
 		double get_sigma() const;
 		double get_chisquare_threshold() const;
 		bool get_live_graphic_display() const;
-		bool get_is_bacth() const;
+		bool get_is_batch() const;
 		bool get_can_continue() const;
+
+		struct raw_data get_next_raw_data();
+		void push_next_raw_data(struct raw_data new_data);
+		bool is_raw_data_empty() const;
+		struct ped_data get_next_ped_data();
+		void push_next_ped_data(struct ped_data new_data);
+		bool is_ped_data_empty() const;
+		struct ped_data get_next_corr_data();
+		void push_next_corr_data(struct ped_data new_data);
+		bool is_corr_data_empty() const;
+		struct event_data get_next_event_data();
+		void push_next_event_data(struct event_data new_data);
+		bool is_event_data_empty() const;
+		struct ray_data get_next_ray_data();
+		void push_next_ray_data(struct ray_data new_data);
+		bool is_ray_data_empty() const;
+		struct deviation_data get_next_deviation_data();
+		void push_next_deviation_data(struct deviation_data new_data);
+		bool is_deviation_data_empty() const;
+
+		unsigned short get_thread_number() const;
+
+		string init_count() const;
+		string print_count() const;
 
 		void save_canvases();
 		void Run();
@@ -99,6 +144,25 @@ class Tomography{
 		double chisquare_threshold;
 		bool live_graphic_display; // toggle updating of canvas during calculation
 		bool is_batch;
+		unsigned short thread_number;
+		queue<raw_data> raw_data_queue;
+		pthread_mutex_t raw_data_mutex;
+		unsigned long raw_data_treated;
+		queue<ped_data> ped_data_queue;
+		pthread_mutex_t ped_data_mutex;
+		unsigned long ped_data_treated;
+		queue<ped_data> corr_data_queue;
+		pthread_mutex_t corr_data_mutex;
+		unsigned long corr_data_treated;
+		queue<event_data> event_queue;
+		pthread_mutex_t event_mutex;
+		unsigned long event_treated;
+		queue<ray_data> ray_queue;
+		pthread_mutex_t ray_mutex;
+		unsigned long ray_treated;
+		queue<deviation_data> deviation_queue;
+		pthread_mutex_t deviation_mutex;
+		unsigned long deviation_treated;
 
 		struct sigaction sigIntHandler;
 		static void signal_handler(int s);
@@ -109,6 +173,36 @@ class Tomography{
 ostream& operator<<(ostream& os, const Tomography::det_type& det);
 ostream& operator<<(ostream& os, const Tomography::strip_type& strip);
 ostream& operator<<(ostream& os, const Tomography::elec_type& elec);
+
+struct raw_data{
+	int Nevent;
+	double evttime;
+	map<Tomography::det_type,vector<vector<vector<float> > > > strip_data;
+	raw_data(): Nevent(-1), evttime(0), strip_data(){}
+};
+struct ped_data{
+	int Nevent;
+	double evttime;
+	map<Tomography::det_type,vector<vector<vector<double> > > > strip_data;
+	ped_data(): Nevent(-1), evttime(0), strip_data(){}
+};
+struct event_data{
+	map<Tomography::det_type,vector<Event*> > det_data;
+	int Nevent;
+	double evttime;
+	event_data(): det_data(), Nevent(-1), evttime(0){}
+};
+struct ray_data{
+	CosmicBenchEvent * CBevent;
+	vector<Ray> rays;
+	ray_data(): CBevent(NULL), rays(){}
+};
+struct deviation_data{
+	CosmicBenchEvent * CBevent;
+	vector<RayPair> rays;
+	deviation_data(): CBevent(NULL), rays(){}
+};
+
 /*
 namespace Tomography{
 

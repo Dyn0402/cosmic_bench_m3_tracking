@@ -203,7 +203,7 @@ void DataReader::compute_ped(){
 	outTree->disable_data_branches();
 	outTree->enable_raw_branches();
 	for(long n=0;n<nentries && Tomography::get_instance()->get_can_continue();n++){
-		StripAmpl = outTree->read_raw(n);
+		StripAmpl = outTree->read_raw<float>(n);
 		for(map<Tomography::det_type,vector<vector<float> > >::iterator type_it=Ped.begin();type_it!=Ped.end();++type_it){
 			for(unsigned int i=0;i<(type_it->second).size();i++){
 				for(unsigned int j=0;j<(type_it->second)[i].size();j++){
@@ -269,7 +269,7 @@ void DataReader::compute_RMSPed(){
 	outTree->disable_data_branches();
 	outTree->enable_corr_branches();
 	for(long n=0;n<nentries && Tomography::get_instance()->get_can_continue();n++){
-		StripAmpl = outTree->read_corr(n);
+		StripAmpl = outTree->read_corr<float>(n);
 		for(map<Tomography::det_type,vector<vector<TH1F*> > >::iterator type_it = ampl_hist.begin();type_it!=ampl_hist.end();++type_it){
 			for(unsigned int i=0;i<(type_it->second).size();i++){
 				for(unsigned int j=0;j<(type_it->second)[i].size();j++){
@@ -308,7 +308,7 @@ void DataReader::do_ped_sub(){
 	outTree->enable_ped_branches();
 	while(event_nb<total_event && Tomography::get_instance()->get_can_continue()){
 		if((event_nb%100) == 0) cout << "\rsubstracting pedestal (" << event_nb << "/" << total_event << ")" << flush;
-		StripAmpl = outTree->read_raw(event_nb);
+		StripAmpl = outTree->read_raw<float>(event_nb);
 		do_ped_sub_event();
 		outTree->fillTree_ped(StripAmpl);
 		event_nb++;
@@ -331,7 +331,7 @@ void DataReader::do_common_noise_sub(){
 	outTree->enable_corr_branches();
 	while(event_nb<total_event && Tomography::get_instance()->get_can_continue()){
 		if((event_nb%100) == 0) cout << "\rsubstracting common noise (" << event_nb << "/" << total_event << ")" << flush;
-		StripAmpl = outTree->read_ped(event_nb);
+		StripAmpl = outTree->read_ped<float>(event_nb);
 		do_common_noise_sub_event();
 		outTree->fillTree_corr(StripAmpl);
 		event_nb++;
@@ -435,10 +435,10 @@ template map<Tomography::det_type,vector<vector<vector<float> > > > DataReader::
 template map<Tomography::det_type,vector<vector<vector<double> > > > DataReader::do_ped_CMN_sub_event(map<Tomography::det_type,vector<vector<vector<float> > > > data_in, map<Tomography::det_type,vector<vector<float> > > ped_in);
 template map<Tomography::det_type,vector<vector<vector<float> > > > DataReader::do_ped_CMN_sub_event(map<Tomography::det_type,vector<vector<vector<double> > > > data_in, map<Tomography::det_type,vector<vector<float> > > ped_in);
 template map<Tomography::det_type,vector<vector<vector<double> > > > DataReader::do_ped_CMN_sub_event(map<Tomography::det_type,vector<vector<vector<double> > > > data_in, map<Tomography::det_type,vector<vector<float> > > ped_in);
-long DataReader::get_event_n(){
+long DataReader::get_event_n() const{
 	return Nevent;
 }
-double DataReader::get_evttime(){
+double DataReader::get_evttime() const{
 	return evttime;
 }
 map<Tomography::det_type,vector<vector<vector<float> > > > DataReader::get_data() const{
@@ -447,7 +447,7 @@ map<Tomography::det_type,vector<vector<vector<float> > > > DataReader::get_data(
 map<Tomography::det_type,vector<vector<float> > > DataReader::get_Ped() const{
 	return Ped;
 }
-bool DataReader::is_end(){
+bool DataReader::is_end() const{
 	return (reader->is_end());
 }
 int DataReader::Dream_mapping(Tomography::det_type det,int channel){

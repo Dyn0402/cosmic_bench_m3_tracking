@@ -27,6 +27,7 @@ class Tsignal_R {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
+   long            current_entry;
 
    // Declaration of leaf types
    map<Tomography::det_type,unsigned short> det_N;
@@ -64,9 +65,10 @@ public :
    virtual void     Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N_);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
-   vector<vector<double> > get_ampl(Tomography::det_type type_, unsigned short det_n_);
-   vector<vector<double> > get_ampl_ped(Tomography::det_type type_, unsigned short det_n_);
-   vector<vector<double> > get_ampl_raw(Tomography::det_type type_, unsigned short det_n_);
+   virtual bool     GetNext();
+   template<typename T> vector<vector<T> > get_ampl(Tomography::det_type type_, unsigned short det_n_);
+   template<typename T> vector<vector<T> > get_ampl_ped(Tomography::det_type type_, unsigned short det_n_);
+   template<typename T> vector<vector<T> > get_ampl_raw(Tomography::det_type type_, unsigned short det_n_);
 
 };
 

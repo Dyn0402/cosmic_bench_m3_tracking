@@ -94,7 +94,10 @@ void Analyse::Residus(){
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
 	for(map<Tomography::det_type,unsigned short>::iterator type_it=det_N.begin();type_it!=det_N.end();++type_it){
-		if(type_it->second > 0) c_MM[type_it->first] = vector<TCanvas*>(type_it->second,NULL);
+		if(type_it->second > 0){
+			c_MM[type_it->first] = vector<TCanvas*>(type_it->second,NULL);
+			hist_residus[type_it->first] = vector<TH1D*>(type_it->second,NULL);
+		}
 		for(int i=0;i<type_it->second;i++){
 			ostringstream name;
 			name << type_it->first << "_" << i;
@@ -2103,7 +2106,7 @@ void Analyse::EventDisplay(long event_nb, TCanvas * c1){
 	signalT->LoadTree(event_nb);
 	signalT->GetEntry(event_nb);
 	for(vector<Event*>::iterator ev_it = (CBEvent->events).begin();ev_it!=(CBEvent->events).end();++ev_it){
-		(*ev_it)->set_strip_ampl(signalT->get_ampl((*ev_it)->get_type(),(*ev_it)->get_n_in_tree()));
+		(*ev_it)->set_strip_ampl(signalT->get_ampl<double>((*ev_it)->get_type(),(*ev_it)->get_n_in_tree()));
 	}
 	CBEvent->EventDisplay(c1);
 	delete CBEvent;

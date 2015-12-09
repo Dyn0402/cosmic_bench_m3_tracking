@@ -21,3 +21,6 @@ Linkdef
 *.jpg
 config
 root_files
+*.sublime-project
+*.sublime-workspace
+*.log
