@@ -1900,7 +1900,8 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 	}
 	map<bool, vector<Ray_2D> > suitableRays;
 	vector<Ray> returnRays;
-	if(sizes[true].size()<3 || sizes[false].size()<3){
+	
+	if(sizes[true].size()<2 || sizes[false].size()<2){
 		for(map<bool, map<double,vector<Cluster*> > >::iterator jt = currentClusters.begin();jt!=currentClusters.end();++jt){
 			for(map<double,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
 				for(unsigned int i=0;i<(kt->second).size();i++){
@@ -1910,63 +1911,82 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 		}
 		return returnRays;
 	}
+	
 	//compute for both acoordinates
 	for(map<bool, map<double,vector<Cluster*> > >::iterator it = currentClusters.begin();it!=currentClusters.end();++it){
-		bool b = true;
-		/*
-		//get size
-		for(map<double,vector<Cluster*> >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
-			if((jt->second).size()==0) b = false;
-			sizes[it->first][jt->first] = (jt->second).size();
-		}
-		*/
-		//find the biggest number of good clusters combinaisons
-		//if no ray found, allow to drop a detector
-		for(int drop = 0;drop<2;drop++){
-			if(suitableRays[it->first].size() > 0) break;
-			// you can adjust the size to require more or less hit
-			while(b && (it->second).size()>2){
-				b = false;
-				//find best combinaison of clusters
-				vector<map<double,int> > comb = combinaisons(sizes[it->first], (drop > 0));
-				double current_chiSquare = numeric_limits<double>::max();
-				map<double,int> best_comb;
-				char coord = (it->first) ? 'X' : 'Y';
-				Ray_2D bestRay = Ray_2D(coord);
-				for(vector<map<double,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
-					//try a comb
-					Ray_2D currentRay = Ray_2D(coord);
-					/*
-					bool has_up = false;
-					bool has_down = false;
-					*/
-					for(map<double,int>::iterator nt = kt->begin();nt!= kt->end();++nt){
-						currentRay.add_cluster(it->second[nt->first][nt->second]);
-						/*
-						if(nt->second[(*kt)[nt->first]]->get_is_up()) has_up = true;
-						else has_down = true;
-						*/
-					}
-					//if(!(has_up && has_down)) continue;
-					currentRay.process();
-					/*double sigma = currentRay.get_t_sigma();*/
-					if(currentRay.get_chiSquare()<current_chiSquare && currentRay.get_chiSquare()>-1 && (currentRay.get_chiSquare()/currentRay.get_clus_n())<(2.*chiSquare_threshold)){
-						bestRay = currentRay;
-						current_chiSquare = currentRay.get_chiSquare();//sigma;
-						best_comb = *kt;
-						b = true;
+		if((it->second).size()<3){
+			Ray_2D unique_ray = Ray_2D((it->first) ? 'X' : 'Y');
+			for(map<double,vector<Cluster*> >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+				vector<Cluster*>::iterator best_clust = (jt->second).end();
+				double max_ampl = 0;
+				for(vector<Cluster*>::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+					if((*kt)->get_ampl()>max_ampl){
+						best_clust = kt;
+						max_ampl = (*kt)->get_ampl();
 					}
 				}
-				if(b){
-					suitableRays[it->first].push_back(Ray_2D(bestRay));
-					for(map<double,int>::iterator kt = best_comb.begin();kt!=best_comb.end();++kt){
-						delete ((it->second)[kt->first][kt->second]);
-						(it->second)[kt->first].erase((it->second)[kt->first].begin()+kt->second);
-						sizes[it->first][kt->first]--;
-						if(sizes[it->first][kt->first]<1){
-							//b = false;
-							(it->second).erase((it->second).find(kt->first));
-							sizes[it->first].erase(sizes[it->first].find(kt->first));
+				unique_ray.add_cluster(*best_clust);
+			}
+			unique_ray.process();
+			suitableRays[it->first].push_back(unique_ray);
+		}
+		else{
+			bool b = true;
+			/*
+			//get size
+			for(map<double,vector<Cluster*> >::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+				if((jt->second).size()==0) b = false;
+				sizes[it->first][jt->first] = (jt->second).size();
+			}
+			*/
+			//find the biggest number of good clusters combinaisons
+			//if no ray found, allow to drop a detector
+			for(int drop = 0;drop<2;drop++){
+				if(suitableRays[it->first].size() > 0) break;
+				// you can adjust the size to require more or less hit
+				while(b && (it->second).size()>2){
+					b = false;
+					//find best combinaison of clusters
+					vector<map<double,int> > comb = combinaisons(sizes[it->first], (drop > 0));
+					double current_chiSquare = numeric_limits<double>::max();
+					map<double,int> best_comb;
+					char coord = (it->first) ? 'X' : 'Y';
+					Ray_2D bestRay = Ray_2D(coord);
+					for(vector<map<double,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
+						//try a comb
+						Ray_2D currentRay = Ray_2D(coord);
+						/*
+						bool has_up = false;
+						bool has_down = false;
+						*/
+						for(map<double,int>::iterator nt = kt->begin();nt!= kt->end();++nt){
+							currentRay.add_cluster(it->second[nt->first][nt->second]);
+							/*
+							if(nt->second[(*kt)[nt->first]]->get_is_up()) has_up = true;
+							else has_down = true;
+							*/
+						}
+						//if(!(has_up && has_down)) continue;
+						currentRay.process();
+						/*double sigma = currentRay.get_t_sigma();*/
+						if(currentRay.get_chiSquare()<current_chiSquare && currentRay.get_chiSquare()>-1 && (currentRay.get_chiSquare()/currentRay.get_clus_n())<(2.*chiSquare_threshold)){
+							bestRay = currentRay;
+							current_chiSquare = currentRay.get_chiSquare();//sigma;
+							best_comb = *kt;
+							b = true;
+						}
+					}
+					if(b){
+						suitableRays[it->first].push_back(Ray_2D(bestRay));
+						for(map<double,int>::iterator kt = best_comb.begin();kt!=best_comb.end();++kt){
+							delete ((it->second)[kt->first][kt->second]);
+							(it->second)[kt->first].erase((it->second)[kt->first].begin()+kt->second);
+							sizes[it->first][kt->first]--;
+							if(sizes[it->first][kt->first]<1){
+								//b = false;
+								(it->second).erase((it->second).find(kt->first));
+								sizes[it->first].erase(sizes[it->first].find(kt->first));
+							}
 						}
 					}
 				}

@@ -174,7 +174,7 @@ double Ray_2D::eval(double z) const{
 	return slope*z+Z_intercept;
 }
 double Ray_2D::get_residu(const Detector * const det) const{
-	if(clusters.size()<3) return numeric_limits<double>::min();
+	if(clusters.size()<2) return numeric_limits<double>::min();
 	TGraph * pos = new TGraph();
 	double maxZ = numeric_limits<double>::min();
 	double minZ = numeric_limits<double>::max();
