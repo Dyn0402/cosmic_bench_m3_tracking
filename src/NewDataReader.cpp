@@ -274,23 +274,22 @@ int main(int argc, char ** argv){
 			}
 		}
 		*/
-		Task * to_do = new Read_Elec_Task(blah, new Ped_Corr_Task(current_ped, new Multicluster_Task(bench,new Write_Analyse_Task(analysisFile))));
-		vector<Worker_Thread*> threads;
-		Task::add_task(to_do);
+		Input_Task * to_do = new Read_Elec_Task(blah, new Ped_Corr_Task(current_ped, new Multicluster_Task(bench,new Write_Analyse_Task(analysisFile))));
+		vector<Thread*> threads;
+		threads.push_back(new Reader_Thread(to_do));
+		(threads.back())->start();
 		const unsigned short n_thread = Tomography::get_instance()->get_thread_number();
-		cout << n_thread << endl;
+		cout << "1 | " << n_thread << endl;
 		for(unsigned short i=0;i<n_thread;i++){
 			threads.push_back(new Worker_Thread());
 			(threads.back())->start();
-			Task::add_task(to_do);
-			Task::add_task(to_do);
 		}
 		cout << Tomography::get_instance()->init_count() << "|" << setw(7) << "tasks" << endl;
 		bool has_working_thread = true;
 		while(has_working_thread && Tomography::get_instance()->get_can_continue()){
 			cout << "\r" << Tomography::get_instance()->print_count() << "|" << setw(7) << Task::task_left() << flush;
 			has_working_thread = false;
-			for(unsigned short i=0;i<n_thread;i++){
+			for(unsigned short i=0;i<threads.size();i++){
 				if(threads[i]->is_working()){
 					has_working_thread = true;
 					break;
@@ -298,7 +297,7 @@ int main(int argc, char ** argv){
 			}
 			usleep(10000);
 		}
-		for(unsigned short i=0;i<n_thread;i++){
+		for(unsigned short i=0;i<threads.size();i++){
 			threads[i]->stop();
 			delete threads[i];
 		}

@@ -61,18 +61,19 @@ IO_Task::~IO_Task(){
 	pthread_mutex_destroy(&IO_mutex);
 }
 
-Input_Task::Input_Task(): IO_Task(){
-
+Input_Task::Input_Task(){
+	pthread_mutex_init(&IO_mutex, NULL);
+	next_task = NULL;
 }
-Input_Task::Input_Task(Task * next_task_): IO_Task(next_task_){
-
+Input_Task::Input_Task(Task * next_task_){
+	pthread_mutex_init(&IO_mutex, NULL);
+	next_task = next_task_;
 }
 Input_Task::~Input_Task(){
-
+	pthread_mutex_destroy(&IO_mutex);
 }
 void Input_Task::update_task_list(){
-	add_task(next_task);
-	add_task(this);
+	Task::add_task(next_task);
 }
 
 Thread::Thread(){
@@ -143,4 +144,38 @@ void Worker_Thread::pre_stop(){
 }
 bool Worker_Thread::is_working() const{
 	return working;
+}
+
+Reader_Thread::Reader_Thread(Input_Task * current_task_): Thread(){
+	working = false;
+	current_task = current_task_;
+}
+Reader_Thread::~Reader_Thread(){
+	working = false;
+	current_task = NULL;
+}
+bool Reader_Thread::is_working() const{
+	return working;
+}
+void * Reader_Thread::run(){
+	working = current_task!=NULL;
+	unsigned int wait_time = 0;
+	while(working){
+		if(current_task->can_exec()){
+			wait_time = 0;
+			while(!(current_task->do_task())){
+				usleep(1000);
+				wait_time++;
+				if(wait_time>10){
+					working = false;
+					break;
+				}
+			}
+			if(working) current_task->update_task_list();
+		}
+	}
+	return 0;
+}
+void Reader_Thread::pre_stop(){
+	working = false;
 }

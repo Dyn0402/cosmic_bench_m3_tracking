@@ -40,7 +40,7 @@ class IO_Task: public Task{
 
 };
 
-class Input_Task: public IO_Task{
+class Input_Task{
 	public:
 		Input_Task();
 		Input_Task(Task * next_task_);
@@ -48,6 +48,9 @@ class Input_Task: public IO_Task{
 		virtual bool do_task() = 0;
 		virtual bool can_exec() = 0;
 		void update_task_list();
+	protected:
+		pthread_mutex_t IO_mutex;
+		Task * next_task;
 };
 
 class Thread{
@@ -57,6 +60,7 @@ class Thread{
 		int start();
 		int stop();
 		pthread_t getThreadId() const;
+		virtual bool is_working() const = 0;
 	private:
 		virtual void * run() = 0;
 		static void * runThread(void * arg);
@@ -77,6 +81,18 @@ class Worker_Thread: public Thread{
 		void pre_stop();
 		bool working;
 		Task * current_task;
+};
+
+class Reader_Thread: public Thread{
+	public:
+		Reader_Thread(Input_Task * current_task_);
+		~Reader_Thread();
+		bool is_working() const;
+	protected:
+		void * run();
+		void pre_stop();
+		bool working;
+		Input_Task * current_task;
 };
 
 
