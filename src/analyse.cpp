@@ -716,7 +716,7 @@ void Analyse::Residus_ref_2D(){
 	}
 
 	c_MM = new TCanvas(name.str().c_str(),name.str().c_str(),1200,1000);
-	c_MM->Divide(2);
+	c_MM->Divide(3);
 	muon_seen = new TH2D((name.str()+"_seen").c_str(),(name.str()+"_seen").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
 	muon_total = new TH2D((name.str()+"_total").c_str(),(name.str()+"_total").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
 	efficacity_2D = new TH2D((name.str()+"_efficacity").c_str(),(name.str()+"_efficacity").c_str(),nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2,nbins_2D,-(1+marge)*Tomography::get_instance()->get_XY_size()/2,(1+marge)*Tomography::get_instance()->get_XY_size()/2);
@@ -815,6 +815,8 @@ void Analyse::Residus_ref_2D(){
 			c_MM->cd(1);
 			efficacity_2D->Draw("COLZ");
 			c_MM->cd(2);
+			muon_seen->Draw("COLZ");
+			c_MM->cd(3);
 			muon_total->Draw("COLZ");
 			c_MM->Modified();
 			c_MM->Update();
@@ -847,6 +849,8 @@ void Analyse::Residus_ref_2D(){
 	c_MM->cd(1);
 	efficacity_2D->Draw("COLZ");
 	c_MM->cd(2);
+	muon_seen->Draw("COLZ");
+	c_MM->cd(3);
 	muon_total->Draw("COLZ");
 	c_MM->Modified();
 	c_MM->Update();
