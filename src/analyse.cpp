@@ -452,7 +452,7 @@ void Analyse::Residus_ref(){
 				double binContent = 0;
 				if(muon_total[it->first]->GetBinContent(binN) > 0) binContent = (muon_seen[it->first]->GetBinContent(binN))/(muon_total[it->first]->GetBinContent(binN));
 				efficacity_2D[it->first]->SetBinContent(binN,binContent);
-				ampl_h[it->first]->SetBinContent(binN,(ampl_h[it->first]->GetBinContent(binN))/(muon_seen[it->first]->GetBinContent(binN)));
+				if(muon_seen[it->first]->GetBinContent(binN) > 0) ampl_h[it->first]->SetBinContent(binN,(ampl_h[it->first]->GetBinContent(binN))/(muon_seen[it->first]->GetBinContent(binN)));
 				double pos_X = muon_total[it->first]->GetXaxis()->GetBinCenter(i);
 				double pos_Y = muon_total[it->first]->GetYaxis()->GetBinCenter(j);
 				if(pos_X<=2*Tomography::get_instance()->get_XY_size()/5. && pos_X>=-2*Tomography::get_instance()->get_XY_size()/5. && pos_Y<=2*Tomography::get_instance()->get_XY_size()/5. && pos_Y>=-2*Tomography::get_instance()->get_XY_size()/5.){
