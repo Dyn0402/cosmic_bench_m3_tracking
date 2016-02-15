@@ -37,7 +37,7 @@ class Detector{
 		int get_perp_n() const;
 		int get_clustering_holes() const;
 		double get_RMS(int i) const;
-		int get_asic_n() const;
+		vector<int> get_asic_n() const;
 		virtual void set_RMS(vector<double> RMS_) = 0;
 		virtual unsigned int StripToChannel(unsigned int i) const = 0;
 		int get_n_in_tree() const;
@@ -58,7 +58,7 @@ class Detector{
 		Detector();	
 		Detector(const Detector& other);
 		Detector& operator=(const Detector& other);
-		Detector(double z_, bool is_X_, bool is_up_,int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_);	
+		Detector(double z_, bool is_X_, bool is_up_,int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, vector<int> asic_n_);	
 		double z; //altitude inside cosmic bench
 		bool is_X;//coordinate measured by the detector
 		bool is_up;//bloc (up|down) which the detector is part of
@@ -73,7 +73,7 @@ class Detector{
 		int perp_n;
 		int clustering_holes;
 		int n_in_tree;
-		int asic_n;
+		vector<int> asic_n;
 
 };
 

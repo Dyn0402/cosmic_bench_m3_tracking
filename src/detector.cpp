@@ -82,7 +82,7 @@ double Detector::get_RMS(int i) const{
 int Detector::get_n_in_tree() const{
 	return n_in_tree;
 }
-int Detector::get_asic_n() const{
+vector<int> Detector::get_asic_n() const{
 	return asic_n;
 }
 Detector::Detector(){
@@ -98,7 +98,7 @@ Detector::Detector(){
 	perp_n = -1;
 	clustering_holes = 0;
 	n_in_tree = -1;
-	asic_n = -1;
+	asic_n.clear();
 }
 Detector::Detector(const Detector& other){
 	z = other.z;
@@ -133,7 +133,7 @@ Detector& Detector::operator=(const Detector& other){
 	asic_n = other.asic_n;
 	return *this;
 }
-Detector::Detector(double z_, bool is_X_, bool is_up_, int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_){
+Detector::Detector(double z_, bool is_X_, bool is_up_, int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, vector<int> asic_n_){
 	z = z_;
 	is_X = is_X_;
 	is_up = is_up_;
@@ -178,7 +178,7 @@ CM_Detector& CM_Detector::operator=(const CM_Detector& other){
 	ClusSizeCut_Max_Wide = other.ClusSizeCut_Max_Wide;
 	return *this;
 }
-CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int asic_n_) :Detector(z_,is_X_,is_up_,cm_n, is_ref_, offset_, direction_, angle_x_, angle_y_, angle_z_,-1,0,asic_n_){
+CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int asic_n_) :Detector(z_,is_X_,is_up_,cm_n, is_ref_, offset_, direction_, angle_x_, angle_y_, angle_z_,-1,0,vector<int>(1,asic_n_)){
 	use_thin_strip = use_thin_strip_;
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
@@ -293,7 +293,7 @@ MG_Detector& MG_Detector::operator=(const MG_Detector& other){
 	ClusSizeCut_Min = other.ClusSizeCut_Min;
 	return *this;
 }
-MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,asic_n_){
+MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,vector<int>(1,asic_n_)){
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;
@@ -449,7 +449,7 @@ MGv2_Detector& MGv2_Detector::operator=(const MGv2_Detector& other){
 	ClusSizeCut_Min = other.ClusSizeCut_Min;
 	return *this;
 }
-MGv2_Detector::MGv2_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,asic_n_){
+MGv2_Detector::MGv2_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,vector<int>(1,asic_n_)){
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;

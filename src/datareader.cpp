@@ -28,8 +28,9 @@ DataReader::DataReader(){
 	reader = NULL;
 	outTree = NULL;
 	DAQtype = Tomography::unknown_elec;
-	det_type_by_asic.clear();
-	det_n_by_asic.clear();
+	//det_type_by_asic.clear();
+	//det_n_by_asic.clear();
+	asic_list.clear();
 	max_event = -1;
 	mapping = NULL;
 	Nevent = -1;
@@ -85,8 +86,22 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk){
 	det_N.clear();
 	for(int i=0;i<current_CB.get_det_N_tot();i++){
 		Detector * current_det = current_CB.get_detector(i);
+		/*
 		det_type_by_asic[current_det->get_asic_n()] = current_det->get_type();
 		det_n_by_asic[current_det->get_asic_n()] = current_det->get_n_in_tree();
+		*/
+		vector<int> current_det_asic_n = current_det->get_asic_n();
+		for(unsigned int j=0;j<current_det_asic_n.size();j++){
+			if(asic_list.count(current_det_asic_n[j])>0){
+				cout << "asic " << current_det_asic_n[j] << " appears multiple times in config file" << endl;
+				return;
+			}
+			struct asic_carac current_asic;
+			current_asic.detector_type = current_det->get_type();
+			current_asic.detector_n = current_det->get_n_in_tree();
+			current_asic.asic_n_in_det = j;
+			asic_list[current_det_asic_n[j]] = current_asic;
+		}
 		det_N[current_det->get_type()]++;
 	}
 	DAQtype = Tomography::str_to_elec(config_tree.get<string>("electronic_type"));
@@ -125,10 +140,13 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk){
 	}
 	else if(DAQtype==Tomography::Feminos){
 		vector<int> fem_id;
-		for(map<int,int>::iterator map_it=det_n_by_asic.begin();map_it!=det_n_by_asic.end();++map_it){
+		for(map<int,asic_carac>::iterator map_it=asic_list.begin();map_it!=asic_list.end();++map_it){
 			bool exists = false;
 			for(vector<int>::iterator vec_it=fem_id.begin();vec_it!=fem_id.end();++vec_it){
-				if((*vec_it) == ((map_it->first)/Tomography::Nasic_Feminos)) exists = true;
+				if((*vec_it) == ((map_it->first)/Tomography::Nasic_Feminos)){
+					exists = true;
+					break;
+				}
 			}
 			if(!exists) fem_id.push_back((map_it->first)/Tomography::Nasic_Feminos);
 		}
@@ -157,8 +175,9 @@ DataReader::~DataReader(){
 		delete outTree;
 	}
 	DAQtype = Tomography::unknown_elec;
-	det_type_by_asic.clear();
-	det_n_by_asic.clear();
+	//det_type_by_asic.clear();
+	//det_n_by_asic.clear();
+	asic_list.clear();
 	StripAmpl.clear();
 	Nevent = -1;
 	evttime = 0;
@@ -194,13 +213,13 @@ void DataReader::process_event(){
 	reader->read_next_event();
 	Nevent = reader->get_event_n();
 	evttime = reader->get_evttime();
-	for(map<int,int>::iterator map_it=det_n_by_asic.begin();map_it!=det_n_by_asic.end();++map_it){
-		for(int j=0;j<Tomography::Nchannel;j++){
-			int channel = mapping(det_type_by_asic[map_it->first],j);
+	for(map<int,asic_carac>::iterator map_it=asic_list.begin();map_it!=asic_list.end();++map_it){
+		for(unsigned int j=0;j<Tomography::Nchannel;j++){
+			int channel = mapping((map_it->second).detector_type,j+Tomography::Nchannel*((map_it->second).asic_n_in_det));
 			if(channel<0) continue;
-			if(static_cast<unsigned int>(channel)>=StripAmpl[det_type_by_asic[map_it->first]][map_it->second].size()) continue;
+			if(static_cast<unsigned int>(channel)>=StripAmpl[(map_it->second).detector_type][(map_it->second).detector_n].size()) continue;
 			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
-				StripAmpl[det_type_by_asic[map_it->first]][map_it->second][channel][k] = reader->get_data(map_it->first,j,k);
+				StripAmpl[(map_it->second).detector_type][(map_it->second).detector_n][channel][k] = reader->get_data(map_it->first,j,k);
 			}
 		}
 	}

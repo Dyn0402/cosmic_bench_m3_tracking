@@ -41,8 +41,6 @@ class Signal: public Tsignal_R, public CosmicBench{
 		long max_event;
 		int data_file_first;
 		int data_file_last;
-		map<int,Tomography::det_type> det_type_by_asic;
-		map<int,int> det_n_by_asic;
 		TFile * fIn;
 		bool exists;
 };

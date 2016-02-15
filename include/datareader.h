@@ -15,6 +15,12 @@ using boost::property_tree::ptree;
 class Tsignal_W;
 class ElecReader;
 
+struct asic_carac{
+	Tomography::det_type detector_type;
+	int detector_n;
+	int asic_n_in_det;
+};
+
 class DataReader{
 	public:
 		DataReader();
@@ -47,8 +53,9 @@ class DataReader{
 		ElecReader * reader;
 		Tsignal_W * outTree;
 		Tomography::elec_type DAQtype;
-		map<int,Tomography::det_type> det_type_by_asic;
-		map<int,int> det_n_by_asic;
+		//map<int,Tomography::det_type> det_type_by_asic;
+		//map<int,int> det_n_by_asic;
+		map<int,struct asic_carac> asic_list;
 		map<Tomography::det_type,unsigned short> det_N;
 		long max_event;
 		long Nevent;

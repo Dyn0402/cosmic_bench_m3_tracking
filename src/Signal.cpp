@@ -69,10 +69,6 @@ Signal::Signal(string configFilePath){
 	exists = fIn_test.good();
 	fIn_test.close();
 	CosmicBench::Init(config_tree);
-	for(vector<Detector*>::const_iterator det_it=detectors.begin();det_it!=detectors.end();++det_it){
-		det_type_by_asic[(*det_it)->get_asic_n()] = (*det_it)->get_type();
-		det_n_by_asic[(*det_it)->get_asic_n()] = (*det_it)->get_n_in_tree();
-	}
 	if(exists){
 		fIn = new TFile(signalName.c_str(),"READ");
 		TTree * treeIn = (TTree*)(fIn->Get("T"));
@@ -101,10 +97,6 @@ Signal::Signal(ptree config_tree){
 	exists = fIn_test.good();
 	fIn_test.close();
 	CosmicBench::Init(config_tree);
-	for(vector<Detector*>::const_iterator det_it=detectors.begin();det_it!=detectors.end();++det_it){
-		det_type_by_asic[(*det_it)->get_asic_n()] = (*det_it)->get_type();
-		det_n_by_asic[(*det_it)->get_asic_n()] = (*det_it)->get_n_in_tree();
-	}
 	if(exists){
 		fIn = new TFile(signalName.c_str(),"READ");
 		TTree * treeIn = (TTree*)(fIn->Get("T"));
