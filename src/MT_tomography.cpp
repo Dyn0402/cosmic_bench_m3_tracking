@@ -210,6 +210,42 @@ template<typename T>
 Output_Task<T>::~Output_Task(){
 	pthread_mutex_destroy(&IO_mutex);
 }
+template<>
+string Output_Task<raw_data>::init_count() const{
+	ostringstream outstring;
+	outstring << left << setw(19) << "raw evt (w)";
+	return outstring.str();
+}
+template<>
+string Output_Task<ped_data>::init_count() const{
+	ostringstream outstring;
+	outstring << left << setw(19) << "ped evt (w)";
+	return outstring.str();
+}
+template<>
+string Output_Task<corr_data>::init_count() const{
+	ostringstream outstring;
+	outstring << left << setw(19) << "corr evt (w)";
+	return outstring.str();
+}
+template<>
+string Output_Task<event_data>::init_count() const{
+	ostringstream outstring;
+	outstring << left << setw(19) << "demux evt (w)";
+	return outstring.str();
+}
+template<>
+string Output_Task<ray_data>::init_count() const{
+	ostringstream outstring;
+	outstring << left << setw(19) << "abs tracked evt (w)";
+	return outstring.str();
+}
+template<>
+string Output_Task<deviation_data>::init_count() const{
+	ostringstream outstring;
+	outstring << left << setw(19) << "dev tracked evt (w)";
+	return outstring.str();
+}
 
 template class Output_Task<raw_data>;
 template class Output_Task<ped_data>;

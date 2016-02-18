@@ -169,7 +169,8 @@ int main(int argc, char ** argv){
 	enum process_type{
 		data_run,
 		ped_run,
-		analysis
+		analysis,
+		live
 	};
 	process_type operation = data_run;
 	for(int i=2;i<argc;i++){
@@ -182,12 +183,20 @@ int main(int argc, char ** argv){
 		else if(argv[i] == string("analyse")){
 			operation = analysis;
 		}
+		else if(argv[i] == string("live")){
+			operation = live;
+		}
 	}
 	string config_file = argv[1];
 	ptree config_tree;
 	read_json(config_file, config_tree);
 	Tomography::Init(config_tree);
-	if(operation != analysis){
+	if(operation==live){
+		DataReader * blah = new DataReader(config_tree,true,true);
+		blah->process();
+		delete blah;
+	}
+	else if(operation != analysis){
 		DataReader * blah = new DataReader(config_tree,true);
 		blah->process();
 		if(operation == ped_run) blah->compute_ped();

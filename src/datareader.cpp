@@ -81,7 +81,7 @@ DataReader::DataReader(map<int,Tomography::det_type> det_type_by_asic_, map<int,
 	mapping = &Feminos_mapping;
 }
 */
-DataReader::DataReader(ptree config_tree, bool save_to_disk){
+DataReader::DataReader(ptree config_tree, bool save_to_disk, bool is_live){
 	CosmicBench current_CB(config_tree);
 	det_N.clear();
 	for(int i=0;i<current_CB.get_det_N_tot();i++){
@@ -118,6 +118,7 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk){
 	else outTree = NULL;
 	if(DAQtype==Tomography::Dream){
 		vector<FeuInfo> all_feu_info;
+		vector<int> used_asics;
 		BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child("FEU")){
 			struct FeuInfo current_feu_info;
 			current_feu_info.id = child.second.get<int>("id");
@@ -132,10 +133,12 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk){
 					continue;
 				}
 				current_feu_info.dream_mask[current_dream] = true;
+				used_asics.push_back(current_dream+(8*(current_feu_info.id)));
 			}
 			all_feu_info.push_back(current_feu_info);
 		}
-		reader = new DreamElecReader(data_file_basename,all_feu_info,first_index,last_index);
+		if(is_live) reader = new LiveElecReader(used_asics);
+		else reader = new DreamElecReader(data_file_basename,all_feu_info,first_index,last_index);
 		mapping = &Dream_mapping;
 	}
 	else if(DAQtype==Tomography::Feminos){

@@ -91,9 +91,9 @@ class LiveElecReader: public ElecReader{
 		LiveElecReader(const LiveElecReader& other);
 		LiveElecReader& operator=(const LiveElecReader& other);
 		void read_next_event();
-		double get_data(int asic_n,int channel_n,int sample_n) const;
-		long get_event_n() const;
-		double get_evttime() const;
+		double get_data(int asic_n,int channel_n,int sample_n);
+		long get_event_n();
+		double get_evttime();
 		bool is_end() const;
 	protected:
 		void reset_data();

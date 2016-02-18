@@ -411,13 +411,13 @@ void LiveElecReader::read_next_event(){
 
 	}
 }
-double LiveElecReader::get_data(int asic_n,int channel_n,int sample_n) const{
+double LiveElecReader::get_data(int asic_n,int channel_n,int sample_n){
 	return ((data.find(asic_n))->second)[channel_n][sample_n];
 }
-long LiveElecReader::get_event_n() const{
+long LiveElecReader::get_event_n(){
 	return Nevent;
 }
-double LiveElecReader::get_evttime() const{
+double LiveElecReader::get_evttime(){
 	return evttime;
 }
 bool LiveElecReader::is_end() const{

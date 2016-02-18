@@ -126,6 +126,7 @@ class Output_Task: public Typed_Task<T>{
 		virtual bool do_task() = 0;
 		virtual bool can_exec() const = 0;
 		virtual void update_task_list() const = 0;
+		string init_count() const;
 	protected:
 		pthread_mutex_t IO_mutex;
 };
