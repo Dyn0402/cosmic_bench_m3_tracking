@@ -27,7 +27,7 @@
 	"FEU": //only needed for DREAM electronic, inform of the conversion between id (present in DREAM packet) and n (present in the fdf file name)
 	[
 		{
-			"id" : 8,
+			"id" : 0,
 			"n" : 1,
 			"dream_mask": [ 0,1,2,3,4,5,6,7 ] //adapt to file format : only DREAMS in this array must be present in fdf file 
 		}

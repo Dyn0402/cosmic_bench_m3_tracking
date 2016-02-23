@@ -187,6 +187,7 @@ LiveElecReader::LiveElecReader(vector<int> used_asics): ElecReader(){
 	live_reader_task = new Read_Live_Task(queue_id);
 	live_reader_thread = new Reader_Thread(live_reader_task);
 	live_reader_thread->start();
+	cout << "listening to queue : " << queue_id << endl;
 	current_message = NULL;
 	message_index = 0;
 }
@@ -272,7 +273,7 @@ void LiveElecReader::read_next_event(){
 	reset_data();
 	DataLineDream current_data;
 	current_data = get_next_word();
-	while(!(event_complete || has_bug)){
+	while(Tomography::get_instance()->get_can_continue() && !(event_complete || has_bug)){
 		if(FeuHeaderLine<8 && current_data.is_Feu_header()){
 			if(FeuHeaderLine==0){
 				asic_nb = 0;
