@@ -465,7 +465,7 @@ void Signal::SignalOverNoiseDisplay(){
 	}
 }
 
-void Signal::EventDisplay(int evn_min, int evn_max){
+void Signal::EventDisplay(int evn_min, int evn_max, Tomography::signal_type signal_correction){
 	int column_nb = CeilNint((get_det_N_tot())/2.);
 	TCanvas * cDisplay = new TCanvas("cDisplay","cDisplay",800,600);
 	cDisplay->Divide(column_nb,2);
@@ -484,7 +484,10 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 		GetEntry(i);
 		int det_id = 1;
 		for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
-			vector<vector<double> > current_ampl = get_ampl<double>((*det_it)->get_type(),(*det_it)->get_n_in_tree());
+			vector<vector<double> > current_ampl;
+			if(signal_correction == Tomography::raw) current_ampl = get_ampl_raw<double>((*det_it)->get_type(),(*det_it)->get_n_in_tree());
+			else if(signal_correction == Tomography::ped) current_ampl = get_ampl_ped<double>((*det_it)->get_type(),(*det_it)->get_n_in_tree());
+			else current_ampl = get_ampl<double>((*det_it)->get_type(),(*det_it)->get_n_in_tree());
 			pair<Tomography::det_type,int> current_key((*det_it)->get_type(),(*det_it)->get_n_in_tree());
 			for(int j=0;j<(*det_it)->get_Nchannel();j++){
 				double max_ampl = -Tomography::ADC_max;
@@ -521,8 +524,14 @@ void Signal::EventDisplay(int evn_min, int evn_max){
 					ostringstream current_title;
 					current_title << current_key.first << "_" << current_key.second << "_Event_" << Nevent << "_Signal";
 					signal_shape[current_key][j]->SetTitle(current_title.str().c_str());
-					signal_shape[current_key][j]->GetHistogram()->SetMinimum(-100);
-					signal_shape[current_key][j]->GetHistogram()->SetMaximum(1200);
+					if(signal_correction == Tomography::raw){
+						signal_shape[current_key][j]->GetHistogram()->SetMinimum(0);
+						signal_shape[current_key][j]->GetHistogram()->SetMaximum(4096);
+					}
+					else{
+						signal_shape[current_key][j]->GetHistogram()->SetMinimum(-100);
+						signal_shape[current_key][j]->GetHistogram()->SetMaximum(1200);
+					}
 					signal_shape[current_key][j]->Draw("AL");
 					//if(point_n>2) rising_fit[current_key][j]->Draw("same");
 				}

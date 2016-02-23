@@ -50,13 +50,22 @@ int main(int argc, char ** argv){
 		blah->HoughTracking(event_nb);
 	}
 	else if(argv[2] == display){
-		if(argc<5){
-			cout << "you must indicate a start and stop event number" << endl;
+		if(argc<6){
+			cout << "you must indicate the signal you want to plot (raw,ped,corr) and a start and stop event number" << endl;
 			return 1;
 		}
-		int event_nb_start = atoi(argv[3]);
-		int event_nb_stop = atoi(argv[4]);
-		blah->EventDisplay(event_nb_start,event_nb_stop);
+		string signal_correction_str = argv[3];
+		Tomography::signal_type signal_correction;
+		if(signal_correction_str == "raw"){
+			signal_correction = Tomography::raw;
+		}
+		else if(signal_correction_str == "ped"){
+			signal_correction = Tomography::ped;
+		}
+		else signal_correction = Tomography::corr;
+		int event_nb_start = atoi(argv[4]);
+		int event_nb_stop = atoi(argv[5]);
+		blah->EventDisplay(event_nb_start,event_nb_stop,signal_correction);
 	}
 	else if(argv[2] == dispersion){
 		blah->SignalDispersion();
