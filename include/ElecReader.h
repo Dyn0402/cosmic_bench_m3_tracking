@@ -83,11 +83,20 @@ class ElecReader{
 		string base_name;
 };
 
+struct asic_event{
+	public:
+		long Nevent;
+		double evttime;
+		map<int,vector<vector<double> > > strip_data;
+		unsigned long data_retrieved;
+		asic_event(): Nevent(-1), evttime(0), strip_data(), data_retrieved(0){}
+};
+
 class LiveElecReader: public ElecReader{
 	public:
 		LiveElecReader();
 		~LiveElecReader();
-		LiveElecReader(vector<int> used_asics, string pipe_name);
+		LiveElecReader(vector<int> used_asics_, string pipe_name);
 		LiveElecReader(const LiveElecReader& other);
 		LiveElecReader& operator=(const LiveElecReader& other);
 		void read_next_event();
@@ -96,17 +105,17 @@ class LiveElecReader: public ElecReader{
 		double get_evttime();
 		bool is_end() const;
 	protected:
-		void reset_data();
+		void build_data(long ev_id, double ev_time);
 		DataLineDream get_next_word();
 		data_message * current_message;
 		unsigned int message_index;
+		vector<int> used_asics;
 		//int queue_id;
 		Read_Live_Task * live_reader_task;
 		Reader_Thread * live_reader_thread;
-		map<int,vector<vector<double> > > data;
+		map<long, asic_event > data;
+		asic_event * current_event_data;
 		map<int,int> dream_mask;
-		long Nevent;
-		double evttime;
 };
 
 class DreamElecReader: public ElecReader{

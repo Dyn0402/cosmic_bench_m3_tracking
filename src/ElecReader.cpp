@@ -169,17 +169,15 @@ ElecReader& ElecReader::operator=(const ElecReader& other){
 }
 
 LiveElecReader::LiveElecReader(): ElecReader(){
-	Nevent = -1;
-	evttime = 0;
 	//queue_id = -1;
 	current_message = NULL;
 	message_index = 0;
+	current_event_data = NULL;
 }
-LiveElecReader::LiveElecReader(vector<int> used_asics, string pipe_name): ElecReader(){
-	Nevent = -1;
-	evttime = 0;
+LiveElecReader::LiveElecReader(vector<int> used_asics_, string pipe_name): ElecReader(){
+	used_asics = used_asics_;
 	for(vector<int>::iterator asics_it=used_asics.begin();asics_it!=used_asics.end();++asics_it){
-		data[*asics_it] = vector<vector<double> >(Tomography::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
+		//data[*asics_it] = vector<vector<double> >(Tomography::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
 		if(dream_mask.count((*asics_it)/Tomography::Nasic_FEU)==0) dream_mask[(*asics_it)/Tomography::Nasic_FEU] = 0;
 		dream_mask[(*asics_it)/Tomography::Nasic_FEU] |= 0x1 << (*asics_it)%Tomography::Nasic_FEU;
 	}
@@ -190,53 +188,52 @@ LiveElecReader::LiveElecReader(vector<int> used_asics, string pipe_name): ElecRe
 	//cout << "listening to queue : " << queue_id << endl;
 	current_message = NULL;
 	message_index = 0;
+	current_event_data = NULL;
 }
 LiveElecReader::~LiveElecReader(){
 	live_reader_thread->stop();
 	delete live_reader_thread;
 	delete live_reader_task;
-	Nevent = 0;
-	evttime = 0;
+	current_event_data = NULL;
 	data.clear();
 	dream_mask.clear();
 	//if(queue_id>0) msgctl(queue_id, IPC_RMID, NULL);
 	//queue_id = 0;
 	delete current_message;
 	message_index = 0;
+	used_asics.clear();
 }
 LiveElecReader::LiveElecReader(const LiveElecReader& other): ElecReader(other){
-	Nevent = other.Nevent;
-	evttime = other.evttime;
 	//queue_id = other.queue_id;
 	live_reader_task = other.live_reader_task;
 	live_reader_thread = other.live_reader_thread;
 	data = other.data;
+	current_event_data = other.current_event_data;
 	dream_mask = other.dream_mask;
 	current_message = other.current_message;
 	message_index = other.message_index;
+	used_asics = other.used_asics;
 	cout << "Warning, the live elec reader should not be copied !" << endl;
 }
 LiveElecReader& LiveElecReader::operator=(const LiveElecReader& other){
-	ElecReader::operator=(other);
-	Nevent = other.Nevent;
-	evttime = other.evttime;
+	ElecReader::operator=(other);;
 	//queue_id = other.queue_id;
 	live_reader_task = other.live_reader_task;
 	live_reader_thread = other.live_reader_thread;
 	data = other.data;
+	current_event_data = other.current_event_data;
 	dream_mask = other.dream_mask;
 	current_message = other.current_message;
 	message_index = other.message_index;
+	used_asics = other.used_asics;
 	cout << "Warning, the live elec reader should not be copied !" << endl;
 	return *this;
 }
-void LiveElecReader::reset_data(){
-	for(map<int,vector<vector<double> > >::iterator asic_it=data.begin();asic_it!=data.end();++asic_it){
-		for(vector<vector<double> >::iterator channel_it=(asic_it->second).begin();channel_it!=(asic_it->second).end();++channel_it){
-			for(vector<double>::iterator sample_it=channel_it->begin();sample_it!=channel_it->end();++sample_it){
-				*sample_it = 0;
-			}
-		}
+void LiveElecReader::build_data(long ev_id, double ev_time){
+	data[ev_id].Nevent = ev_id;
+	data[ev_id].evttime = ev_time;
+	for(vector<int>::iterator asics_it=used_asics.begin();asics_it!=used_asics.end();++asics_it){
+		data[ev_id].strip_data[*asics_it] = vector<vector<double> >(Tomography::Nchannel,vector<double>(Tomography::get_instance()->get_Nsample(),0));
 	}
 }
 DataLineDream LiveElecReader::get_next_word(){
@@ -254,10 +251,10 @@ DataLineDream LiveElecReader::get_next_word(){
 }
 
 void LiveElecReader::read_next_event(){
-	int isample=-1; int isample_prev=-2;
+	int isample=-1; //int isample_prev=-2;
 	int isample_nb=0;
 	int asic_nb = 0;
-	unsigned int feu_nb = 0;
+	//unsigned int feu_nb = 0;
 	int ichannel=0;
 	int asicN=0;
 	int FeuN=0;
@@ -268,9 +265,10 @@ void LiveElecReader::read_next_event(){
 	bool event_complete = false;
 	bool has_bug = false;
 	int current_event = -1;
-	int current_event_old = -1;
+	//int current_event_old = -1;
 	double current_evttime = 0;
-	reset_data();
+	if(current_event_data) data.erase(current_event_data->Nevent);
+	current_event_data = NULL;
 	DataLineDream current_data;
 	current_data = get_next_word();
 	while(Tomography::get_instance()->get_can_continue() && !(event_complete || has_bug)){
@@ -288,13 +286,15 @@ void LiveElecReader::read_next_event(){
 				current_evttime = current_data.get_data();
 			}
 			else if(FeuHeaderLine==3){
-				if(feu_nb==0 && asic_nb==0) isample_prev = current_data.get_sample_ID();;
+				//if(feu_nb==0 && asic_nb==0) isample_prev = current_data.get_sample_ID();;
 				isample = current_data.get_sample_ID();
+				/*
 				if(isample!=isample_prev){
 					cout << "problem in sample index : " << isample << "; " << isample_prev << endl;
 					has_bug = true;
 					break;
 				}
+				*/
 			}
 			else if(FeuHeaderLine==4){
 				current_event += static_cast<int>(current_data.get_data()) << 12;
@@ -310,12 +310,15 @@ void LiveElecReader::read_next_event(){
 			break;
 		}
 		else if(FeuHeaderLine>3){
+			/*
 			if(feu_nb==0 && asic_nb==0 && isample==0) current_event_old = current_event;
 			if(current_event != current_event_old){
 				cout << "problem in event id : " << current_event << "; " << current_event_old << endl;
 				has_bug = true;
 				break;
 			}
+			*/
+			if(data.count(current_event) == 0) build_data(current_event,current_evttime);
 			if(DataHeaderLine<4 && current_data.is_data_header()){
 				asicN = current_data.get_dream_ID();
 				DataHeaderLine++;
@@ -328,7 +331,7 @@ void LiveElecReader::read_next_event(){
 			else if(DataHeaderLine>3){
 				if(current_data.is_data() && !zs_mode){
 					cout << "getting data for asic : " << asicN+(8*FeuN) << " channel : " << ichannel << " sample : " << isample << endl;
-					data[asicN+(8*FeuN)][ichannel][isample] = current_data.get_data();
+					data[current_event].strip_data[asicN+(8*FeuN)][ichannel][isample] = current_data.get_data();
 					ichannel++;
 				}
 				else if(current_data.is_data_zs() && zs_mode){
@@ -337,7 +340,7 @@ void LiveElecReader::read_next_event(){
 						got_channel_id = true;
 					}
 					else{
-						data[asicN+(8*FeuN)][ichannel][isample] = current_data.get_data();
+						data[current_event].strip_data[asicN+(8*FeuN)][ichannel][isample] = current_data.get_data();
 						got_channel_id = false;
 					}
 				}
@@ -384,7 +387,7 @@ void LiveElecReader::read_next_event(){
 					has_bug = true;
 					break;
 				}
-				else feu_nb++;
+				//else feu_nb++;
 				isample_nb++;
 				zs_mode = false;
 				FeuHeaderLine=0;
@@ -393,37 +396,44 @@ void LiveElecReader::read_next_event(){
 				current_data = DataLineDream();
 				if(current_data.is_EOE()){
 					if(isample_nb!=Tomography::get_instance()->get_Nsample()) cout << "Reached EOE with less than " << Tomography::get_instance()->get_Nsample() << " samples (" << isample_nb << ")" << endl;
-					isample=-1; isample_prev=-2;
-					if(feu_nb==dream_mask.size()){
+					(data[current_event].data_retrieved)++;
+					isample=-1; //isample_prev=-2;
+					if(data[current_event].data_retrieved==dream_mask.size()){
 						event_complete = true;
 						break;
 					}
 				}
+				/*
 				if(feu_nb==dream_mask.size()){
 					feu_nb=0;
 				}
+				*/
 			}
 		}
 		current_data = get_next_word();
 	}
 	if(event_complete){
-		Nevent = current_event;
-		evttime = current_evttime;
+		data[current_event].Nevent = current_event;
+		data[current_event].evttime = current_evttime;
+		current_event_data = &(data[current_event]);
 	}
 	if(has_bug){
-		Nevent = -1;
-		evttime = 0;
-
+		data[current_event].Nevent = -1;
+		data[current_event].evttime = 0;
+		current_event_data = &(data[current_event]);
 	}
 }
 double LiveElecReader::get_data(int asic_n,int channel_n,int sample_n){
-	return ((data.find(asic_n))->second)[channel_n][sample_n];
+	if(current_event_data) return current_event_data->strip_data[asic_n][channel_n][sample_n];
+	else return -1;
 }
 long LiveElecReader::get_event_n(){
-	return Nevent;
+	if(current_event_data) return current_event_data->Nevent;
+	else return -1;
 }
 double LiveElecReader::get_evttime(){
-	return evttime;
+	if(current_event_data) return current_event_data->evttime;
+	else return -1;
 }
 bool LiveElecReader::is_end() const{
 	return !((live_reader_task->has_new_data()) || (live_reader_thread->is_working()));
