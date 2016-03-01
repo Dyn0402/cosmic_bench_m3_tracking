@@ -202,6 +202,7 @@ void DataReader::process(){
 		if((event_nb%100) == 0) cout << "\r" << "event processed : " << event_nb << flush;
 		process_event();
 		event_nb++;
+		if((event_nb%1000)==0 && outTree != NULL) outTree->Write();
 	}
 	cout << "\r" << "event processed : " << event_nb << endl;
 	if(outTree != NULL){
@@ -213,6 +214,7 @@ void DataReader::process_event(){
 		cout << "Data Reader not initialized !" << endl;
 		return;
 	}
+	cout << "reading event" << endl;
 	reader->read_next_event();
 	Nevent = reader->get_event_n();
 	evttime = reader->get_evttime();

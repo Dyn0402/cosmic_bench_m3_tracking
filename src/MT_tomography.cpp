@@ -368,6 +368,14 @@ void * Reader_Thread::run(){
 			}
 			if(working) current_task->update_task_list();
 		}
+		else{
+			usleep(1000);
+			wait_time++;
+			if(wait_time>0){
+				working = false;
+				break;
+			}
+		}
 	}
 	return 0;
 }

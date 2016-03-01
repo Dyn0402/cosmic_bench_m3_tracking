@@ -239,11 +239,16 @@ void LiveElecReader::build_data(long ev_id, double ev_time){
 DataLineDream LiveElecReader::get_next_word(){
 	if(current_message==NULL || message_index>=data_message::max_length){
 		if(live_reader_task->has_new_data()){
+			//cout << "getting next message" << endl;
 			current_message = live_reader_task->get_next_data();
 			message_index = 0;
 		}
-		else return DataLineDream();
+		else{
+			//cout << "empty message queue" << endl;
+			return DataLineDream();
+		}
 	}
+	//cout << "getting " << message_index << " line of message" << endl;
 	DataLineDream current_line((current_message->data)[message_index]);
 	current_line.ntohs_();
 	message_index++;
@@ -252,7 +257,7 @@ DataLineDream LiveElecReader::get_next_word(){
 
 void LiveElecReader::read_next_event(){
 	int isample=-1; //int isample_prev=-2;
-	int isample_nb=0;
+	//int isample_nb=0;
 	int asic_nb = 0;
 	//unsigned int feu_nb = 0;
 	int ichannel=0;
@@ -271,7 +276,7 @@ void LiveElecReader::read_next_event(){
 	current_event_data = NULL;
 	DataLineDream current_data;
 	current_data = get_next_word();
-	while(Tomography::get_instance()->get_can_continue() && !(event_complete || has_bug)){
+	while(Tomography::get_instance()->get_can_continue() && (live_reader_thread->is_working() || live_reader_task->has_new_data()) && !(event_complete || has_bug)){
 		if(FeuHeaderLine<8 && current_data.is_Feu_header()){
 			if(FeuHeaderLine==0){
 				asic_nb = 0;
@@ -330,7 +335,7 @@ void LiveElecReader::read_next_event(){
 			}
 			else if(DataHeaderLine>3){
 				if(current_data.is_data() && !zs_mode){
-					cout << "getting data for asic : " << asicN+(8*FeuN) << " channel : " << ichannel << " sample : " << isample << endl;
+					//cout << "getting data for asic : " << asicN+(8*FeuN) << " channel : " << ichannel << " sample : " << isample << endl;
 					data[current_event].strip_data[asicN+(8*FeuN)][ichannel][isample] = current_data.get_data();
 					ichannel++;
 				}
@@ -388,21 +393,24 @@ void LiveElecReader::read_next_event(){
 					break;
 				}
 				//else feu_nb++;
-				isample_nb++;
+				//isample_nb++;
+				(data[current_event].data_retrieved)++;
 				zs_mode = false;
 				FeuHeaderLine=0;
 				FeuN = 0;
-				current_data = get_next_word();
-				current_data = DataLineDream();
+				//cout << "trailer reached" << endl;
 				if(current_data.is_EOE()){
-					if(isample_nb!=Tomography::get_instance()->get_Nsample()) cout << "Reached EOE with less than " << Tomography::get_instance()->get_Nsample() << " samples (" << isample_nb << ")" << endl;
-					(data[current_event].data_retrieved)++;
+					//if(((data[current_event].data_retrieved) % Tomography::get_instance()->get_Nsample()) != 0) cout << "Reached EOE with less than " << Tomography::get_instance()->get_Nsample() << " samples (" << data[current_event].data_retrieved << ")" << endl;
+					//(data[current_event].data_retrieved)++;
 					isample=-1; //isample_prev=-2;
-					if(data[current_event].data_retrieved==dream_mask.size()){
+					//cout << "EOE reached for " << data[current_event].data_retrieved/Tomography::get_instance()->get_Nsample() << " FEUs out of " << dream_mask.size() << endl;
+					if((data[current_event].data_retrieved)==((dream_mask.size())*(Tomography::get_instance()->get_Nsample()))){
 						event_complete = true;
 						break;
 					}
 				}
+				current_data = get_next_word();
+				current_data = DataLineDream();
 				/*
 				if(feu_nb==dream_mask.size()){
 					feu_nb=0;
@@ -413,11 +421,13 @@ void LiveElecReader::read_next_event(){
 		current_data = get_next_word();
 	}
 	if(event_complete){
+		cout << "complete event read !" << endl;
 		data[current_event].Nevent = current_event;
 		data[current_event].evttime = current_evttime;
 		current_event_data = &(data[current_event]);
 	}
 	if(has_bug){
+		cout << "bugged event read !" << endl;
 		data[current_event].Nevent = -1;
 		data[current_event].evttime = 0;
 		current_event_data = &(data[current_event]);

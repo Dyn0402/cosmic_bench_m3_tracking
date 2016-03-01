@@ -36,7 +36,7 @@ Read_Live_Task::~Read_Live_Task(){
 }
 bool Read_Live_Task::do_task(){
 	data_message * current_data = new data_message();
-	//cout << "trying to read message..." << endl;
+	cout << "trying to read message..." << endl;
 	//if(msgrcv(queue_id,current_data,sizeof(current_data->data),0,0) == -1) return false;
 	int rd_size;
 	if(Pipe_Read(pipe_ptr,(char*)current_data, &rd_size) < 0){
@@ -50,6 +50,7 @@ bool Read_Live_Task::do_task(){
 		return true;
 	}
 	else{
+		//cout << "recieved control message : " << hex << showbase << current_data->mtype << dec << noshowbase << endl;
 		status |= (current_data->mtype);
 		delete current_data;
 		return true;
@@ -59,6 +60,7 @@ bool Read_Live_Task::do_task(){
 }
 bool Read_Live_Task::can_exec() const{
 	//cout << "current status : " << hex << showbase << status << dec << noshowbase << endl;
+	//if(status & 0x8000) cout << "recieved quit message" << endl;
 	return (!(status & 0x8000));
 }
 void Read_Live_Task::update_task_list() const{
