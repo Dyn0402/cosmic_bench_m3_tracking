@@ -138,6 +138,7 @@ status_message::~status_message(){
 }
 data_message::data_message(){
 	mtype = -1;
+	memset(data,0,max_length*sizeof(uint16_t));
 }
 data_message::~data_message(){
 	mtype = -1;
@@ -186,8 +187,8 @@ LiveElecReader::LiveElecReader(vector<int> used_asics_, string pipe_name): ElecR
 	live_reader_thread = new Reader_Thread(live_reader_task);
 	live_reader_thread->start();
 	//cout << "listening to queue : " << queue_id << endl;
-	current_message = NULL;
-	message_index = 0;
+	current_message = new data_message();
+	message_index = data_message::max_length;
 	current_event_data = NULL;
 }
 LiveElecReader::~LiveElecReader(){
@@ -237,16 +238,11 @@ void LiveElecReader::build_data(long ev_id, double ev_time){
 	}
 }
 DataLineDream LiveElecReader::get_next_word(){
-	if(current_message==NULL || message_index>=data_message::max_length){
-		if(live_reader_task->has_new_data()){
-			//cout << "getting next message" << endl;
-			current_message = live_reader_task->get_next_data();
-			message_index = 0;
-		}
-		else{
-			//cout << "empty message queue" << endl;
-			return DataLineDream();
-		}
+	if(message_index>=data_message::max_length){	
+		delete current_message;
+		//cout << "waiting data" << endl;
+		current_message = live_reader_task->wait_new_data();
+		message_index = 0;
 	}
 	//cout << "getting " << message_index << " line of message" << endl;
 	DataLineDream current_line((current_message->data)[message_index]);
@@ -254,8 +250,14 @@ DataLineDream LiveElecReader::get_next_word(){
 	message_index++;
 	return current_line;
 }
+void LiveElecReader::get_next_message(){
+	delete current_message;
+	current_message = live_reader_task->wait_new_data();
+	message_index = 0;
+}
 
 void LiveElecReader::read_next_event(){
+	//cout << "reading event" << endl;
 	int isample=-1; //int isample_prev=-2;
 	//int isample_nb=0;
 	int asic_nb = 0;
@@ -282,6 +284,11 @@ void LiveElecReader::read_next_event(){
 				asic_nb = 0;
 				zs_mode = current_data.get_zs_mode();
 				FeuN = current_data.get_Feu_ID();
+				if(dream_mask.count(FeuN)==0){
+					cout << "unknown FEU " << FeuN << endl;
+					has_bug = true;
+					break;
+				}
 				//if(FeuN != feu_id) cout << "problem in FeuN to FeuID mapping" << endl;
 			}
 			else if(FeuHeaderLine==1){
@@ -421,16 +428,18 @@ void LiveElecReader::read_next_event(){
 		current_data = get_next_word();
 	}
 	if(event_complete){
-		cout << "complete event read !" << endl;
+		//cout << "complete event read !" << endl;
 		data[current_event].Nevent = current_event;
 		data[current_event].evttime = current_evttime;
 		current_event_data = &(data[current_event]);
 	}
 	if(has_bug){
 		cout << "bugged event read !" << endl;
+		cout << message_index << " | " << current_event << " | " << FeuN << " | " << asicN << " | " << ichannel << " | " << isample << endl;
+		get_next_message();
 		data[current_event].Nevent = -1;
 		data[current_event].evttime = 0;
-		current_event_data = &(data[current_event]);
+		//current_event_data = &(data[current_event]);
 	}
 }
 double LiveElecReader::get_data(int asic_n,int channel_n,int sample_n){

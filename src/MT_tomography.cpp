@@ -284,7 +284,7 @@ int Thread::start(){
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	if(running == 0){
-		int result = pthread_create(&id,NULL,runThread,this);
+		int result = pthread_create(&id,&attr,runThread,this);
 		if(result == 0) running = 1;
 		pthread_attr_destroy(&attr);
 		return result;

@@ -107,6 +107,7 @@ class LiveElecReader: public ElecReader{
 	protected:
 		void build_data(long ev_id, double ev_time);
 		DataLineDream get_next_word();
+		void get_next_message();
 		data_message * current_message;
 		unsigned int message_index;
 		vector<int> used_asics;

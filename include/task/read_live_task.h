@@ -17,9 +17,11 @@ class Read_Live_Task: public Input_Task{
 		bool can_exec() const;
 		void update_task_list() const;
 		data_message * get_next_data();
+		data_message * wait_new_data();
 		bool has_new_data() const;
 		int get_status() const;
 	protected:
+		pthread_cond_t queue_cond;
 		void * pipe_ptr;
 		int queue_id;
 		queue<data_message*> data_queue;

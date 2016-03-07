@@ -201,7 +201,7 @@ void DataReader::process(){
 	while((!(reader->is_end())) && !((event_nb>max_event)*(max_event>0)) && Tomography::get_instance()->get_can_continue()){
 		if((event_nb%100) == 0) cout << "\r" << "event processed : " << event_nb << flush;
 		process_event();
-		event_nb++;
+		if(Nevent>-1) event_nb++;
 		if((event_nb%1000)==0 && outTree != NULL) outTree->Write();
 	}
 	cout << "\r" << "event processed : " << event_nb << endl;
@@ -214,9 +214,10 @@ void DataReader::process_event(){
 		cout << "Data Reader not initialized !" << endl;
 		return;
 	}
-	cout << "reading event" << endl;
+	//cout << "reading event" << endl;
 	reader->read_next_event();
 	Nevent = reader->get_event_n();
+	if(Nevent<0) return;
 	evttime = reader->get_evttime();
 	for(map<int,asic_carac>::iterator map_it=asic_list.begin();map_it!=asic_list.end();++map_it){
 		for(unsigned int j=0;j<Tomography::Nchannel;j++){
