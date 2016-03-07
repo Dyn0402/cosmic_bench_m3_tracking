@@ -1,5 +1,5 @@
 diff --git a/include/detector.h b/include/detector.h
-index 4860075..09302c0 100644
+index a816d46..0a733f5 100644
 --- a/include/detector.h
 +++ b/include/detector.h
 @@ -86,12 +86,12 @@ class CM_Detector: public Detector{
@@ -63,10 +63,10 @@ index 4860075..09302c0 100644
 \ No newline at end of file
 +#endif
 diff --git a/include/tomography.h b/include/tomography.h
-index a197f83..cb7b8f9 100644
+index 57f46c6..642cfc2 100644
 --- a/include/tomography.h
 +++ b/include/tomography.h
-@@ -52,11 +52,11 @@ class Tomography{
+@@ -68,11 +68,11 @@ class Tomography{
  		};
  		static elec_type str_to_elec(string str);
  
@@ -83,7 +83,7 @@ index a197f83..cb7b8f9 100644
  		static const string DreamExt;
  		static const string FeminosExt;
  		//TODO : make this map const
-@@ -172,4 +172,4 @@ namespace Tomography{
+@@ -198,4 +198,4 @@ namespace Tomography{
  	//void process_elec_files(ptree config_tree);
  }
  */
