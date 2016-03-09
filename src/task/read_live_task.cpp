@@ -114,3 +114,6 @@ bool Read_Live_Task::has_new_data() const{
 int Read_Live_Task::get_status() const{
 	return status;
 }
+bool Read_Live_Task::is_saturated() const{
+	return false;
+}

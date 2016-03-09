@@ -13,6 +13,7 @@ class Read_Elec_Task: public Input_Task{
 		bool do_task();
 		bool can_exec() const;
 		void update_task_list() const;
+		bool is_saturated() const;
 	protected:
 		DataReader * reader;
 		Typed_Task<raw_data> * next_task;

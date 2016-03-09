@@ -645,9 +645,11 @@ map<Tomography::det_type,vector<vector<double> > > CosmicBench::read_pedfile(str
 	double current_rms = 0;
 	map<Tomography::det_type,vector<vector<double> > > RMS;
 	for(map<Tomography::det_type,unsigned short>::const_iterator type_it=det_n_.begin();type_it!=det_n_.end();++type_it){
+		if(type_it->second == 0) continue;
 		RMS[type_it->first] = vector<vector<double> >(type_it->second,vector<double>(Tomography::Static_Detector[type_it->first]->get_Nchannel()));
 	}
 	map<Tomography::det_type,unsigned short>::iterator det_it = det_n_.begin();
+	while(det_it->second == 0 && det_it!=det_n_.end()) ++det_it;
 	while(in.good() && det_it!=det_n_.end()){
 		in >> current_det >> current_strip >> current_rms;
 		if(current_det<0 || current_strip<0){
@@ -655,6 +657,7 @@ map<Tomography::det_type,vector<vector<double> > > CosmicBench::read_pedfile(str
 		}
 		if(current_det < last_det && current_strip == 0){
 			++det_it;
+			while(det_it->second == 0 && det_it!=det_n_.end()) ++det_it;
 			if(det_it==det_n_.end()) break;
 		}
 		if(current_det >= det_it->second){

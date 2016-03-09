@@ -17,7 +17,12 @@ Read_Signal_Task<T>::Read_Signal_Task(long max_event_, Tsignal_R * reader_,Typed
 
 template<typename T>
 Read_Signal_Task<T>::~Read_Signal_Task(){
+	delete next_task;
+}
 
+template<typename T>
+bool Read_Signal_Task<T>::do_task(){
+	return false;
 }
 
 template<>
@@ -93,11 +98,15 @@ template<typename T>
 bool Read_Signal_Task<T>::can_exec() const{
 	if(reader==NULL) return false;
 	if(max_event<0) return true;
-	return (reader->fChain->GetEntriesFast() < max_event);
+	return (reader->GetCurrentEntry() < max_event);
 }
 template<typename T>
 void Read_Signal_Task<T>::update_task_list() const{
 	add_task(next_task);
+}
+template<typename T>
+bool Read_Signal_Task<T>::is_saturated() const{
+	return ((next_task->get_queue_size()) > 500);
 }
 
 template class Read_Signal_Task<raw_data>;

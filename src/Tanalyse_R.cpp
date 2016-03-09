@@ -22,12 +22,11 @@ Tanalyse_R::Tanalyse_R(TTree *tree, map<Tomography::det_type,unsigned short> det
 
    }*/
    Init(tree, det_N_);
-   current_entry = fChain->GetEntries();
 }
 
 Tanalyse_R::~Tanalyse_R()
 {
-   if(det_N[Tomography::CM]>0){
+   if(det_N.count(Tomography::CM)>0){
       delete[] CM_NClus;
       delete[] CM_Spark;
       delete[] CM_ClusAmpl;
@@ -40,7 +39,7 @@ Tanalyse_R::~Tanalyse_R()
       delete[] CM_ClusMaxStripAmpl;
       delete[] CM_StripMaxAmpl;
    }
-   if(det_N[Tomography::MG]>0){
+   if(det_N.count(Tomography::MG)>0){
       delete[] MG_NClus;
       delete[] MG_Spark;
       delete[] MG_ClusAmpl;
@@ -53,7 +52,7 @@ Tanalyse_R::~Tanalyse_R()
       delete[] MG_ClusMaxStripAmpl;
       delete[] MG_StripMaxAmpl;
    }
-   if(det_N[Tomography::MGv2]>0){
+   if(det_N.count(Tomography::MGv2)>0){
       delete[] MGv2_NClus;
       delete[] MGv2_Spark;
       delete[] MGv2_ClusAmpl;
@@ -103,6 +102,9 @@ bool Tanalyse_R::GetNext(){
       return true;
    }
 }
+long Tanalyse_R::GetCurrentEntry() const{
+   return current_entry;
+}
 void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N_)
 {
    // The Init() function is called when the selector needs to initialize
@@ -120,10 +122,12 @@ void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_
    fCurrent = -1;
    fChain->SetMakeClass(1);
 
+   current_entry = -1;
+   
    fChain->SetBranchAddress("evn", &evn, &b_evn);
    //evttime = 0;
    fChain->SetBranchAddress("evttime", &evttime, &b_evttime);
-   if(det_N[Tomography::CM]>0){
+   if(det_N.count(Tomography::CM)>0){
       CM_NClus = new int[det_N[Tomography::CM]];
       fChain->SetBranchAddress("CM_NClus", CM_NClus, &b_CM_NClus);
       CM_Spark = new int[det_N[Tomography::CM]];
@@ -150,7 +154,7 @@ void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_
       CM_StripMaxAmpl = new Double_t[det_N[Tomography::CM]][CM_Detector::Nchannel/2];
       fChain->SetBranchAddress("CM_StripMaxAmpl", CM_StripMaxAmpl, &b_CM_StripMaxAmpl);
    }
-   if(det_N[Tomography::MG]>0){
+   if(det_N.count(Tomography::MG)>0){
       MG_NClus = new int[det_N[Tomography::MG]];
       fChain->SetBranchAddress("MG_NClus", MG_NClus, &b_MG_NClus);
       MG_Spark = new int[det_N[Tomography::MG]];
@@ -177,7 +181,7 @@ void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_
       MG_StripMaxAmpl = new Double_t[det_N[Tomography::MG]][MG_Detector::Nchannel];
       fChain->SetBranchAddress("MG_StripMaxAmpl", MG_StripMaxAmpl, &b_MG_StripMaxAmpl);
    }
-   if(det_N[Tomography::MGv2]>0){
+   if(det_N.count(Tomography::MGv2)>0){
       MGv2_NClus = new int[det_N[Tomography::MGv2]];
       fChain->SetBranchAddress("MGv2_NClus", MGv2_NClus, &b_MGv2_NClus);
       MGv2_Spark = new int[det_N[Tomography::MGv2]];

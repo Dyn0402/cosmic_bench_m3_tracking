@@ -14,6 +14,7 @@ class Read_Analyse_Task: public Input_Task{
 		bool do_task();
 		bool can_exec() const;
 		void update_task_list() const;
+		bool is_saturated() const;
 	protected:
 		const CosmicBench * detectors;
 		Tanalyse_R * reader;

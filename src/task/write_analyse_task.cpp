@@ -18,7 +18,10 @@ Write_Analyse_Task::~Write_Analyse_Task(){
 }
 bool Write_Analyse_Task::do_task(){
 	event_data * current_data = get_next_data();
-	if(current_data->Nevent<0) return false;
+	if(current_data->Nevent<0){
+		delete current_data;
+		return false;
+	}
 	pthread_mutex_lock(&IO_mutex);
 	writer->fillTree(current_data->Nevent, current_data->evttime, current_data->det_data);
 	pthread_mutex_unlock(&IO_mutex);

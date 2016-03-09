@@ -124,7 +124,7 @@ Signal::~Signal(){
 void Signal::MultiCluster_raw(){
 	cout << "reading pedfile : " << PedName << endl;
 	map<Tomography::det_type,vector<vector<double> > > current_ped = CosmicBench::read_pedfile(PedName,det_N);
-	cout << "reading RMSfile : " << PedName << endl;
+	cout << "reading RMSfile : " << RMSName << endl;
 	map<Tomography::det_type,vector<vector<double> > > current_RMS = CosmicBench::read_pedfile(RMSName,det_N);
 	Tanalyse_W * analyseFile = new Tanalyse_W(analyseTree,det_n);
 	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
@@ -153,7 +153,6 @@ void Signal::MultiCluster_raw(){
 	//cout << Tomography::get_instance()->init_count() << "|" << setw(7) << "tasks" << endl;
 	bool has_working_thread = true;
 	while(has_working_thread && Tomography::get_instance()->get_can_continue()){
-		//cout << "\r" << Tomography::get_instance()->print_count() << "|" << setw(7) << Task::task_left() << flush;
 		has_working_thread = false;
 		for(unsigned short i=0;i<threads.size();i++){
 			if(threads[i]->is_working()){
@@ -173,6 +172,7 @@ void Signal::MultiCluster_raw(){
 	analyseFile->CloseFile();
 	//delete analyseFile;
 	fChain->SetBranchStatus("*",1);
+	delete to_do;
 }
 void Signal::MultiCluster(){
 	cout << "destination file : " << analyseTree << endl;

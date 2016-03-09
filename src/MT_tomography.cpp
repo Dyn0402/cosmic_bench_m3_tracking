@@ -26,6 +26,31 @@ using std::right;
 using std::left;
 using std::setw;
 
+raw_data::raw_data(){
+	Nevent = -1;
+	evttime = 0;
+}
+raw_data::~raw_data(){
+
+}
+ped_data::ped_data(){
+	Nevent = -1;
+	evttime = 0;
+}
+ped_data::~ped_data(){
+
+}
+corr_data::corr_data(){
+	Nevent = -1;
+	evttime = 0;
+}
+corr_data::~corr_data(){
+
+}
+event_data::event_data(){
+	Nevent = -1;
+	evttime = 0;
+}
 event_data::~event_data(){
 	for(map<Tomography::det_type,vector<Event*> >::iterator type_it = det_data.begin();type_it!=det_data.end();++type_it){
 		while((type_it->second).size()>0){
@@ -34,8 +59,14 @@ event_data::~event_data(){
 		}
 	}
 }
+ray_data::ray_data(){
+	CBevent = NULL;
+}
 ray_data::~ray_data(){
 	if(CBevent!=NULL) delete CBevent;
+}
+deviation_data::deviation_data(){
+	CBevent = NULL;
 }
 deviation_data::~deviation_data(){
 	if(CBevent!=NULL) delete CBevent;
@@ -91,6 +122,7 @@ Typed_Task<T>::~Typed_Task(){
 	}
 	pthread_mutex_unlock(&data_queue_mutex);
 	pthread_mutex_destroy(&data_queue_mutex);
+	Display_Thread::get_instance()->unregister_task(this);
 }
 template<typename T>
 void Typed_Task<T>::push_next_data(T * next_data){
@@ -115,6 +147,10 @@ bool Typed_Task<T>::is_queue_empty() const{
 template<typename T>
 bool Typed_Task<T>::can_exec() const{
 	return !(data_queue.empty());
+}
+template<typename T>
+unsigned int Typed_Task<T>::get_queue_size() const{
+	return data_queue.size();
 }
 template<typename T>
 string Typed_Task<T>::print_count() const{
@@ -192,7 +228,7 @@ T * Buffer_Task<T>::fetch_data(){
 }
 template<typename T>
 bool Buffer_Task<T>::can_fetch_data() const{
-	return this->is_queue_empty();
+	return !(this->is_queue_empty());
 }
 
 template class Buffer_Task<raw_data>;
@@ -329,7 +365,10 @@ void * Worker_Thread::run(){
 		else{
 			usleep(100);
 			wait_time++;
-			if(wait_time>50000) working = false;
+			if(wait_time>50000){
+				working = false;
+				*(Display_Thread::get_instance()) << "worker thread timeout" << endl;
+			}
 		}
 	}
 	return 0;
@@ -356,13 +395,18 @@ void * Reader_Thread::run(){
 	working = current_task!=NULL;
 	unsigned int wait_time = 0;
 	while(working){
+		if(current_task->is_saturated()){
+			usleep(1000);
+			continue;
+		}
 		if(current_task->can_exec()){
 			wait_time = 0;
 			while(!(current_task->do_task())){
 				usleep(1000);
 				wait_time++;
-				if(wait_time>10){
+				if(wait_time>100){
 					working = false;
+					*(Display_Thread::get_instance()) << "reader thread execution timeout" << endl;
 					break;
 				}
 			}
@@ -371,8 +415,9 @@ void * Reader_Thread::run(){
 		else{
 			usleep(1000);
 			wait_time++;
-			if(wait_time>0){
+			if(wait_time>10){
 				working = false;
+				*(Display_Thread::get_instance()) << "reader thread check timeout" << endl;
 				break;
 			}
 		}
@@ -390,6 +435,10 @@ Display_Thread * Display_Thread::get_instance(){
 		singleton_instance->start();
 	}
 	return singleton_instance;
+}
+void Display_Thread::Quit(){
+	if(singleton_instance) delete singleton_instance;
+	singleton_instance = 0;
 }
 
 Display_Thread::Display_Thread(): Thread(){
@@ -468,8 +517,8 @@ void Display_Thread::display_text(){
 	str("");
 	if(is_counting && (!registered_task.empty())){
 		if(buffer.size()>0) temp << "\n" << buffer << "\n";
+		temp << "\r" << setw(19) << Task::task_left();
 		vector<Task*>::reverse_iterator task_it=registered_task.rbegin();
-		temp << "\r" << (*task_it)->print_count();
 		while(task_it!=registered_task.rend()){
 			temp << "|" << (*task_it)->print_count();
 			++task_it;
@@ -495,8 +544,8 @@ void Display_Thread::display_canvas(){
 }
 void Display_Thread::start_count(){
 	if(registered_task.empty()) return;
+	*this << "\r" << setw(19) << "task count";
 	vector<Task*>::reverse_iterator task_it=registered_task.rbegin();
-	*this << (*task_it)->init_count();
 	while(task_it!=registered_task.rend()){
 		*this << "|" << (*task_it)->init_count();
 		++task_it;
@@ -508,4 +557,20 @@ void Display_Thread::stop_count(){
 }
 void Display_Thread::register_task(Task * some_task){
 	registered_task.push_back(some_task);
+}
+void Display_Thread::unregister_task(Task * some_task){
+	bool constant = true;
+	vector<Task*>::iterator it = registered_task.begin();
+	while(it!=registered_task.end()){
+		if(some_task == *it){
+			constant = false;
+			it = registered_task.erase(it);
+		}
+		else{
+			++it;
+		}
+	}
+	if(constant){
+		*this << "Task was not registered, counld not unregister" << endl;
+	}
 }

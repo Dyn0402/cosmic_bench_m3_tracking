@@ -15,6 +15,7 @@ class Read_Signal_Task: public Input_Task{
 		bool do_task();
 		bool can_exec() const;
 		void update_task_list() const;
+		bool is_saturated() const;
 	protected:
 		Tsignal_R * reader;
 		Typed_Task<T> * next_task;

@@ -17,7 +17,7 @@ Read_Analyse_Task::Read_Analyse_Task(long max_event_, Tanalyse_R * reader_, cons
 	next_task = next_task_;
 }
 Read_Analyse_Task::~Read_Analyse_Task(){
-
+	delete next_task;
 }
 bool Read_Analyse_Task::do_task(){
 	int det_N = detectors->get_det_N_tot();
@@ -45,8 +45,11 @@ bool Read_Analyse_Task::can_exec() const{
 	if(reader==NULL) return false;
 	if(detectors==NULL) return false;
 	if(max_event<0) return true;
-	return (reader->fChain->GetEntriesFast() < max_event);
+	return (reader->GetCurrentEntry() < max_event);
 }
 void Read_Analyse_Task::update_task_list() const{
 	add_task(next_task);
+}
+bool Read_Analyse_Task::is_saturated() const{
+	return ((next_task->get_queue_size()) > 500);
 }

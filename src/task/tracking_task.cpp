@@ -15,7 +15,7 @@ Tracking_Abs_Task::Tracking_Abs_Task(const CosmicBench * const detectors_, Typed
 	next_task = next_task_;
 }
 Tracking_Abs_Task::~Tracking_Abs_Task(){
-
+	delete next_task;
 }
 bool Tracking_Abs_Task::do_task(){
 	event_data * current_data = get_next_data();
@@ -48,7 +48,7 @@ Tracking_Dev_Task::Tracking_Dev_Task(const CosmicBench * const detectors_, Typed
 	next_task = next_task_;
 }
 Tracking_Dev_Task::~Tracking_Dev_Task(){
-
+	delete next_task;
 }
 bool Tracking_Dev_Task::do_task(){
 	event_data * current_data = get_next_data();

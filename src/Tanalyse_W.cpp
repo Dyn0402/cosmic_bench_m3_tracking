@@ -22,7 +22,7 @@ Tanalyse_W::Tanalyse_W(string saveFileName, map<Tomography::det_type,unsigned sh
 
 Tanalyse_W::~Tanalyse_W()
 {
-   if(det_N[Tomography::CM]>0){
+   if(det_N.count(Tomography::CM)>0){
       delete CM_NClus;
       delete CM_Spark;
       delete CM_ClusAmpl;
@@ -35,7 +35,7 @@ Tanalyse_W::~Tanalyse_W()
       delete CM_ClusMaxStripAmpl;
       delete CM_StripMaxAmpl;
    }
-   if(det_N[Tomography::MG]>0){
+   if(det_N.count(Tomography::MG)>0){
       delete MG_NClus;
       delete MG_Spark;
       delete MG_ClusAmpl;
@@ -48,7 +48,7 @@ Tanalyse_W::~Tanalyse_W()
       delete MG_ClusMaxStripAmpl;
       delete MG_StripMaxAmpl;
    }
-   if(det_N[Tomography::MGv2]>0){
+   if(det_N.count(Tomography::MGv2)>0){
       delete MGv2_NClus;
       delete MGv2_Spark;
       delete MGv2_ClusAmpl;
@@ -71,7 +71,7 @@ void Tanalyse_W::Init()
    T->Branch("evttime", &evttime, "evttime/D");
    //Tout->Branch("finetstp", &finetstp, "finetstp/I");
 
-   if(det_N[Tomography::MG]>0){
+   if(det_N.count(Tomography::MG)>0){
       MG_NClus = new int[det_N[Tomography::MG]];
       MG_Spark = new int[det_N[Tomography::MG]];
       MG_ClusAmpl = new Double_t[det_N[Tomography::MG]][300];
@@ -83,6 +83,12 @@ void Tanalyse_W::Init()
       MG_ClusTOT = new Double_t[det_N[Tomography::MG]][300];
       MG_ClusT = new Double_t[det_N[Tomography::MG]][300];
       MG_StripMaxAmpl = new Double_t[det_N[Tomography::MG]][MG_Detector::Nchannel];
+      for(unsigned int i=0;i<det_N[Tomography::MG];i++){
+         MG_Spark[i] = 0;
+	 for(unsigned int j=0;j<MG_Detector::Nchannel;j++){
+             MG_StripMaxAmpl[i][j] = 0;
+         }
+      }
 
       int MG_MaxNClus = 300;
 
@@ -131,7 +137,7 @@ void Tanalyse_W::Init()
       T->Branch("MG_ClusMaxStrip", MG_ClusMaxStrip, leefMG_ClusMaxStrip);
    }
 
-   if(det_N[Tomography::MGv2]>0){
+   if(det_N.count(Tomography::MGv2)>0){
       MGv2_NClus = new int[det_N[Tomography::MGv2]];
       MGv2_Spark = new int[det_N[Tomography::MGv2]];
       MGv2_ClusAmpl = new Double_t[det_N[Tomography::MGv2]][300];
@@ -143,6 +149,13 @@ void Tanalyse_W::Init()
       MGv2_ClusTOT = new Double_t[det_N[Tomography::MGv2]][300];
       MGv2_ClusT = new Double_t[det_N[Tomography::MGv2]][300];
       MGv2_StripMaxAmpl = new Double_t[det_N[Tomography::MGv2]][MGv2_Detector::Nchannel];
+      for(unsigned int i=0;i<det_N[Tomography::MGv2];i++){
+         MGv2_Spark[i] = 0;
+         for(unsigned int j=0;j<MGv2_Detector::Nchannel;j++){
+             MGv2_StripMaxAmpl[i][j] = 0;
+         }
+      }
+
 
       int MGv2_MaxNClus = 300;
 
@@ -191,7 +204,7 @@ void Tanalyse_W::Init()
       T->Branch("MGv2_ClusMaxStrip", MGv2_ClusMaxStrip, leefMGv2_ClusMaxStrip);
    }
 
-   if(det_N[Tomography::CM]>0){
+   if(det_N.count(Tomography::CM)>0){
       CM_NClus = new int[det_N[Tomography::CM]];
       CM_Spark = new int[det_N[Tomography::CM]];
       CM_ClusAmpl = new Double_t[det_N[Tomography::CM]][600];
@@ -202,6 +215,13 @@ void Tanalyse_W::Init()
       CM_ClusTOT = new Double_t[det_N[Tomography::CM]][600];
       CM_ClusT = new Double_t[det_N[Tomography::CM]][600];
       CM_StripMaxAmpl = new Double_t[det_N[Tomography::CM]][CM_Detector::Nchannel/2];
+      for(unsigned int i=0;i<det_N[Tomography::CM];i++){
+         CM_Spark[i] = 0;
+         for(unsigned int j=0;j<CM_Detector::Nchannel;j++){
+             CM_StripMaxAmpl[i][j] = 0;
+         }
+      }
+
 
       int CM_MaxNClus = 600;
 
@@ -265,6 +285,10 @@ void Tanalyse_W::fillTree(int evn_, double evttime_, map<Tomography::det_type,ve
    evttime = evttime_;
 
    for(map<Tomography::det_type,vector<Event*> >::iterator type_it=events.begin();type_it!=events.end();++type_it){
+      if(det_N.count(type_it->first)==0){
+         cout << "detector type mismatch : " << type_it->first << endl;
+         return;
+      }
       if((type_it->second).size() != det_N[type_it->first]){
          cout << "problem in event number" << endl;
          return;

@@ -17,22 +17,21 @@ Tsignal_R::Tsignal_R(){
 Tsignal_R::Tsignal_R(TTree *tree, map<Tomography::det_type,unsigned short> det_N_) : fChain(0) 
 {
    Init(tree, det_N_);
-   current_entry = fChain->GetEntries();
 }
 
 Tsignal_R::~Tsignal_R()
 {
-   if(det_N[Tomography::MG]>0){
+   if(det_N.count(Tomography::MG)>0){
       delete[] StripAmpl_MG;
       delete[] StripAmpl_MG_ped;
       delete[] StripAmpl_MG_corr;
    }
-   if(det_N[Tomography::MGv2]>0){
+   if(det_N.count(Tomography::MGv2)>0){
       delete[] StripAmpl_MGv2;
       delete[] StripAmpl_MGv2_ped;
       delete[] StripAmpl_MGv2_corr;
    }
-   if(det_N[Tomography::CM]>0){
+   if(det_N.count(Tomography::CM)>0){
       delete[] StripAmpl_CM;
       delete[] StripAmpl_CM_ped;
       delete[] StripAmpl_CM_corr;
@@ -71,46 +70,46 @@ void Tsignal_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_N
    // Init() will be called many times when running on PROOF
    // (once per file to be processed).
    det_N = det_N_;
-   if(det_N[Tomography::MG]>0){
+   if(det_N.count(Tomography::MG)>0){
       StripAmpl_MG = new Float_t[det_N[Tomography::MG]*MG_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
       StripAmpl_MG_ped = new Float_t[det_N[Tomography::MG]*MG_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
       StripAmpl_MG_corr = new Float_t[det_N[Tomography::MG]*MG_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
    }
-   if(det_N[Tomography::MGv2]>0){
+   if(det_N.count(Tomography::MGv2)>0){
       StripAmpl_MGv2 = new Float_t[det_N[Tomography::MGv2]*MGv2_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
       StripAmpl_MGv2_ped = new Float_t[det_N[Tomography::MGv2]*MGv2_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
       StripAmpl_MGv2_corr = new Float_t[det_N[Tomography::MGv2]*MGv2_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
    }
-   if(det_N[Tomography::CM]>0){
+   if(det_N.count(Tomography::CM)>0){
       StripAmpl_CM = new Float_t[det_N[Tomography::CM]*CM_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
       StripAmpl_CM_ped = new Float_t[det_N[Tomography::CM]*CM_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
       StripAmpl_CM_corr = new Float_t[det_N[Tomography::CM]*CM_Detector::Nchannel*Tomography::get_instance()->get_Nsample()];
    }
-
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
    fCurrent = -1;
    fChain->SetMakeClass(1);
-
+   current_entry = -1;
+   
    fChain->SetBranchAddress("Nevent", &Nevent, &b_Nevent);
    fChain->SetBranchAddress("evttime",&evttime, &b_evttime);
-   if(det_N[Tomography::MG]>0){
+   if(det_N.count(Tomography::MG)>0){
 	   fChain->SetBranchAddress("StripAmpl_MG", StripAmpl_MG, &b_StripAmpl_MG);
 	   fChain->SetBranchAddress("StripAmpl_MG_ped", StripAmpl_MG_ped, &b_StripAmpl_MG_ped);
 	   fChain->SetBranchAddress("StripAmpl_MG_corr", StripAmpl_MG_corr, &b_StripAmpl_MG_corr);
 	}
-   if(det_N[Tomography::MGv2]>0){
+   if(det_N.count(Tomography::MGv2)>0){
       fChain->SetBranchAddress("StripAmpl_MGv2", StripAmpl_MGv2, &b_StripAmpl_MGv2);
       fChain->SetBranchAddress("StripAmpl_MGv2_ped", StripAmpl_MGv2_ped, &b_StripAmpl_MGv2_ped);
       fChain->SetBranchAddress("StripAmpl_MGv2_corr", StripAmpl_MGv2_corr, &b_StripAmpl_MGv2_corr);
    }
-	if(det_N[Tomography::CM]>0){
+	if(det_N.count(Tomography::CM)>0){
 	   fChain->SetBranchAddress("StripAmpl_CM", StripAmpl_MG, &b_StripAmpl_MG);
 	   fChain->SetBranchAddress("StripAmpl_CM_ped", StripAmpl_MG_ped, &b_StripAmpl_MG_ped);
 	   fChain->SetBranchAddress("StripAmpl_CM_corr", StripAmpl_MG_corr, &b_StripAmpl_MG_corr);
 	}
-   Notify();
+ Notify();
 }
 
 Bool_t Tsignal_R::Notify()
@@ -149,6 +148,9 @@ bool Tsignal_R::GetNext(){
       GetEntry(current_entry);
       return true;
    }
+}
+long Tsignal_R::GetCurrentEntry() const{
+   return current_entry;
 }
 template<typename T>
 vector<vector<T> > Tsignal_R::get_ampl(Tomography::det_type type_, unsigned short det_n_){

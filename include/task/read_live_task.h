@@ -20,6 +20,7 @@ class Read_Live_Task: public Input_Task{
 		data_message * wait_new_data();
 		bool has_new_data() const;
 		int get_status() const;
+		bool is_saturated() const;
 	protected:
 		pthread_cond_t queue_cond;
 		void * pipe_ptr;

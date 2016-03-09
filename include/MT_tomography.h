@@ -27,42 +27,45 @@ class raw_data{
 		int Nevent;
 		double evttime;
 		map<Tomography::det_type,vector<vector<vector<float> > > > strip_data;
-		raw_data(): Nevent(-1), evttime(0), strip_data(){}
+		raw_data();
+		~raw_data();
 };
 class ped_data{
 	public:
 		int Nevent;
 		double evttime;
 		map<Tomography::det_type,vector<vector<vector<double> > > > strip_data;
-		ped_data(): Nevent(-1), evttime(0), strip_data(){}
+		ped_data();
+		~ped_data();
 };
 class corr_data{
 	public:
 		int Nevent;
 		double evttime;
 		map<Tomography::det_type,vector<vector<vector<double> > > > strip_data;
-		corr_data(): Nevent(-1), evttime(0), strip_data(){}
+		corr_data();
+		~corr_data();
 };
 class event_data{
 	public:
 		map<Tomography::det_type,vector<Event*> > det_data;
 		int Nevent;
 		double evttime;
-		event_data(): det_data(), Nevent(-1), evttime(0){}
+		event_data();
 		~event_data();
 };
 class ray_data{
 	public:
 		CosmicBenchEvent * CBevent;
 		vector<Ray> rays;
-		ray_data(): CBevent(NULL), rays(){}
+		ray_data();
 		~ray_data();
 };
 class deviation_data{
 	public:
 		CosmicBenchEvent * CBevent;
 		vector<RayPair> rays;
-		deviation_data(): CBevent(NULL), rays(){}
+		deviation_data();
 		~deviation_data();
 };
 
@@ -85,6 +88,7 @@ class Task{
 		static bool is_init;
 		//Task * next_task;
 };
+
 template<typename T>
 class Typed_Task: public Task{
 	public:
@@ -97,6 +101,7 @@ class Typed_Task: public Task{
 		virtual string init_count() const;
 		string print_count() const;
 		void push_next_data(T * next_data);
+		unsigned int get_queue_size() const;
 	protected:
 		T * get_next_data();
 		bool is_queue_empty() const;
@@ -139,6 +144,7 @@ class Input_Task: public Task{
 		virtual bool do_task() = 0;
 		virtual bool can_exec() const = 0;
 		void update_task_list() const = 0;
+		virtual bool is_saturated() const = 0;
 		string init_count() const;
 		string print_count() const;
 	protected:
@@ -200,7 +206,9 @@ class Display_Thread: public Thread, public ostringstream{
 		void start_count();
 		void stop_count();
 		void register_task(Task * some_task);
+		void unregister_task(Task * some_task);
 		static Display_Thread * get_instance();
+		static void Quit();
 	protected:
 		static Display_Thread * singleton_instance;
 		Display_Thread();

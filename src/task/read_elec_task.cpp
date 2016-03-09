@@ -14,7 +14,7 @@ Read_Elec_Task::Read_Elec_Task(DataReader * reader_, Typed_Task<raw_data> * next
 	next_task = next_task_;
 }
 Read_Elec_Task::~Read_Elec_Task(){
-
+	delete next_task;
 }
 bool Read_Elec_Task::do_task(){
 	raw_data * current_data = new raw_data();
@@ -41,4 +41,7 @@ bool Read_Elec_Task::can_exec() const{
 }
 void Read_Elec_Task::update_task_list() const{
 	add_task(next_task);
+}
+bool Read_Elec_Task::is_saturated() const{
+	return ((next_task->get_queue_size()) > 500);
 }

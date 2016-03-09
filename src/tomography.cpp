@@ -1,6 +1,7 @@
 #define tomography_cpp
 #include "tomography.h"
 #include "detector.h"
+#include "MT_tomography.h"
 
 #include <sstream>
 #include <iomanip>
@@ -199,6 +200,7 @@ void Tomography::Quit(){
 		delete singleton_instance;
 		singleton_instance = 0;
 	}
+	Display_Thread::Quit();
 }
 Tomography * Tomography::get_instance(){
 	if(!singleton_instance){

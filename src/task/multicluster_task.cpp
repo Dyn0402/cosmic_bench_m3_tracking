@@ -16,7 +16,7 @@ Multicluster_Task::Multicluster_Task(const CosmicBench * const detectors_, Typed
 	next_task = next_task_;
 }
 Multicluster_Task::~Multicluster_Task(){
-
+	delete next_task;
 }
 bool Multicluster_Task::do_task(){
 	corr_data * current_data = get_next_data();
