@@ -1969,7 +1969,7 @@ void Analyse::StoreRayPairs(string outFileName){
 			theta_X_Down = currentRayPair.get_theta_x_down();
 			theta_Y_Down = currentRayPair.get_theta_y_down();
 			Point PoCA = currentRayPair.get_PoCA();
-			if(PoCA.get_Z()>600 && PoCA.get_Z()<800) XY_correlation->Fill(PoCA.get_X(),PoCA.get_Y());
+			/*if(PoCA.get_Z()>600 && PoCA.get_Z()<800)*/ XY_correlation->Fill(PoCA.get_X(),PoCA.get_Y());
 			pocaX->Fill(PoCA.get_X());
 			pocaY->Fill(PoCA.get_Y());
 			pocaZ->Fill(PoCA.get_Z());
