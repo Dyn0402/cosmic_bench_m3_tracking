@@ -36,6 +36,7 @@ using TMath::Max;
 using TMath::Abs;
 using TMath::FloorNint;
 using TMath::CeilNint;
+using TMath::Sqrt;
 /*
 vector<map<double,int> > CosmicBenchEvent::combinaisons(map<double,int> sizes, bool allow_drop){
 	map<double,int> partial_product;
@@ -1627,7 +1628,7 @@ void CosmicBenchEvent::createPairs(){
 		bool b=true;
 		while(b){
 			b = false;
-			double bestDoca = 50;
+			double bestDoca = 1000000;
 			double current_chiSquare = chiSquare_threshold;
 			map<bool, map<bool, int > > best_comb;
 			RayPair bestRay = RayPair();
@@ -1641,9 +1642,22 @@ void CosmicBenchEvent::createPairs(){
 							currentRayPair.process();
 							double currentDoca = currentRayPair.get_doca();
 							Point currentPoCA = currentRayPair.get_PoCA();
-							if(currentPoCA.get_Z()>(max_z+10) || currentPoCA.get_Z()<(min_z-10)) continue;
-							if(currentPoCA.get_X()>10.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_X()<-10.*Tomography::get_instance()->get_XY_size()/10.) continue;
-							if(currentPoCA.get_Y()>10.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_Y()<-10.*Tomography::get_instance()->get_XY_size()/10.) continue;
+							double distance_z = 0;
+							double distance_x = 0;
+							double distance_y = 0;
+							//if(currentPoCA.get_Z()>(max_z+10) || currentPoCA.get_Z()<(min_z-10)) continue;
+							if(currentPoCA.get_Z()>max_z) distance_z = currentPoCA.get_Z() - max_z;
+							if(currentPoCA.get_Z()<min_z) distance_z = -(currentPoCA.get_Z()) + min_z;
+							else distance_z= 0;
+							//if(currentPoCA.get_X()>10.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_X()<-10.*Tomography::get_instance()->get_XY_size()/10.) continue;
+							if(currentPoCA.get_X()>(Tomography::get_instance()->get_XY_size()/2.)) distance_x = currentPoCA.get_X() - (Tomography::get_instance()->get_XY_size()/2.);
+							else if(currentPoCA.get_X()<(-Tomography::get_instance()->get_XY_size()/2.)) distance_x = -(currentPoCA.get_X()) - (Tomography::get_instance()->get_XY_size()/2.);
+							else distance_x = 0;
+							//if(currentPoCA.get_Y()>10.*Tomography::get_instance()->get_XY_size()/10. || currentPoCA.get_Y()<-10.*Tomography::get_instance()->get_XY_size()/10.) continue;
+							if(currentPoCA.get_Y()>(Tomography::get_instance()->get_XY_size()/2.)) distance_y = currentPoCA.get_Y() - (Tomography::get_instance()->get_XY_size()/2.);
+							else if(currentPoCA.get_Y()<(-Tomography::get_instance()->get_XY_size()/2.)) distance_y = -(currentPoCA.get_Y()) - (Tomography::get_instance()->get_XY_size()/2.);
+							else distance_y = 0;
+							currentDoca += Sqrt((distance_x*distance_x)+(distance_y*distance_y)+(distance_z*distance_z));
 							if(currentDoca<bestDoca){
 								bestDoca = currentDoca;
 								bestRay = currentRayPair;

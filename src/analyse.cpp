@@ -1893,6 +1893,20 @@ void Analyse::StoreRayPairs(string outFileName){
 	c2->Divide(3);
 	TH1D * pocaX = new TH1D("pocaX","pocaX",100,-Tomography::get_instance()->get_XY_size(),Tomography::get_instance()->get_XY_size());
 	TH1D * pocaY = new TH1D("pocaY","pocaY",100,-Tomography::get_instance()->get_XY_size(),Tomography::get_instance()->get_XY_size());
+	
+	TCanvas * c3 = new TCanvas();
+	c3->Divide(3,2);
+	TH1D * chi2_h = new TH1D("chisquares","chisquares",100,0,1);
+	c3->GetPad(1)->SetLogy();
+	TH1D * sizes = new TH1D("sizes","sizes",10,0,10);
+	TH1D * suitable_h = new TH1D("suitable","suitable",10,0,10);
+	suitable_h->SetLineColor(2);
+	c3->GetPad(2)->SetLogy();
+	TH1D * nclus_xh_h = new TH1D("nclus_xh","nclus_xh",20,0,20);
+	TH1D * nclus_yh_h = new TH1D("nclus_yh","nclus_yh",20,0,20);
+	TH1D * nclus_xb_h = new TH1D("nclus_xb","nclus_xb",20,0,20);
+	TH1D * nclus_yb_h = new TH1D("nclus_yb","nclus_yb",20,0,20);
+	
 	double z_Up_tot = numeric_limits<double>::min();
 	for(vector<Detector*>::const_iterator it = detectors.begin();it!=detectors.end();++it){
 		if((*it)->get_z()>z_Up_tot){
@@ -1906,7 +1920,12 @@ void Analyse::StoreRayPairs(string outFileName){
 		}
 	}
 	TH1D * pocaZ = new TH1D("pocaZ","pocaZ",100,z_Down_tot - (z_Up_tot-z_Down_tot),z_Up_tot + (z_Up_tot-z_Down_tot));
-
+	TLine * downLim = new TLine(z_Down_tot,0,z_Down_tot,1);
+	TLine * upLim = new TLine(z_Up_tot,0,z_Up_tot,1);
+	downLim->SetLineStyle(2);
+	upLim->SetLineStyle(2);
+	downLim->SetLineColor(2);
+	upLim->SetLineColor(2);
 	long eventReconstructed = 0;
 	long eventSuitable = 0;
 
@@ -1952,9 +1971,39 @@ void Analyse::StoreRayPairs(string outFileName){
 		CosmicBenchEvent * currentCBEvent = new CosmicBenchEvent(this,this,-1);
 		currentCBEvent->createPairs();
 		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
+		bool is_suitable = true;	
+		for(vector<Detector*>::const_iterator it = detectors.begin();it!=detectors.end();++it){
+			if(currentCBEvent->get_clus_N_by_det(*it)<1) is_suitable = false;
+			if((*it)->get_is_up()){
+				if((*it)->get_is_X()){
+					nclus_xh_h->Fill(currentCBEvent->get_clus_N_by_det(*it));
+				}
+				else{	
+					nclus_yh_h->Fill(currentCBEvent->get_clus_N_by_det(*it));
+				}
+			}
+			else{
+				if((*it)->get_is_X()){
+					nclus_xb_h->Fill(currentCBEvent->get_clus_N_by_det(*it));
+				}
+				else{	
+					nclus_yb_h->Fill(currentCBEvent->get_clus_N_by_det(*it));
+				}
+			}
+		}
+		if(is_suitable) suitable_h->Fill(1);
+		else suitable_h->Fill(0);
 		eventReconstructed+=currentCBEvent->get_rayPairs_N();
+		sizes->Fill(currentCBEvent->get_rayPairs_N());
 		for(unsigned int i=0;i<currentCBEvent->get_rayPairs_N();i++){
 			RayPair currentRayPair = currentCBEvent->get_rayPair(i);
+			double current_chi = 0;
+			current_chi += currentRayPair.downRay.get_chiSquare_X()*currentRayPair.downRay.get_chiSquare_X();
+			current_chi += currentRayPair.downRay.get_chiSquare_Y()*currentRayPair.downRay.get_chiSquare_Y();
+			current_chi += currentRayPair.upRay.get_chiSquare_X()*currentRayPair.upRay.get_chiSquare_X();
+			current_chi += currentRayPair.upRay.get_chiSquare_Y()*currentRayPair.upRay.get_chiSquare_Y();
+			current_chi = Sqrt(current_chi);
+			chi2_h->Fill(current_chi);
 			doca->Fill(currentRayPair.get_doca());
 			thetaXUp->Fill(currentRayPair.upRay.get_slope_X());
 			thetaYUp->Fill(currentRayPair.upRay.get_slope_Y());
@@ -1997,8 +2046,27 @@ void Analyse::StoreRayPairs(string outFileName){
 			pocaY->Draw();
 			c2->cd(3);
 			pocaZ->Draw();
+			upLim->SetY2(pocaZ->GetMaximum());
+			downLim->SetY2(pocaZ->GetMaximum());
+			upLim->Draw();
+			downLim->Draw();
 			c2->Modified();
 			c2->Update();
+			c3->cd(1);
+			chi2_h->Draw();
+			c3->cd(2);
+			sizes->Draw();
+			suitable_h->Draw("SAME");
+			c3->cd(3);
+			nclus_xh_h->Draw();
+			c3->cd(4);
+			nclus_yh_h->Draw();
+			c3->cd(5);
+			nclus_xb_h->Draw();
+			c3->cd(6);
+			nclus_yb_h->Draw();
+			c3->Modified();
+			c3->Update();
 		}
 	}
 	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
@@ -2023,8 +2091,27 @@ void Analyse::StoreRayPairs(string outFileName){
 	pocaY->Draw();
 	c2->cd(3);
 	pocaZ->Draw();
+	upLim->SetY2(pocaZ->GetMaximum());
+	downLim->SetY2(pocaZ->GetMaximum());
+	upLim->Draw();
+	downLim->Draw();
 	c2->Modified();
 	c2->Update();
+	c3->cd(1);
+	chi2_h->Draw();
+	c3->cd(2);
+	sizes->Draw();
+	suitable_h->Draw("SAME");
+	c3->cd(3);
+	nclus_xh_h->Draw();
+	c3->cd(4);
+	nclus_yh_h->Draw();
+	c3->cd(5);
+	nclus_xb_h->Draw();
+	c3->cd(6);
+	nclus_yb_h->Draw();
+	c3->Modified();
+	c3->Update();
 }
 
 /*void Analyse::MultiGenDebug(int i){
