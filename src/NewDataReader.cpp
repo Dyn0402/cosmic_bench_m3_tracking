@@ -87,8 +87,7 @@ int main(int argc, char ** argv){
 		(threads.back())->start();
 		threads.push_back(new Reader_Thread(to_do));
 		(threads.back())->start();
-		unsigned short n_thread = Tomography::get_instance()->get_thread_number() - threads.size();
-		if(n_thread<1) n_thread = 1;
+		const unsigned short n_thread = (Tomography::get_instance()->get_thread_number() > threads.size()) ? (Tomography::get_instance()->get_thread_number() - threads.size()) : 1;
 		cout << "1 | " << n_thread << " | 1" << endl;
 		for(unsigned short i=0;i<n_thread;i++){
 			threads.push_back(new Worker_Thread());
@@ -123,7 +122,7 @@ int main(int argc, char ** argv){
 	else if(operation == pyramids){
 		CosmicBench * bench = new CosmicBench(config_tree);
 		Tanalyse_W * analysisFile = new Tanalyse_W(config_tree.get<string>("Tree"),bench->get_det_N());
-		DataReader * blah = new DataReader(config_tree,false);
+		DataReader * blah = new DataReader(config_tree,false,true);
 		blah->read_ped();
 		map<Tomography::det_type,vector<vector<float> > > current_ped = blah->get_Ped();
 		Tsignal_W * signalFile = new Tsignal_W(config_tree.get<string>("signal_file"),bench->get_det_N());
@@ -137,8 +136,7 @@ int main(int argc, char ** argv){
 		(threads.back())->start();
 		threads.push_back(new Writer_Thread(to_write_analyse));
 		(threads.back())->start();
-		unsigned short n_thread = Tomography::get_instance()->get_thread_number() - threads.size();
-		if(n_thread<1) n_thread = 1;
+		const unsigned short n_thread = (Tomography::get_instance()->get_thread_number() > threads.size()) ? (Tomography::get_instance()->get_thread_number() - threads.size()) : 1;
 		cout << "1 | " << n_thread << " | 1" << endl;
 		for(unsigned short i=0;i<n_thread;i++){
 			threads.push_back(new Worker_Thread());

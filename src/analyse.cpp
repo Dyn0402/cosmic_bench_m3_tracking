@@ -668,7 +668,7 @@ void Analyse::Residus_ref_MT(){
 	vector<Thread*> threads;
 	threads.push_back(new Reader_Thread(to_do));
 	(threads.back())->start();
-	const unsigned short n_thread = Tomography::get_instance()->get_thread_number();
+	const unsigned short n_thread = (Tomography::get_instance()->get_thread_number() > threads.size()) ? (Tomography::get_instance()->get_thread_number() - threads.size()) : 1;
 	*MT_display << "1 | " << n_thread << "\n";
 	for(unsigned short i=0;i<n_thread;i++){
 		threads.push_back(new Worker_Thread());

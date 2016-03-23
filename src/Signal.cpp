@@ -146,8 +146,7 @@ void Signal::MultiCluster_raw(){
 	(threads.back())->start();
 	threads.push_back(new Reader_Thread(to_do));
 	(threads.back())->start();
-	unsigned short n_thread = Tomography::get_instance()->get_thread_number() - threads.size();
-	if(n_thread<1) n_thread = 1;
+	const unsigned short n_thread = (Tomography::get_instance()->get_thread_number() > threads.size()) ? (Tomography::get_instance()->get_thread_number() - threads.size()) : 1;
 	cout << "1 | " << n_thread << " | 1" << endl;
 	for(unsigned short i=0;i<n_thread;i++){
 		threads.push_back(new Worker_Thread());

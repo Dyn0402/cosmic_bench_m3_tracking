@@ -489,9 +489,9 @@ void * Writer_Thread::run(){
 			if(working) current_task->update_task_list();
 		}
 		else{
-			usleep(1000);
+			usleep(100);
 			wait_time++;
-			if(wait_time>10){
+			if(wait_time>50000){
 				working = false;
 				*(Display_Thread::get_instance()) << "writer thread check timeout" << endl;
 				break;
