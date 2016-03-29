@@ -21,7 +21,10 @@ Write_Signal_Task<T>::~Write_Signal_Task(){
 template<>
 bool Write_Signal_Task<raw_data>::do_task(){
 	raw_data * current_data = get_next_data();
-	if(current_data->Nevent<0) return false;
+	if(current_data->Nevent<0){
+		delete current_data;
+		return false;
+	}
 	pthread_mutex_lock(&IO_mutex);
 	writer->fillTree_raw(current_data->Nevent, current_data->evttime, current_data->strip_data);
 	pthread_mutex_unlock(&IO_mutex);
@@ -32,7 +35,10 @@ bool Write_Signal_Task<raw_data>::do_task(){
 template<>
 bool Write_Signal_Task<ped_data>::do_task(){
 	ped_data * current_data = get_next_data();
-	if(current_data->Nevent<0) return false;
+	if(current_data->Nevent<0){
+		delete current_data;
+		return false;
+	}
 	pthread_mutex_lock(&IO_mutex);
 	writer->fillTree_ped(current_data->strip_data);
 	pthread_mutex_unlock(&IO_mutex);
@@ -43,7 +49,10 @@ bool Write_Signal_Task<ped_data>::do_task(){
 template<>
 bool Write_Signal_Task<corr_data>::do_task(){
 	corr_data * current_data = get_next_data();
-	if(current_data->Nevent<0) return false;
+	if(current_data->Nevent<0){
+		delete current_data;
+		return false;
+	}
 	pthread_mutex_lock(&IO_mutex);
 	writer->fillTree_corr(current_data->strip_data);
 	pthread_mutex_unlock(&IO_mutex);

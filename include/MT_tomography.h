@@ -86,7 +86,7 @@ class Task{
 	protected:
 		static queue<Task*> task_queue;
 		static pthread_mutex_t queue_mutex;
-		static bool is_init;
+		static queue<Task*> queue_init();
 		//Task * next_task;
 };
 
@@ -194,7 +194,11 @@ class Reader_Thread: public Thread{
 		Reader_Thread(Input_Task * current_task_);
 		~Reader_Thread();
 		bool is_working() const;
+		static unsigned short has_working_readers();
 	protected:
+		static unsigned short working_readers;
+		static unsigned short working_readers_init();
+		static pthread_mutex_t number_mutex;
 		void * run();
 		void pre_stop();
 		bool working;

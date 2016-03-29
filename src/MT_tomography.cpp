@@ -89,15 +89,14 @@ Task * Task::get_next_task(){
 	pthread_mutex_unlock(&queue_mutex);
 	return priority_task;
 }
-bool Task::is_init = false;
 pthread_mutex_t Task::queue_mutex;
-queue<Task*> Task::task_queue;
+queue<Task*> Task::queue_init(){
+	pthread_mutex_init(&queue_mutex, NULL);
+	return queue<Task*>();
+}
+queue<Task*> Task::task_queue = Task::queue_init();
 
 void Task::add_task(Task * new_task){
-	if(!is_init){
-		pthread_mutex_init(&queue_mutex, NULL);
-		is_init = true;
-	}
 	if(new_task->is_queueable()){
 		pthread_mutex_lock(&queue_mutex);
 		task_queue.push(new_task);
@@ -137,8 +136,11 @@ template<typename T>
 T * Typed_Task<T>::get_next_data(){
 	T * next_data;
 	pthread_mutex_lock(&data_queue_mutex);
-	next_data = data_queue.front();
-	data_queue.pop();
+	if(data_queue.empty()) next_data = new T();
+	else{
+		next_data = data_queue.front();
+		data_queue.pop();
+	}
 	pthread_mutex_unlock(&data_queue_mutex);
 	return next_data;
 }
@@ -388,6 +390,7 @@ void * Worker_Thread::run(){
 		}
 		else{
 			usleep(100);
+			if(Reader_Thread::has_working_readers()>0) continue;
 			wait_time++;
 			if(wait_time>50000){
 				working = false;
@@ -412,12 +415,24 @@ Reader_Thread::~Reader_Thread(){
 	working = false;
 	current_task = NULL;
 }
+pthread_mutex_t Reader_Thread::number_mutex;
+unsigned short Reader_Thread::working_readers_init(){
+	pthread_mutex_init(&number_mutex, NULL);
+	return 0;
+}
+unsigned short Reader_Thread::working_readers = Reader_Thread::working_readers_init();
+unsigned short Reader_Thread::has_working_readers(){
+	return working_readers;
+}
 bool Reader_Thread::is_working() const{
 	return working;
 }
 void * Reader_Thread::run(){
 	working = current_task!=NULL;
 	unsigned int wait_time = 0;
+	pthread_mutex_lock(&number_mutex);
+	if(working) working_readers++;
+	pthread_mutex_unlock(&number_mutex);
 	while(working){
 		if(current_task->is_saturated()){
 			usleep(1000);
@@ -446,6 +461,9 @@ void * Reader_Thread::run(){
 			}
 		}
 	}
+	pthread_mutex_lock(&number_mutex);
+	working_readers--;
+	pthread_mutex_unlock(&number_mutex);
 	return 0;
 }
 void Reader_Thread::pre_stop(){
@@ -490,6 +508,7 @@ void * Writer_Thread::run(){
 		}
 		else{
 			usleep(100);
+			if(Reader_Thread::has_working_readers()>0) continue;
 			wait_time++;
 			if(wait_time>50000){
 				working = false;

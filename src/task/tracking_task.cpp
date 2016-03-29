@@ -19,7 +19,10 @@ Tracking_Abs_Task::~Tracking_Abs_Task(){
 }
 bool Tracking_Abs_Task::do_task(){
 	event_data * current_data = get_next_data();
-	if(current_data->Nevent < 0) return false;
+	if(current_data->Nevent < 0){
+		delete current_data;
+		return false;
+	}
 	vector<Event*> all_event;
 	for(map<Tomography::det_type,vector<Event*> >::iterator type_it = (current_data->det_data).begin();type_it!=(current_data->det_data).end();++type_it){
 		all_event.insert(all_event.end(),(type_it->second).begin(),(type_it->second).end());
@@ -55,7 +58,10 @@ Tracking_Dev_Task::~Tracking_Dev_Task(){
 }
 bool Tracking_Dev_Task::do_task(){
 	event_data * current_data = get_next_data();
-	if(current_data->Nevent < 0) return false;
+	if(current_data->Nevent < 0){
+		delete current_data;
+		return false;
+	}
 	vector<Event*> all_event;
 	for(map<Tomography::det_type,vector<Event*> >::iterator type_it = (current_data->det_data).begin();type_it!=(current_data->det_data).end();++type_it){
 		all_event.insert(all_event.end(),(type_it->second).begin(),(type_it->second).end());
