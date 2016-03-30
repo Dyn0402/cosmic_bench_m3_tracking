@@ -162,6 +162,8 @@ int main(int argc, char ** argv){
 		}
 		Display_Thread::get_instance()->stop_count();
 		//cout << "\r" << Tomography::get_instance()->print_count() << "|" << setw(7) << Task::task_left() << endl;
+		signalFile->Write();
+		signalFile->CloseFile();
 		analysisFile->Write();
 		analysisFile->CloseFile();
 		delete blah;

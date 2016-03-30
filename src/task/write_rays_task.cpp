@@ -27,6 +27,7 @@ bool Write_Rays_Task::do_task(){
 	}
 	pthread_mutex_lock(&IO_mutex);
 	writer->fillTree((current_data->CBevent)->get_evn(), (current_data->CBevent)->get_evttime(), current_data->rays, z_up, z_down);
+	if((data_treated%1000) == 0) writer->Write();
 	pthread_mutex_unlock(&IO_mutex);
 	if(next_task==NULL) delete current_data;
 	else next_task->push_next_data(current_data);

@@ -24,6 +24,7 @@ bool Write_Analyse_Task::do_task(){
 	}
 	pthread_mutex_lock(&IO_mutex);
 	writer->fillTree(current_data->Nevent, current_data->evttime, current_data->det_data);
+	if((data_treated%1000) == 0) writer->Write();
 	pthread_mutex_unlock(&IO_mutex);
 	if(next_task==NULL) delete current_data;
 	else next_task->push_next_data(current_data);
