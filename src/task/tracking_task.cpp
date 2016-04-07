@@ -19,7 +19,10 @@ Tracking_Abs_Task::~Tracking_Abs_Task(){
 }
 bool Tracking_Abs_Task::do_task(){
 	event_data * current_data = get_next_data();
-	if(current_data->Nevent < 0) return false;
+	if(current_data->Nevent < 0){
+		delete current_data;
+		return false;
+	}
 	vector<Event*> all_event;
 	for(map<Tomography::det_type,vector<Event*> >::iterator type_it = (current_data->det_data).begin();type_it!=(current_data->det_data).end();++type_it){
 		all_event.insert(all_event.end(),(type_it->second).begin(),(type_it->second).end());
@@ -37,6 +40,9 @@ bool Tracking_Abs_Task::can_exec() const{
 void Tracking_Abs_Task::update_task_list() const{
 	add_task(next_task);
 }
+bool Tracking_Abs_Task::is_queueable() const{
+	return true;
+}
 /*
 Tracking_Dev_Task::Tracking_Dev_Task(const CosmicBench * const detectors_): Typed_Task<event_data>(){
 	detectors = detectors_;
@@ -52,7 +58,10 @@ Tracking_Dev_Task::~Tracking_Dev_Task(){
 }
 bool Tracking_Dev_Task::do_task(){
 	event_data * current_data = get_next_data();
-	if(current_data->Nevent < 0) return false;
+	if(current_data->Nevent < 0){
+		delete current_data;
+		return false;
+	}
 	vector<Event*> all_event;
 	for(map<Tomography::det_type,vector<Event*> >::iterator type_it = (current_data->det_data).begin();type_it!=(current_data->det_data).end();++type_it){
 		all_event.insert(all_event.end(),(type_it->second).begin(),(type_it->second).end());
@@ -70,4 +79,7 @@ bool Tracking_Dev_Task::can_exec() const{
 }
 void Tracking_Dev_Task::update_task_list() const{
 	add_task(next_task);
+}
+bool Tracking_Dev_Task::is_queueable() const{
+	return true;
 }
