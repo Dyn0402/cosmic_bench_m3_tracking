@@ -10,6 +10,10 @@
 #include <utility>
 #include <TROOT.h>
 #include <TCanvas.h>
+#include <TThread.h>
+#include <Math/MinimizerOptions.h>
+#include <Fit/FitConfig.h>
+#include <TVirtualFitter.h>
 
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -137,6 +141,10 @@ Tomography::Tomography(){
 	event_treated = 0;
 	ray_treated = 0;
 	deviation_treated = 0;
+	TThread::Initialize();
+	ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
+	ROOT::Fit::FitConfig::SetDefaultMinimizer("Minuit2");
+	TVirtualFitter::SetDefaultFitter("Minuit2");
 	sigIntHandler.sa_handler = signal_handler;
 	gROOT->SetBatch(true);
 	can_continue = true;
@@ -180,6 +188,10 @@ Tomography::Tomography(ptree config_tree_){
 	event_treated = 0;
 	ray_treated = 0;
 	deviation_treated = 0;
+	TThread::Initialize();
+	ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
+	ROOT::Fit::FitConfig::SetDefaultMinimizer("Minuit2");
+	TVirtualFitter::SetDefaultFitter("Minuit2");
 	sigIntHandler.sa_handler = signal_handler;
 	sigemptyset(&sigIntHandler.sa_mask);
 	sigIntHandler.sa_flags = 0;
