@@ -563,7 +563,7 @@ void Analyse::Residus_ref_MT(){
 	//map<string, bool> nref_is_X;
 	//unsigned int det_x_n = 0;
 	unsigned int nref_x_n = 0;
-	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
+	unsigned long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())){
 			ostringstream name;
@@ -664,7 +664,7 @@ void Analyse::Residus_ref_MT(){
 
 
 	Buffer_Task<ray_data> * ray_list = new Buffer_Task<ray_data>();
-	Input_Task * to_do = new Read_Analyse_Task(-1,this,this, new Tracking_Abs_Task(this, ray_list));
+	Input_Task * to_do = new Read_Analyse_Task(nentries,this,this, new Tracking_Abs_Task(this, ray_list));
 	vector<Thread*> threads;
 	threads.push_back(new Reader_Thread(to_do));
 	(threads.back())->start();
