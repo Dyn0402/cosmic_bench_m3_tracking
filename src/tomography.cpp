@@ -14,6 +14,7 @@
 #include <Math/MinimizerOptions.h>
 #include <Fit/FitConfig.h>
 #include <TVirtualFitter.h>
+#include <TError.h>
 
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -137,6 +138,7 @@ Tomography::Tomography(){
 	ray_treated = 0;
 	deviation_treated = 0;
 	TThread::Initialize();
+	gErrorIgnoreLevel = 1001;
 	ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
 	ROOT::Fit::FitConfig::SetDefaultMinimizer("Minuit2");
 	TVirtualFitter::SetDefaultFitter("Minuit2");
@@ -184,6 +186,7 @@ Tomography::Tomography(ptree config_tree_){
 	ray_treated = 0;
 	deviation_treated = 0;
 	TThread::Initialize();
+	gErrorIgnoreLevel = 1001;
 	ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
 	ROOT::Fit::FitConfig::SetDefaultMinimizer("Minuit2");
 	TVirtualFitter::SetDefaultFitter("Minuit2");
