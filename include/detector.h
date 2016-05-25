@@ -94,6 +94,7 @@ class CM_Detector: public Detector{
 		static const int Nstrip = 1024;
 		static const double size = 500.;
 		static const int CMN_div = 2;
+		static const int MaxNClus = 600;
 		unsigned int StripToChannel(unsigned int i) const;
 		double get_size() const;
 		int get_Nchannel() const;
@@ -146,6 +147,7 @@ class MG_Detector: public Detector{
 		static const int Nstrip = 1024;
 		static const double size = 500.;
 		static const int CMN_div = 2;
+		static const int MaxNClus = 300;
 		double get_size() const;
 		int get_Nchannel() const;
 		int get_Nstrip() const;
@@ -201,6 +203,7 @@ class MGv2_Detector: public Detector{
 		static const int Nstrip = 1037;
 		static const double size = 500.;
 		static const int CMN_div = 2;
+		static const int MaxNClus = 300;
 		double get_size() const;
 		int get_Nchannel() const;
 		int get_Nstrip() const;

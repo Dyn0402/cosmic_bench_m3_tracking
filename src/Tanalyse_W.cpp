@@ -109,7 +109,7 @@ void Tanalyse_W::Init()
       T->Branch((current_name+"_StripMaxAmpl").c_str(), StripMaxAmpl[type_it->first], leef_StripMaxAmpl);
 
       char leef_ClusMaxStrip[100];
-      sprintf(leef_ClusMaxStrip,"%s_ClusMaxStri[%d][%d]/I",(current_name).c_str(),type_it->second,current_MaxNClus);
+      sprintf(leef_ClusMaxStrip,"%s_ClusMaxStrip[%d][%d]/I",(current_name).c_str(),type_it->second,current_MaxNClus);
       T->Branch((current_name+"_ClusMaxStrip").c_str(), ClusMaxStrip[type_it->first], leef_ClusMaxStrip);
 
    }
@@ -138,6 +138,7 @@ void Tanalyse_W::fillTree(int evn_, double evttime_, map<Tomography::det_type,ve
          cout << "problem in event number" << endl;
          return;
       }
+      int current_MaxNClus = Tomography::Static_Detector[type_it->first]->get_MaxNClus();
       for(vector<Event*>::iterator event_it=(type_it->second).begin();event_it!=(type_it->second).end();++event_it){
          int i = (*event_it)->get_n_in_tree();
          NClus[type_it->first][i] = (*event_it)->get_NClus();
@@ -147,24 +148,24 @@ void Tanalyse_W::fillTree(int evn_, double evttime_, map<Tomography::det_type,ve
             return;
          }
          for(int j=0;j<NClus[type_it->first][i];j++){
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusAmpl[type_it->first])[i][j] = current_clusters[j]->get_ampl();
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusT[type_it->first])[i][j] = current_clusters[j]->get_t();
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusTOT[type_it->first])[i][j] = current_clusters[j]->get_TOT();
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusPos[type_it->first])[i][j] = current_clusters[j]->get_pos();
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusSize[type_it->first])[i][j] = current_clusters[j]->get_size();
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusMaxSample[type_it->first])[i][j] = current_clusters[j]->get_maxSample();
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusMaxStripAmpl[type_it->first])[i][j] = current_clusters[j]->get_maxStripAmpl();
-            reinterpret_cast<Int_t(*)[(type_it->second).size()]>(ClusMaxStrip[type_it->first])[i][j] = current_clusters[j]->get_maxStrip();
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusAmpl[type_it->first])[i][j] = current_clusters[j]->get_ampl();
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusT[type_it->first])[i][j] = current_clusters[j]->get_t();
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusTOT[type_it->first])[i][j] = current_clusters[j]->get_TOT();
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusPos[type_it->first])[i][j] = current_clusters[j]->get_pos();
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusSize[type_it->first])[i][j] = current_clusters[j]->get_size();
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusMaxSample[type_it->first])[i][j] = current_clusters[j]->get_maxSample();
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusMaxStripAmpl[type_it->first])[i][j] = current_clusters[j]->get_maxStripAmpl();
+            reinterpret_cast<Int_t(*)[current_MaxNClus]>(ClusMaxStrip[type_it->first])[i][j] = current_clusters[j]->get_maxStrip();
          }
-         for(int j=NClus[type_it->first][i];j<(Tomography::Static_Detector[type_it->first]->get_MaxNClus());j++){
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusAmpl[type_it->first])[i][j] = 0;
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusT[type_it->first])[i][j] = 0;
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusTOT[type_it->first])[i][j] = 0;
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusPos[type_it->first])[i][j] = 0;
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusSize[type_it->first])[i][j] = -1;
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusMaxSample[type_it->first])[i][j] = 0;
-            reinterpret_cast<Double_t(*)[(type_it->second).size()]>(ClusMaxStripAmpl[type_it->first])[i][j] = 0;
-            reinterpret_cast<Int_t(*)[(type_it->second).size()]>(ClusMaxStrip[type_it->first])[i][j] = 0;
+         for(int j=NClus[type_it->first][i];j<current_MaxNClus;j++){
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusAmpl[type_it->first])[i][j] = 0;
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusT[type_it->first])[i][j] = 0;
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusTOT[type_it->first])[i][j] = 0;
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusPos[type_it->first])[i][j] = 0;
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusSize[type_it->first])[i][j] = -1;
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusMaxSample[type_it->first])[i][j] = 0;
+            reinterpret_cast<Double_t(*)[current_MaxNClus]>(ClusMaxStripAmpl[type_it->first])[i][j] = 0;
+            reinterpret_cast<Int_t(*)[current_MaxNClus]>(ClusMaxStrip[type_it->first])[i][j] = 0;
          }
          for(vector<Cluster*>::iterator clus_it=current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
             delete *clus_it;

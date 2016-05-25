@@ -127,7 +127,7 @@ void Tanalyse_R::Init(TTree *tree, map<Tomography::det_type,unsigned short> det_
       fChain->SetBranchAddress((current_name+"_ClusTOT").c_str(), ClusTOT[type_it->first], &b_ClusTOT[type_it->first]);
       ClusT[type_it->first] = new Double_t[(type_it->second)*current_MaxNClus];
       fChain->SetBranchAddress((current_name+"_ClusT").c_str(), ClusT[type_it->first], &b_ClusT[type_it->first]);
-      StripMaxAmpl[type_it->first] = new Double_t[(type_it->second)*(Tomography::Static_Detector[type_it->first]->get_Nchannel())/2];
+      StripMaxAmpl[type_it->first] = new Double_t[(type_it->second)*(Tomography::Static_Detector[type_it->first]->get_Nchannel())];
       fChain->SetBranchAddress((current_name+"_StripMaxAmpl").c_str(), StripMaxAmpl[type_it->first], &b_StripMaxAmpl[type_it->first]);
    }
    /*

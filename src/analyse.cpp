@@ -2199,9 +2199,9 @@ void Analyse::bugtest(){
 		cout << endl;
 		delete CBEvent;
 		for(int i=0;i<det_N[Tomography::MG]-1;i++){
-			cout << setw(10) << reinterpret_cast<Double_t(*)[det_N[Tomography::MG]]>(ClusPos[Tomography::MG])[i][0] << " | ";
+			cout << setw(10) << reinterpret_cast<Double_t(*)[MG_Detector::MaxNClus]>(ClusPos[Tomography::MG])[i][0] << " | ";
 		}
-		cout << setw(10) << reinterpret_cast<Double_t(*)[det_N[Tomography::MG]]>(ClusPos[Tomography::MG])[det_N[Tomography::MG]-1][0] << endl;
+		cout << setw(10) << reinterpret_cast<Double_t(*)[MG_Detector::MaxNClus]>(ClusPos[Tomography::MG])[det_N[Tomography::MG]-1][0] << endl;
 	}
 }
 

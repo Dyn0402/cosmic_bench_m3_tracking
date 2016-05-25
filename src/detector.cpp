@@ -276,7 +276,7 @@ string CM_Detector::Name() const{
 	return "CM";
 }
 int CM_Detector::get_MaxNClus() const{
-	return 300;
+	return MaxNClus;
 }
 
 MG_Detector::MG_Detector(): Detector(){
@@ -438,7 +438,7 @@ string MG_Detector::Name() const{
 	return "MG";
 }
 int MG_Detector::get_MaxNClus() const{
-	return 300;
+	return MaxNClus;
 }
 
 MGv2_Detector::MGv2_Detector(): Detector(){
@@ -609,7 +609,7 @@ string MGv2_Detector::Name() const{
 	return "MGv2";
 }
 int MGv2_Detector::get_MaxNClus() const{
-	return 300;
+	return MaxNClus;
 }
 
 
