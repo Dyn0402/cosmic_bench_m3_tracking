@@ -90,17 +90,18 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk, bool is_live){
 		det_type_by_asic[current_det->get_asic_n()] = current_det->get_type();
 		det_n_by_asic[current_det->get_asic_n()] = current_det->get_n_in_tree();
 		*/
-		vector<int> current_det_asic_n = current_det->get_asic_n();
+		vector<pair<int,bool>> current_det_asic_n = current_det->get_asic_n();
 		for(unsigned int j=0;j<current_det_asic_n.size();j++){
-			if(asic_list.count(current_det_asic_n[j])>0){
-				cout << "asic " << current_det_asic_n[j] << " appears multiple times in config file" << endl;
+			if(asic_list.count(current_det_asic_n[j].first)>0){
+				cout << "asic " << current_det_asic_n[j].first << " appears multiple times in config file" << endl;
 				return;
 			}
 			struct asic_carac current_asic;
 			current_asic.detector_type = current_det->get_type();
 			current_asic.detector_n = current_det->get_n_in_tree();
 			current_asic.asic_n_in_det = j;
-			asic_list[current_det_asic_n[j]] = current_asic;
+			current_asic.connector_direction = current_det_asic_n[j].second;
+			asic_list[current_det_asic_n[j].first] = current_asic;
 		}
 		det_N[current_det->get_type()]++;
 	}
@@ -221,7 +222,7 @@ void DataReader::process_event(){
 	evttime = reader->get_evttime();
 	for(map<int,asic_carac>::iterator map_it=asic_list.begin();map_it!=asic_list.end();++map_it){
 		for(unsigned int j=0;j<Tomography::Nchannel;j++){
-			int channel = mapping((map_it->second).detector_type,j+Tomography::Nchannel*((map_it->second).asic_n_in_det));
+			int channel = mapping((map_it->second).detector_type,j+Tomography::Nchannel*((map_it->second).asic_n_in_det),(map_it->second).connector_direction);
 			if(channel<0) continue;
 			if(static_cast<unsigned int>(channel)>=StripAmpl[(map_it->second).detector_type][(map_it->second).detector_n].size()) continue;
 			for(int k=0;k<Tomography::get_instance()->get_Nsample();k++){
@@ -501,9 +502,9 @@ map<Tomography::det_type,vector<vector<float> > > DataReader::get_Ped() const{
 bool DataReader::is_end() const{
 	return (reader->is_end());
 }
-int DataReader::Dream_mapping(Tomography::det_type det,int channel){
-	return Tomography::Static_Detector[det]->dream_mapping(channel);
+int DataReader::Dream_mapping(Tomography::det_type det,int channel, bool direction){
+	return Tomography::Static_Detector[det]->dream_mapping(channel, direction);
 }
-int DataReader::Feminos_mapping(Tomography::det_type det,int channel){
-	return Tomography::Static_Detector[det]->feminos_mapping(channel);
+int DataReader::Feminos_mapping(Tomography::det_type det,int channel, bool direction){
+	return Tomography::Static_Detector[det]->feminos_mapping(channel, direction);
 }

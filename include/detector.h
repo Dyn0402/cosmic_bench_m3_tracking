@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <utility>
 
 #include "tomography.h"
 
@@ -14,6 +15,7 @@ using boost::property_tree::ptree;
 using std::string;
 using std::vector;
 using std::map;
+using std::pair;
 
 class Cluster;
 class Event;
@@ -37,7 +39,7 @@ class Detector{
 		int get_perp_n() const;
 		int get_clustering_holes() const;
 		double get_RMS(int i) const;
-		vector<int> get_asic_n() const;
+		vector<pair<int,bool> > get_asic_n() const;
 		virtual void set_RMS(vector<double> RMS_) = 0;
 		virtual unsigned int StripToChannel(unsigned int i) const = 0;
 		int get_n_in_tree() const;
@@ -52,13 +54,13 @@ class Detector{
 		virtual Event * build_event(const Tanalyse_R * const treeObject) const = 0;
 		virtual Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const = 0;
 		virtual Detector * build_det(const ptree::value_type& child) const = 0;
-		virtual int feminos_mapping(int channel) const = 0;
-		virtual int dream_mapping(int channel) const = 0;
+		virtual int feminos_mapping(int channel, bool connector_direction) const = 0;
+		virtual int dream_mapping(int channel, bool connector_direction) const = 0;
 	protected:
 		Detector();	
 		Detector(const Detector& other);
 		Detector& operator=(const Detector& other);
-		Detector(double z_, bool is_X_, bool is_up_,int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, vector<int> asic_n_);	
+		Detector(double z_, bool is_X_, bool is_up_,int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, vector<pair<int,bool> > asic_n_);
 		double z; //altitude inside cosmic bench
 		bool is_X;//coordinate measured by the detector
 		bool is_up;//bloc (up|down) which the detector is part of
@@ -73,7 +75,7 @@ class Detector{
 		int perp_n;
 		int clustering_holes;
 		int n_in_tree;
-		vector<int> asic_n;
+		vector<pair<int,bool> > asic_n;
 
 };
 
@@ -82,7 +84,7 @@ class CM_Detector: public Detector{
 		CM_Detector();
 		CM_Detector(const CM_Detector& other);
 		CM_Detector& operator=(const CM_Detector& other);
-		CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int asic_n_);
+		CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int asic_n_, bool connector_direction = true);
 		~CM_Detector();
 		Detector * build_det(const ptree::value_type& child) const;
 		//CosMulti general charac
@@ -113,8 +115,8 @@ class CM_Detector: public Detector{
 		Event * build_event(Tanalyse_R * treeObject, int entry) const;
 		Event * build_event(const Tanalyse_R * const treeObject) const;
 		Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const;
-		int feminos_mapping(int channel) const;
-		int dream_mapping(int channel) const;
+		int feminos_mapping(int channel, bool connector_direction) const;
+		int dream_mapping(int channel, bool connector_direction) const;
 	protected:
 		bool use_thin_strip;
 		//Detector dependent Cuts
@@ -130,7 +132,7 @@ class MG_Detector: public Detector{
 		MG_Detector();
 		MG_Detector(const MG_Detector& other);
 		MG_Detector& operator=(const MG_Detector& other);
-		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_);
+		MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_, bool connector_direction = true);
 		~MG_Detector();
 		Detector * build_det(const ptree::value_type& child) const;
 		unsigned int StripToChannel(unsigned int i) const;
@@ -163,8 +165,8 @@ class MG_Detector: public Detector{
 		Event * build_event(Tanalyse_R * treeObject, int entry) const;
 		Event * build_event(const Tanalyse_R * const treeObject) const;
 		Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const;
-		int feminos_mapping(int channel) const;
-		int dream_mapping(int channel) const;
+		int feminos_mapping(int channel, bool connector_direction) const;
+		int dream_mapping(int channel, bool connector_direction) const;
 	protected:
 		//Detector dependant cuts
 		double ClusSizeCut_Min;
@@ -183,7 +185,7 @@ class MGv2_Detector: public Detector{
 		MGv2_Detector();
 		MGv2_Detector(const MGv2_Detector& other);
 		MGv2_Detector& operator=(const MGv2_Detector& other);
-		MGv2_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_);
+		MGv2_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_, bool connector_direction = true);
 		~MGv2_Detector();
 		Detector * build_det(const ptree::value_type& child) const;
 		unsigned int StripToChannel(unsigned int i) const;
@@ -216,8 +218,8 @@ class MGv2_Detector: public Detector{
 		Event * build_event(Tanalyse_R * treeObject, int entry) const;
 		Event * build_event(const Tanalyse_R * const treeObject) const;
 		Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const;
-		int feminos_mapping(int channel) const;
-		int dream_mapping(int channel) const;
+		int feminos_mapping(int channel, bool connector_direction) const;
+		int dream_mapping(int channel, bool connector_direction) const;
 	protected:
 		//Detector dependant cuts
 		double ClusSizeCut_Min;

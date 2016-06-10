@@ -82,7 +82,7 @@ double Detector::get_RMS(int i) const{
 int Detector::get_n_in_tree() const{
 	return n_in_tree;
 }
-vector<int> Detector::get_asic_n() const{
+vector<pair<int,bool> > Detector::get_asic_n() const{
 	return asic_n;
 }
 Detector::Detector(){
@@ -119,7 +119,7 @@ Detector::Detector(const Detector& other){
 Detector& Detector::operator=(const Detector& other){
 	z = other.z;
 	is_X = other.is_X;
-	is_up = other.is_up;
+is_up = other.is_up;
 	is_ref = other.is_ref;
 	offset = other.offset;
 	direction = other.direction;
@@ -133,7 +133,7 @@ Detector& Detector::operator=(const Detector& other){
 	asic_n = other.asic_n;
 	return *this;
 }
-Detector::Detector(double z_, bool is_X_, bool is_up_, int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, vector<int> asic_n_){
+Detector::Detector(double z_, bool is_X_, bool is_up_, int det_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, vector<pair<int,bool> > asic_n_){
 	z = z_;
 	is_X = is_X_;
 	is_up = is_up_;
@@ -178,7 +178,7 @@ CM_Detector& CM_Detector::operator=(const CM_Detector& other){
 	ClusSizeCut_Max_Wide = other.ClusSizeCut_Max_Wide;
 	return *this;
 }
-CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int asic_n_) :Detector(z_,is_X_,is_up_,cm_n, is_ref_, offset_, direction_, angle_x_, angle_y_, angle_z_,-1,0,vector<int>(1,asic_n_)){
+CM_Detector::CM_Detector(double z_, bool is_X_, bool is_up_, int cm_n, bool use_thin_strip_, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int asic_n_, bool connector_direction) :Detector(z_,is_X_,is_up_,cm_n, is_ref_, offset_, direction_, angle_x_, angle_y_, angle_z_,-1,0,vector<pair<int,bool> >(1,pair<int,bool>(asic_n_,connector_direction))){
 	use_thin_strip = use_thin_strip_;
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
@@ -202,7 +202,7 @@ CM_Detector::~CM_Detector(){
 
 }
 Detector * CM_Detector::build_det(const ptree::value_type& child) const{
-	CM_Detector * current_det  = new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("asic_n"));
+	CM_Detector * current_det  = new CM_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("cm_n"),child.second.get<bool>("use_thin_strip"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("asic_n"), child.second.get<bool>("connector_direction"));
 	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -266,11 +266,13 @@ bool CM_Detector::is_suitable(const Cluster * const clus) const{
 	}
 	return true;
 }
-int CM_Detector::feminos_mapping(int channel) const{
-	return channel;
+int CM_Detector::feminos_mapping(int channel, bool connector_direction) const{
+	if(connector_direction) return channel;
+	else return Tomography::Nchannel - 1 - channel;
 }
-int CM_Detector::dream_mapping(int channel) const{
-	return channel;
+int CM_Detector::dream_mapping(int channel, bool connector_direction) const{
+	if(connector_direction) return channel;
+	else return Tomography::Nchannel - 1 - channel;
 }
 
 MG_Detector::MG_Detector(): Detector(){
@@ -293,7 +295,7 @@ MG_Detector& MG_Detector::operator=(const MG_Detector& other){
 	ClusSizeCut_Min = other.ClusSizeCut_Min;
 	return *this;
 }
-MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,vector<int>(1,asic_n_)){
+MG_Detector::MG_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_, bool connector_direction): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,vector<pair<int,bool> >(1,pair<int,bool>(asic_n_,connector_direction))){
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;
@@ -315,7 +317,7 @@ MG_Detector::~MG_Detector(){
 
 }
 Detector * MG_Detector::build_det(const ptree::value_type& child) const{
-	MG_Detector * current_det = new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<int>("asic_n"));
+	MG_Detector * current_det = new MG_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<int>("asic_n"), child.second.get<bool>("connector_direction"));
 	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -420,13 +422,15 @@ bool MG_Detector::is_suitable(const Cluster * const clus) const{
 	if(clus->get_size() < ClusSizeCut_Min) return false;
 	return true;
 }
-int MG_Detector::feminos_mapping(int channel) const{
-	int tmpchan = channel - 2 - (channel>13) - (channel>24) - (channel>47) - (channel>58);
+int MG_Detector::feminos_mapping(int channel, bool connector_direction) const{
+	int tmpchan = (connector_direction) ? channel : (Tomography::Nchannel - 1 - channel);
+	tmpchan = tmpchan - 2 - (tmpchan>13) - (tmpchan>24) - (tmpchan>47) - (tmpchan>58);
 	if(tmpchan>15 && tmpchan<48) return tmpchan;
 	else return (tmpchan + 1 - (2*(tmpchan%2)));
 }
-int MG_Detector::dream_mapping(int channel) const{
-	return (channel + 1 - (2*(channel%2)));
+int MG_Detector::dream_mapping(int channel, bool connector_direction) const{
+	int tmpchan = (connector_direction) ? channel : (Tomography::Nchannel - 1 - channel);
+	return (tmpchan + 1 - (2*(tmpchan%2)));
 }
 
 MGv2_Detector::MGv2_Detector(): Detector(){
@@ -449,7 +453,7 @@ MGv2_Detector& MGv2_Detector::operator=(const MGv2_Detector& other){
 	ClusSizeCut_Min = other.ClusSizeCut_Min;
 	return *this;
 }
-MGv2_Detector::MGv2_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,vector<int>(1,asic_n_)){
+MGv2_Detector::MGv2_Detector(double z_, bool is_X_, bool is_up_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_, bool connector_direction): Detector(z_,is_X_,is_up_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,vector<pair<int,bool> >(1,pair<int,bool>(asic_n_,connector_direction))){
 	ClusTOTCut_Min = -1;
 	ClusMaxSampleCut_Min = -1;
 	ClusMaxSampleCut_Max = -1;
@@ -471,7 +475,7 @@ MGv2_Detector::~MGv2_Detector(){
 
 }
 Detector * MGv2_Detector::build_det(const ptree::value_type& child) const{
-	MGv2_Detector * current_det = new MGv2_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<int>("asic_n"));
+	MGv2_Detector * current_det = new MGv2_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<bool>("is_up"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<int>("asic_n"),child.second.get<bool>("connector_direction"));
 	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -576,17 +580,19 @@ bool MGv2_Detector::is_suitable(const Cluster * const clus) const{
 	if(clus->get_size() < ClusSizeCut_Min) return false;
 	return true;
 }
-int MGv2_Detector::feminos_mapping(int channel) const{
+int MGv2_Detector::feminos_mapping(int channel, bool connector_direction) const{
 	// Warning !!!
 	//This part was never tested
-	int tmpchan = channel - 2 - (channel>13) - (channel>24) - (channel>47) - (channel>58);
+	int tmpchan = (connector_direction) ? channel : (Tomography::Nchannel - 1 - channel);
+	tmpchan = tmpchan - 2 - (tmpchan>13) - (tmpchan>24) - (tmpchan>47) - (tmpchan>58);
 	if(tmpchan>15 && tmpchan<48) return tmpchan;
 	else return (tmpchan + 1 - (2*(tmpchan%2)));
 }
-int MGv2_Detector::dream_mapping(int channel) const{
-	if(channel == 6) return 8;
-	else if(channel == 8) return 6;
-	else return channel;
+int MGv2_Detector::dream_mapping(int channel, bool connector_direction) const{
+	int tmpchan = (connector_direction) ? channel : (Tomography::Nchannel - 1 - channel);
+	if(tmpchan == 6) return 8;
+	else if(tmpchan == 8) return 6;
+	else return tmpchan;
 	/*
 	if(channel == 57) return 8;
 	else if(channel == 55) return 6;

@@ -19,6 +19,7 @@ struct asic_carac{
 	Tomography::det_type detector_type;
 	int detector_n;
 	int asic_n_in_det;
+	bool connector_direction;
 };
 
 class DataReader{
@@ -47,9 +48,9 @@ class DataReader{
 		template<typename S, typename T> static map<Tomography::det_type,vector<vector<vector<S> > > > do_ped_CMN_sub_event(map<Tomography::det_type,vector<vector<vector<T> > > > data_in, map<Tomography::det_type,vector<vector<float> > > ped_in);
 	protected:
 		//void Init(map<int,Tomography::det_type> det_type_by_asic_, map<int,int> det_n_by_asic_, string PedName_, string RMSName_, string outFileName = "", long max_event_ = -1);
-		static int Dream_mapping(Tomography::det_type det,int channel);
-		static int Feminos_mapping(Tomography::det_type det,int channel);
-		int (*mapping)(Tomography::det_type,int);
+		static int Dream_mapping(Tomography::det_type det,int channel, bool direction);
+		static int Feminos_mapping(Tomography::det_type det,int channel, bool direction);
+		int (*mapping)(Tomography::det_type,int,bool);
 		ElecReader * reader;
 		Tsignal_W * outTree;
 		Tomography::elec_type DAQtype;
