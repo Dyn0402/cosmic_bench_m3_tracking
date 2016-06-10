@@ -14,6 +14,7 @@ Tanalyse_W::Tanalyse_W(string saveFileName){
 Tanalyse_W::Tanalyse_W(string saveFileName, map<Tomography::det_type,unsigned short> det_N_)
 {
    saveFile = new TFile(saveFileName.c_str(),"RECREATE");
+   saveFile->SetCompressionLevel(5);
    T = new TTree("T","event");
    T->SetMaxTreeSize(10000000000000LL);
    det_N = det_N_;

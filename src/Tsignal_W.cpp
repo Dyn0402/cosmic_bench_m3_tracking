@@ -17,7 +17,10 @@ Tsignal_W::Tsignal_W(string saveFileName, map<Tomography::det_type,unsigned shor
 {
    saveFile = new TFile(saveFileName.c_str(),"UPDATE");
    T = (TTree*)saveFile->Get("T");
-   if(!T) T = new TTree("T","event");
+   if(!T){
+      saveFile->SetCompressionLevel(5);
+      T = new TTree("T","event");
+   }
    T->SetMaxTreeSize(10000000000000LL);
    det_N = det_N_;
    Init();
