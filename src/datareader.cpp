@@ -90,7 +90,7 @@ DataReader::DataReader(ptree config_tree, bool save_to_disk, bool is_live){
 		det_type_by_asic[current_det->get_asic_n()] = current_det->get_type();
 		det_n_by_asic[current_det->get_asic_n()] = current_det->get_n_in_tree();
 		*/
-		vector<pair<int,bool>> current_det_asic_n = current_det->get_asic_n();
+		vector<pair<int,bool> > current_det_asic_n = current_det->get_asic_n();
 		for(unsigned int j=0;j<current_det_asic_n.size();j++){
 			if(asic_list.count(current_det_asic_n[j].first)>0){
 				cout << "asic " << current_det_asic_n[j].first << " appears multiple times in config file" << endl;
