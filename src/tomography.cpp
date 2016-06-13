@@ -126,6 +126,7 @@ Tomography::Tomography(){
 	SampleMax = -1;
 	sigma = 0;
 	TOTCut = -1;
+	noise_RMS = ADC_max+1;
 	chisquare_threshold = 0;
 	live_graphic_display = false;
 	is_batch = true;
@@ -162,6 +163,7 @@ Tomography::Tomography(ptree config_tree_){
 	SampleMax = config_tree.get<int>("SampleMax");
 	sigma = config_tree.get<double>("sigma");
 	TOTCut = config_tree.get<int>("TOTCut");
+	noise_RMS = config_tree.get<double>("noise_RMS");
 	chisquare_threshold = config_tree.get<double>("chisquare_threshold");
 	if(gROOT->IsBatch()) is_batch = true;
 	else is_batch = config_tree.get<bool>("batch");
@@ -206,11 +208,11 @@ Tomography::~Tomography(){
 	cout << "Terminating Tomography !" << endl;
 }
 void Tomography::Quit(){
+	Display_Thread::Quit();
 	if(singleton_instance != 0){
 		delete singleton_instance;
 		singleton_instance = 0;
 	}
-	Display_Thread::Quit();
 }
 Tomography * Tomography::get_instance(){
 	if(!singleton_instance){
@@ -255,6 +257,9 @@ double Tomography::get_chisquare_threshold() const{
 }
 double Tomography::get_sigma() const{
 	return sigma;
+}
+double Tomography::get_noise_RMS() const{
+	return noise_RMS;
 }
 bool Tomography::get_live_graphic_display() const{
 	return live_graphic_display;
