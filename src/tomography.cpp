@@ -287,7 +287,7 @@ void Tomography::save_canvases(){
 	if(gROOT->GetListOfCanvases()->GetSize() > 0) write_json(base_name + "config.json",config_tree);
 }
 void Tomography::Run(){
-	Display_Thread::get_instance()->stop();
+	Display_Thread::Quit();
 	if(root_interpreter) root_interpreter->Run(true);
 }
 
