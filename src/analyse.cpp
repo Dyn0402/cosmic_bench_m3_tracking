@@ -1827,6 +1827,7 @@ void Analyse::AbsorptionFluxMapNormTheoAngle(double bench_angle, int mult, TCanv
 		threads.push_back(new Worker_Thread());
 		(threads.back())->start();
 	}
+	usleep(1000);
 	MT_display->start_count();
 	//MT_display << Tomography::get_instance()->init_count() << "|" << setw(7) << "tracks\n";
 	bool has_working_thread = true;
@@ -1882,6 +1883,7 @@ void Analyse::AbsorptionFluxMapNormTheoAngle(double bench_angle, int mult, TCanv
 			c3->Modified();
 			c3->Update();
 		}
+		//*MT_display << jentry << " | " << Tomography::get_instance()->get_can_continue() << " | " << has_working_thread << " | " << ray_list->can_fetch_data() << "\n";
 	}
 	for(unsigned short i=0;i<threads.size();i++){
 		threads[i]->stop();

@@ -12,10 +12,12 @@
 #include <Math/WrappedMultiTF1.h>
 #include <Math/AdaptiveIntegratorMultiDim.h>
 #include <iostream>
+#include <utility>
 
 using std::cout;
 using std::endl;
 using std::flush;
+using std::pair;
 using TMath::ATan;
 using TMath::Tan;
 using TMath::Erf;
@@ -27,6 +29,7 @@ using TMath::PiOver2;
 using TMath::Cos;
 using TMath::Sin;
 using TMath::Abs;
+using TMath::Binomial;
 
 acceptanceFunction::acceptanceFunction(double x_min_,double x_max_,double y_min_,double y_max_,double z_Up_,double z_Down_,double bench_angle_){
 	x_min = x_min_;
@@ -293,13 +296,15 @@ TH2D FreeSkyFunction::plot_PhiTheta(int nbin_phi,double phi1,double phi2,int nbi
 	theta_min_plot -= width_theta/(nbin_theta*100.);
 	double width_step_phi = (phi_max_plot - phi_min_plot)/step_phi;
 	double width_step_theta = (theta_max_plot - theta_min_plot)/step_theta;
-	vector<double> delta_z;
+	map<double,int> delta_z;
 	for(set<double>::iterator z_it=z.begin();z_it!=z.end();++z_it){
 		set<double>::iterator z_jt = z.end();
 		--z_jt;
 		while(z_jt!=z_it){
-			if(distance(z_it,z_jt)>(mult-2)) delta_z.push_back(*z_jt - *z_it);
-			--z_it;
+			if(distance(z_it,z_jt)>(mult-2)){
+				delta_z.insert(pair<double,int>(*z_jt - *z_it,Binomial(distance(z_it,z_jt)-1,mult-2)));
+			}
+			--z_jt;
 		}
 	}
 	for(int i=0;i<step_phi && Tomography::get_instance()->get_can_continue();i++){
@@ -309,8 +314,8 @@ TH2D FreeSkyFunction::plot_PhiTheta(int nbin_phi,double phi1,double phi2,int nbi
 			double theta = theta_min_plot + (j+0.5)*width_step_theta;
 			if(theta<theta1 || theta>theta2) continue;
 			double proba = 0;
-			for(vector<double>::iterator delta_z_it=delta_z.begin();delta_z_it!=delta_z.end();++delta_z_it){
-				proba += (*this)(phi,theta,*delta_z_it);
+			for(map<double,int>::iterator delta_z_it=delta_z.begin();delta_z_it!=delta_z.end();++delta_z_it){
+				proba += ((*this)(phi,theta,delta_z_it->first))*(delta_z_it->second);
 			}
 			proba_PhiTheta.Fill(phi,theta,proba);
 		}

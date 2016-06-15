@@ -603,7 +603,7 @@ void * Display_Thread::run(){
 	unsigned int delay = 0;
 	while(working){
 		display_text();
-		cout << " " << delay;
+		//cout << " " << delay;
 		if(delay>240){
 		//if(delay>60){
 			//display_canvas();
