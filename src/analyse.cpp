@@ -1778,6 +1778,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, double bench_angle, TCanvas * 
 	c3->Update();
 }
 void Analyse::AbsorptionFluxMapNormTheoAngle(double bench_angle, int mult, TCanvas * c1, TCanvas * c2, TCanvas * c3, TCanvas * c4){
+	Display_Thread * MT_display = Display_Thread::get_instance();
 	double chisquare_threshold = 100;
 
 	gStyle->SetPalette(55,0);
@@ -1815,8 +1816,6 @@ void Analyse::AbsorptionFluxMapNormTheoAngle(double bench_angle, int mult, TCanv
 	c4->Modified();
 	c4->Update();
 
-	Display_Thread * MT_display = Display_Thread::get_instance();
-
 	Buffer_Task<ray_data> * ray_list = new Buffer_Task<ray_data>();
 	Input_Task * to_do = new Read_Analyse_Task(nentries,this,this, new Tracking_Abs_Task(this, ray_list));
 	vector<Thread*> threads;
@@ -1851,6 +1850,7 @@ void Analyse::AbsorptionFluxMapNormTheoAngle(double bench_angle, int mult, TCanv
 				fluxMapZ->Fill(ATan(ray_it->get_slope_X()),bench_angle+ATan(ray_it->get_slope_Y()));
 			}
 		}
+		delete current_rays;
 		jentry++;
 		if(jentry%10000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			TH2D * copy = new TH2D(*fluxMapZ);
