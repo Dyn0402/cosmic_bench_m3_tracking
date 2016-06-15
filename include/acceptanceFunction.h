@@ -1,6 +1,11 @@
 #ifndef acceptanceFunction_h
 #define acceptanceFunction_h
 #include <TH2D.h>
+#include <set>
+#include <vector>
+
+using std::set;
+using std::vector;
 
 class acceptanceFunction{
 	public:
@@ -17,6 +22,21 @@ class acceptanceFunction{
 		double z_Up;
 		double z_Down;
 		double bench_angle;
+};
+
+class FreeSkyFunction{
+	public:
+		FreeSkyFunction(double x_min_,double x_max_,double y_min_,double y_max_,vector<double> z_);
+		~FreeSkyFunction();
+		void plot_3D();
+		TH2D plot_PhiTheta(int nbin_phi,double phi1,double phy22,int nbin_theta,double theta1,double theta2,unsigned int mult);
+		TH2D plot_PhiTheta(int nbin_phi, int nbin_theta, unsigned int mult);
+		double operator()(double phi, double theta, double delta_z);
+		double x_min;
+		double x_max;
+		double y_min;
+		double y_max;
+		set<double> z;
 };
 
 #endif

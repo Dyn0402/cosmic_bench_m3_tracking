@@ -1777,6 +1777,138 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, double bench_angle, TCanvas * 
 	c3->Modified();
 	c3->Update();
 }
+void Analyse::AbsorptionFluxMapNormTheoAngle(double bench_angle, int mult, TCanvas * c1, TCanvas * c2, TCanvas * c3, TCanvas * c4){
+	double chisquare_threshold = 100;
+
+	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
+	//gStyle->SetPalette(1);
+	//double z_Pb = 1553;
+	double z_max = numeric_limits<double>::min();
+	double z_min = numeric_limits<double>::max();
+	vector<double> z_det;
+	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+		if((*det_it)->get_is_X() && ((*det_it)->get_perp_n()>0)) continue;
+		double current_z = (*det_it)->get_z();
+		if(current_z>z_max) z_max = current_z;
+		if(current_z<z_min) z_min = current_z;
+		z_det.push_back(current_z);
+	}
+	double phi_max = ATan(Tomography::get_instance()->get_XY_size()/(z_max - z_min));
+	phi_max += 0.1*phi_max;
+
+	if (fChain == 0) return;
+	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
+	int nbins = Sqrt(0.02*nentries);
+	if(c1==0) c1 = new TCanvas("fluxMap","fluxMap");
+	TH2D * fluxMapZ = new TH2D("fluxMapSignal","fluxMapSignal",nbins,-phi_max,phi_max,nbins,bench_angle-phi_max,bench_angle+phi_max);
+	fluxMapZ->SetStats(0);
+	if(c2 == 0) c2 = new TCanvas("fluxMapNorm","fluxMapNorm");
+	TH2D * fluxMapSigma = new TH2D("fluxMapSigma","fluxMapSigma",nbins,-phi_max,phi_max,nbins,bench_angle-phi_max,bench_angle+phi_max);
+	fluxMapSigma->SetStats(0);
+	if(c3 == 0) c3 = new TCanvas("fluxMap_Sigma","fluxMap_Sigma");
+	FreeSkyFunction acceptanceEstimation(-Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,-Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,z_det);
+	TH2D * background = new TH2D(acceptanceEstimation.plot_PhiTheta(nbins,-phi_max,phi_max,nbins,bench_angle-phi_max,bench_angle+phi_max,mult));
+	if(c4 == 0) c4 = new TCanvas("fluxMap_background","fluxMap_background");
+	c4->cd();
+	background->Draw("COLZ");
+	c4->Modified();
+	c4->Update();
+
+	Display_Thread * MT_display = Display_Thread::get_instance();
+
+	Buffer_Task<ray_data> * ray_list = new Buffer_Task<ray_data>();
+	Input_Task * to_do = new Read_Analyse_Task(nentries,this,this, new Tracking_Abs_Task(this, ray_list));
+	vector<Thread*> threads;
+	threads.push_back(new Reader_Thread(to_do));
+	(threads.back())->start();
+	const unsigned short n_thread = (Tomography::get_instance()->get_thread_number() > threads.size()) ? (Tomography::get_instance()->get_thread_number() - threads.size()) : 1;
+	*MT_display << "1 | " << n_thread << "\n";
+	for(unsigned short i=0;i<n_thread;i++){
+		threads.push_back(new Worker_Thread());
+		(threads.back())->start();
+	}
+	MT_display->start_count();
+	//MT_display << Tomography::get_instance()->init_count() << "|" << setw(7) << "tracks\n";
+	bool has_working_thread = true;
+	unsigned long jentry = 0;
+	while((has_working_thread || ray_list->can_fetch_data()) && Tomography::get_instance()->get_can_continue()){
+		has_working_thread = false;
+		for(unsigned short i=0;i<threads.size();i++){
+			if(threads[i]->is_working()){
+				has_working_thread = true;
+				break;
+			}
+		}
+		if(!(ray_list->can_fetch_data())){
+			usleep(1000);
+			continue;
+		}
+		ray_data * current_rays = ray_list->fetch_data();
+		vector<Ray>::iterator ray_it = (current_rays->rays).begin();
+		while(ray_it != (current_rays->rays).end()){
+			if(ray_it->get_chiSquare_X()>-1 && ray_it->get_chiSquare_Y()>-1 && ((ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y())/ray_it->get_clus_n())<chisquare_threshold){
+				fluxMapZ->Fill(ATan(ray_it->get_slope_X()),bench_angle+ATan(ray_it->get_slope_Y()));
+			}
+		}
+		jentry++;
+		if(jentry%10000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
+			TH2D * copy = new TH2D(*fluxMapZ);
+			copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
+			copy->SetStats(0);
+			copy->Scale(1./copy->Integral());
+			copy->Add(background,-1./background->Integral());
+			copy->Scale(-1.);
+			c2->cd();
+			copy->Draw("COLZ");
+			c2->Modified();
+			c2->Update();
+			delete copy;
+			c1->cd();
+			fluxMapZ->Draw("COLZ");
+			c1->Modified();
+			c1->Update();
+			double ratio = background->Integral()/fluxMapZ->Integral();
+			for(int i=1;i<=nbins;i++){
+				for(int j=1;j<=nbins;j++){
+					int binN = fluxMapSigma->GetBin(i,j);
+					double binContent = (fluxMapZ->GetBinContent(binN)*ratio - background->GetBinContent(binN))/Sqrt(background->GetBinContent(binN) + fluxMapZ->GetBinContent(binN)*ratio);
+					fluxMapSigma->SetBinContent(binN,-binContent);
+				}
+			}
+			c3->cd();
+			fluxMapSigma->Draw("COLZ");
+			c3->Modified();
+			c3->Update();
+		}
+	}
+	TH2D * copy = new TH2D(*fluxMapZ);
+	copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
+	copy->SetStats(0);
+	copy->Scale(1./copy->Integral());
+	copy->Add(background,-1./background->Integral());
+	copy->Scale(-1.);
+	c2->cd();
+	copy->Draw("COLZ");
+	c2->Modified();
+	c2->Update();
+	c1->cd();
+	fluxMapZ->Draw("COLZ");
+	c1->Modified();
+	c1->Update();
+	double ratio = background->Integral()/fluxMapZ->Integral();
+	for(int i=1;i<=nbins;i++){
+		for(int j=1;j<=nbins;j++){
+			int binN = fluxMapSigma->GetBin(i,j);
+			double binContent = (fluxMapZ->GetBinContent(binN)*ratio - background->GetBinContent(binN))/Sqrt(background->GetBinContent(binN) + fluxMapZ->GetBinContent(binN)*ratio);
+			fluxMapSigma->SetBinContent(binN,-binContent);
+		}
+	}
+	c3->cd();
+	fluxMapSigma->Draw("COLZ");
+	c3->Modified();
+	c3->Update();
+}
 void Analyse::AbsorptionFluxMapNorm(double z,TH2D * background, int nbins, TCanvas * c1, TCanvas * c2, TCanvas * c3){
 	long eventReconstructed = 0;
 	long eventSuitable = 0;

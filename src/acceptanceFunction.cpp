@@ -18,11 +18,13 @@ using std::endl;
 using std::flush;
 
 using TMath::ATan;
+using TMath::Tan;
 using TMath::Erf;
 using TMath::Sqrt;
 using TMath::Max;
 using TMath::Min;
 using TMath::Pi;
+using TMath::PiOver2;
 using TMath::Cos;
 using TMath::Sin;
 using TMath::Abs;
@@ -184,10 +186,10 @@ TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,doubl
 	double width_step_x = (x_max_plot - x_min_plot)/step_x;
 	double width_step_y = (y_max_plot - y_min_plot)/step_y;
 	for(int i=0;i<step_x && Tomography::get_instance()->get_can_continue();i++){
-		double x = x_min_plot + i*width_step_x;
+		double x = x_min_plot + (i+0.5)*width_step_x;
 		if(x<x1 || x>x2) continue;
 		for(int j=0;j<step_y && Tomography::get_instance()->get_can_continue();j++){
-			double y = y_min_plot + j*width_step_y;
+			double y = y_min_plot + (j+0.5)*width_step_y;
 			if(y<y1 || y>y2) continue;
 			double real_x = x;
 			double real_y = y*Cos(y_angle);
@@ -246,10 +248,10 @@ TH2D acceptanceFunction::plot_XY(int nbin_x, int nbin_y,double z, double y_angle
 	double width_step_x = (x_max_plot - x_min_plot)/step_x;
 	double width_step_y = (y_max_plot - y_min_plot)/step_y;
 	for(int i=0;i<step_x && Tomography::get_instance()->get_can_continue();i++){
-		double x = x_min_plot + i*width_step_x;
+		double x = x_min_plot + (i+0.5)*width_step_x;
 		if(x<x_min_hist || x>x_max_hist) continue;
 		for(int j=0;j<step_y && Tomography::get_instance()->get_can_continue();j++){
-			double y = y_min_plot + j*width_step_y;
+			double y = y_min_plot + (j+0.5)*width_step_y;
 			if(y<y_min_hist || y>y_max_hist) continue;
 			double real_x = x;
 			double real_y = y*Cos(y_angle);
@@ -259,4 +261,70 @@ TH2D acceptanceFunction::plot_XY(int nbin_x, int nbin_y,double z, double y_angle
 		}
 	}
 	return proba_XY;
+}
+
+FreeSkyFunction::FreeSkyFunction(double x_min_,double x_max_,double y_min_,double y_max_,vector<double> z_){
+	x_min = x_min_;
+	x_max = x_max_;
+	y_min = y_min_;
+	y_max = y_max_;
+	z = set<double>(z_.begin(),z_.end());
+}
+FreeSkyFunction::~FreeSkyFunction(){
+
+}
+void FreeSkyFunction::plot_3D(){
+
+}
+TH2D FreeSkyFunction::plot_PhiTheta(int nbin_phi,double phi1,double phi2,int nbin_theta,double theta1,double theta2,unsigned int mult){
+	double phi_min_plot = phi1;
+	double phi_max_plot = phi2;
+	double theta_min_plot = theta1;
+	double theta_max_plot = theta2;
+	int step_phi = 20*nbin_phi;
+	int step_theta = 20*nbin_theta;
+	TH2D proba_PhiTheta("proba_PhiTheta","proba_PhiTheta",nbin_phi,phi1,phi2,nbin_theta,theta1,theta2);
+	proba_PhiTheta.SetStats(false);
+	double width_phi = phi_max_plot - phi_min_plot;
+	double width_theta = theta_max_plot - theta_min_plot;
+	phi_max_plot += width_phi/(nbin_phi*100.);
+	phi_min_plot -= width_phi/(nbin_phi*100.);
+	theta_max_plot += width_theta/(nbin_theta*100.);
+	theta_min_plot -= width_theta/(nbin_theta*100.);
+	double width_step_phi = (phi_max_plot - phi_min_plot)/step_phi;
+	double width_step_theta = (theta_max_plot - theta_min_plot)/step_theta;
+	vector<double> delta_z;
+	for(set<double>::iterator z_it=z.begin();z_it!=z.end();++z_it){
+		set<double>::iterator z_jt = z.end();
+		--z_jt;
+		while(z_jt!=z_it){
+			if(distance(z_it,z_jt)>(mult-2)) delta_z.push_back(*z_jt - *z_it);
+			--z_it;
+		}
+	}
+	for(int i=0;i<step_phi && Tomography::get_instance()->get_can_continue();i++){
+		double phi = phi_min_plot + (i+0.5)*width_step_phi;
+		if(phi<phi1 || phi>phi2) continue;
+		for(int j=0;j<step_theta && Tomography::get_instance()->get_can_continue();j++){
+			double theta = theta_min_plot + (j+0.5)*width_step_theta;
+			if(theta<theta1 || theta>theta2) continue;
+			double proba = 0;
+			for(vector<double>::iterator delta_z_it=delta_z.begin();delta_z_it!=delta_z.end();++delta_z_it){
+				proba += (*this)(phi,theta,*delta_z_it);
+			}
+			proba_PhiTheta.Fill(phi,theta,proba);
+		}
+	}
+	return proba_PhiTheta;
+}
+TH2D FreeSkyFunction::plot_PhiTheta(int nbin_phi, int nbin_theta, unsigned int mult){
+
+}
+double FreeSkyFunction::operator()(double phi, double theta, double delta_z){
+	double eff_x = ((x_max - x_min) - delta_z*Tan(phi))/(x_max - x_min);
+	double eff_y = ((y_max - y_min) - delta_z*Tan(theta))/(y_max - y_min);
+	if(eff_x<0 || eff_y<0) return 0;
+	double flux_comp = Cos(PiOver2() - theta);
+	flux_comp *= flux_comp;
+	return eff_x*eff_y*flux_comp;
 }

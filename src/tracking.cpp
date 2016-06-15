@@ -46,6 +46,7 @@ int main(int argc, char ** argv){
 	string SoN = "SoN";
 	string acceptance = "acceptance";
 	string watto = "watto";
+	string scanpyramids = "scanpyramids";
 	if(argv[2] == efficacity){
 		blah->Efficacity();
 	}
@@ -90,6 +91,19 @@ int main(int argc, char ** argv){
 				bench_angle = atof(argv[4]);
 			}
 			blah->AbsorptionFluxMapNormTheo(z,bench_angle);
+		}
+	}
+	else if(argv[2] == scanpyramids){
+		if(argc<5){
+			cout << "you must indicate the angle of the telescope wrt to the ground and the multiplicity of the trigger" << endl;
+			Tomography::Quit();
+			delete blah;
+			return 1;
+		}
+		else{
+			double bench_angle = atof(argv[3]);
+			int mult = atoi(argv[4]);
+			blah->AbsorptionFluxMapNormTheoAngle(bench_angle,mult);
 		}
 	}
 	else if(argv[2] == raypairs){
