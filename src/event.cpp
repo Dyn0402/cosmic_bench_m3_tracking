@@ -1022,7 +1022,10 @@ void MGv2_Event::MultiCluster(){
 		current_strip.MaxSample = 0;
 		current_strip.TOT = 0;
 		current_strip.Time = 0;
-		if((detector->get_RMS(i))>noise_RMS) noisyChannels.insert(pair<int,bool>(i,true));
+		if((detector->get_RMS(i))>noise_RMS){
+			noisyChannels.insert(pair<int,bool>(i,true));
+			//cout << "noisy channel : " << i << " in det : " << get_n_in_tree() << " with RMS : " << detector->get_RMS(i) << endl;
+		}
 		for(int j=0;j<SampleMin;j++){
 			current_strip.signal_sample[j] = false;
 		}
@@ -1128,14 +1131,18 @@ void MGv2_Event::MultiCluster(){
 							current_cluster.second = j;
 							used_channel.push_back(MGv2_Detector::StripToChannel_a[j]);
 						}
+						else if(noisyChannels.count(MGv2_Detector::StripToChannel_a[j])>0){
+							noisy_channel_n++;
+							hole_channel.insert(pair<int,int>(MGv2_Detector::StripToChannel_a[j],j));
+						}
 						else if(hole_channel.size()<(max_hole_size + noisy_channel_n)){
 							hole_channel.insert(pair<int,int>(MGv2_Detector::StripToChannel_a[j],j));
-							if(noisyChannels.count(MGv2_Detector::StripToChannel_a[j])>0) noisy_channel_n++;
 						}
 						else break;
 					}		
 					else break;
 				}
+				//if(noisy_channel_n>0) cout << "make cluster with " << noisy_channel_n << " noisy channels" << endl;
 				/*
 				map<int,int>::iterator hole_it = hole_channel.begin();
 				while(hole_it!=hole_channel.end()){
