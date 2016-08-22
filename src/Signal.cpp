@@ -571,6 +571,12 @@ void Signal::EventDisplay(int evn_min, int evn_max, Tomography::signal_type sign
 		LoadTree(i);
 		GetEntry(i);
 		int det_id = 1;
+		ostringstream canvas_title;
+		canvas_title << "cDisplay_Event_" << Nevent;
+		if(signal_correction == Tomography::raw) canvas_title << "_raw";
+		else if(signal_correction == Tomography::ped) canvas_title << "_ped";
+		else if(signal_correction == Tomography::corr) canvas_title << "_corr";
+		else canvas_title << "_unknown";
 		for(vector<Detector*>::const_iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
 			vector<vector<double> > current_ampl;
 			if(signal_correction == Tomography::raw) current_ampl = get_ampl_raw<double>((*det_it)->get_type(),(*det_it)->get_n_in_tree());
@@ -610,7 +616,11 @@ void Signal::EventDisplay(int evn_min, int evn_max, Tomography::signal_type sign
 				cDisplay->cd(det_id);
 				if(j==0){
 					ostringstream current_title;
-					current_title << current_key.first << "_" << current_key.second << "_Event_" << Nevent << "_Signal";
+					current_title << current_key.first << "_" << current_key.second << "_Event_" << Nevent;
+					if(signal_correction == Tomography::raw) current_title << "_raw";
+					else if(signal_correction == Tomography::ped) current_title << "_ped";
+					else if(signal_correction == Tomography::corr) current_title << "_corr";
+					else current_title << "_unknown";
 					signal_shape[current_key][j]->SetTitle(current_title.str().c_str());
 					if(signal_correction == Tomography::raw){
 						signal_shape[current_key][j]->GetHistogram()->SetMinimum(0);
@@ -630,6 +640,7 @@ void Signal::EventDisplay(int evn_min, int evn_max, Tomography::signal_type sign
 			}
 			det_id++;
 		}
+		cDisplay->SetTitle(canvas_title.str().c_str());
 		cDisplay->Modified();
 		cDisplay->Update();
 		gSystem->Sleep(1000);
