@@ -788,6 +788,7 @@ void MG_Event::ConvCluster(){
 		}
 		old_derivative = current_derivative;
 	}
+	delete convHist;
 
 }
 void MG_Event::HoughCluster(){
@@ -1413,6 +1414,7 @@ void MGv2_Event::ConvCluster(){
 		}
 		old_derivative = current_derivative;
 	}
+	delete convHist;
 
 }
 void MGv2_Event::HoughCluster(){
