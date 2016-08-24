@@ -20,6 +20,7 @@ using std::pair;
 class Cluster;
 class Event;
 class Tanalyse_R;
+class TLine;
 
 class Detector{
 	public:
@@ -58,6 +59,7 @@ class Detector{
 		virtual int dream_mapping(int channel, bool connector_direction) const = 0;
 		virtual string Name() const = 0;
 		virtual int get_MaxNClus() const = 0;
+		virtual TLine * get_line_display() const = 0;
 	protected:
 		Detector();	
 		Detector(const Detector& other);
@@ -122,6 +124,7 @@ class CM_Detector: public Detector{
 		int dream_mapping(int channel, bool connector_direction) const;
 		string Name() const;
 		int get_MaxNClus() const;
+		TLine * get_line_display() const;
 	protected:
 		bool use_thin_strip;
 		//Detector dependent Cuts
@@ -175,6 +178,7 @@ class MG_Detector: public Detector{
 		int dream_mapping(int channel, bool connector_direction) const;
 		string Name() const;
 		int get_MaxNClus() const;
+		TLine * get_line_display() const;
 	protected:
 		//Detector dependant cuts
 		double ClusSizeCut_Min;
@@ -231,6 +235,7 @@ class MGv2_Detector: public Detector{
 		int dream_mapping(int channel, bool connector_direction) const;
 		string Name() const;
 		int get_MaxNClus() const;
+		TLine * get_line_display() const;
 	protected:
 		//Detector dependant cuts
 		double ClusSizeCut_Min;

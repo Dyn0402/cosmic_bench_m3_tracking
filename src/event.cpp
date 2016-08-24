@@ -926,7 +926,7 @@ void MG_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
 TH1D * MG_Event::get_ampl_hist() const{
 	ostringstream name;
 	name << "ampl_MG_det_" << detector->get_n_in_tree() << "_evn_" << evn;
-	TH1D * histo = new TH1D(name.str().c_str(),name.str().c_str(),1024,-MG_Detector::size/2.,MG_Detector::size/2.);
+	TH1D * histo = new TH1D(name.str().c_str(),name.str().c_str(),1024,detector->get_offset() - MG_Detector::size/2.,detector->get_offset() + MG_Detector::size/2.);
 	vector<pair<int,int> > cluster_edges;
 	for(vector<Cluster*>::const_iterator it=clusters.begin();it!=clusters.end();++it){
 		cluster_edges.push_back(pair<int,int>(FloorNint((*it)->get_pos()-(*it)->get_size()),CeilNint((*it)->get_pos()+(*it)->get_size())));
@@ -940,7 +940,7 @@ TH1D * MG_Event::get_ampl_hist() const{
 		for(int strip=it->first;strip<=it->second;strip++){
 			if(is_used[strip]) continue;
 			int channel = MG_Detector::StripToChannel_a[strip];
-			histo->Fill(strip*MG_Detector::StripPitch - MG_Detector::size/2.,*max_element(strip_ampl[channel].begin(),strip_ampl[channel].end()));
+			histo->Fill(strip*MG_Detector::StripPitch + detector->get_offset() - MG_Detector::size/2.,*max_element(strip_ampl[channel].begin(),strip_ampl[channel].end()));
 			is_used[strip] = true;
 		}
 	}
@@ -1599,7 +1599,7 @@ void MGv2_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
 TH1D * MGv2_Event::get_ampl_hist() const{
 	ostringstream name;
 	name << "ampl_MGv2_det_" << detector->get_n_in_tree() << "_evn_" << evn;
-	TH1D * histo = new TH1D(name.str().c_str(),name.str().c_str(),1037,-MGv2_Detector::size/2.,MGv2_Detector::size/2.);
+	TH1D * histo = new TH1D(name.str().c_str(),name.str().c_str(),1037,detector->get_offset() - MGv2_Detector::size/2.,detector->get_offset() + MGv2_Detector::size/2.);
 	vector<pair<int,int> > cluster_edges;
 	for(vector<Cluster*>::const_iterator it=clusters.begin();it!=clusters.end();++it){
 		cluster_edges.push_back(pair<int,int>(FloorNint((*it)->get_pos()-(*it)->get_size()),CeilNint((*it)->get_pos()+(*it)->get_size())));
@@ -1613,7 +1613,7 @@ TH1D * MGv2_Event::get_ampl_hist() const{
 		for(int strip=it->first;strip<=it->second;strip++){
 			if(is_used[strip]) continue;
 			int channel = MGv2_Detector::StripToChannel_a[strip];
-			histo->Fill(strip*MGv2_Detector::StripPitch - MGv2_Detector::size/2.,*max_element(strip_ampl[channel].begin(),strip_ampl[channel].end()));
+			histo->Fill(strip*MGv2_Detector::StripPitch + detector->get_offset() - MGv2_Detector::size/2.,*max_element(strip_ampl[channel].begin(),strip_ampl[channel].end()));
 			is_used[strip] = true;
 		}
 	}
@@ -2327,6 +2327,8 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	map<double,vector<double> > clus_pos_Y;
 	//map<double,TCanvas*> cHist;
 	double min_dist = 10000;
+	vector<TLine*> det_X;
+	vector<TLine*> det_Y;
 	for(vector<Event*>::iterator event_it = events.begin();event_it!=events.end();++event_it){
 		if((*event_it)->get_is_X()){
 			for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
@@ -2338,9 +2340,12 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 			}
 			vector<Cluster*> current_clusters = (*event_it)->get_clusters();
 			for(vector<Cluster*>::iterator clus_it = current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
-				clus_pos_X[(*event_it)->get_z()].push_back((*clus_it)->get_pos()*(*event_it)->get_StripPitch() - Tomography::get_instance()->get_XY_size()/2.);
+				//clus_pos_X[(*event_it)->get_z()].push_back((*clus_it)->get_pos()*(*event_it)->get_StripPitch() - Tomography::get_instance()->get_XY_size()/2.);
+				clus_pos_X[(*event_it)->get_z()].push_back((*clus_it)->get_pos_mm());
 				delete *clus_it;
 			}
+			det_X.push_back((*event_it)->get_det()->get_line_display());
+			(det_X.back())->SetLineColor(detector_color);
 		}
 		else{
 			for(map<double,TH1D*>::iterator map_it = ampl_hists_Y.begin();map_it!=ampl_hists_Y.end();++map_it){
@@ -2352,9 +2357,12 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 			}
 			vector<Cluster*> current_clusters = (*event_it)->get_clusters();
 			for(vector<Cluster*>::iterator clus_it = current_clusters.begin();clus_it!=current_clusters.end();++clus_it){
-				clus_pos_Y[(*event_it)->get_z()].push_back((*clus_it)->get_pos()*(*event_it)->get_StripPitch() - Tomography::get_instance()->get_XY_size()/2.);
+				//clus_pos_Y[(*event_it)->get_z()].push_back((*clus_it)->get_pos()*(*event_it)->get_StripPitch() - Tomography::get_instance()->get_XY_size()/2.);
+				clus_pos_Y[(*event_it)->get_z()].push_back((*clus_it)->get_pos_mm());
 				delete *clus_it;
 			}
+			det_Y.push_back((*event_it)->get_det()->get_line_display());
+			(det_Y.back())->SetLineColor(detector_color);
 		}
 	}
 	double scale_factor = 1;
@@ -2397,9 +2405,9 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	vector<TLine*> clus_Y;
 	double min_z = Min(ampl_hists_X.begin()->first,ampl_hists_Y.begin()->first);
 	double max_z = Max((--(ampl_hists_X.end()))->first,(--(ampl_hists_Y.end()))->first);
-	double temp = min_z;
-	min_z -= 0.1*(max_z-min_z);
-	max_z += 0.1*(max_z-temp);
+	double diff_z = max_z-min_z;
+	min_z -= 0.1*diff_z;
+	max_z += 0.1*diff_z;
 	for(map<double,vector<double> >::iterator it = clus_pos_X.begin();it!=clus_pos_X.end();++it){
 		for(vector<double>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			clus_X.push_back(new TLine(*jt,it->first,*jt,Min(it->first + (min_dist/scale),max_z)));
@@ -2422,8 +2430,7 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 		(rays_X.back())->SetLineColor(ray_color);
 		(rays_Y.back())->SetLineColor(ray_color);
 	}
-	vector<TLine*> det_X;
-	vector<TLine*> det_Y;
+	/*
 	for(map<double,TH1D*>::iterator map_it = ampl_hists_X.begin();map_it!=ampl_hists_X.end();++map_it){
 		det_X.push_back(new TLine(-Tomography::get_instance()->get_XY_size()/2.,map_it->first,Tomography::get_instance()->get_XY_size()/2.,map_it->first));
 		det_Y.push_back(new TLine(-Tomography::get_instance()->get_XY_size()/2.,map_it->first,Tomography::get_instance()->get_XY_size()/2.,map_it->first));
@@ -2431,6 +2438,7 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 		(det_Y.back())->SetLineColor(detector_color);
 
 	}
+	*/
 	TH1D * bg_X = new TH1D("XZ plane","XZ plane",2,-6*Tomography::get_instance()->get_XY_size()/10.,6*Tomography::get_instance()->get_XY_size()/10.);
 	TH1D * bg_Y = new TH1D("YZ plane","YZ plane",2,-6*Tomography::get_instance()->get_XY_size()/10.,6*Tomography::get_instance()->get_XY_size()/10.);
 	//bg_X->Fill(-Tomography::get_instance()->get_XY_size()/2.,min_z);

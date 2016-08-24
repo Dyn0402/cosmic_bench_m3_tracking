@@ -14,6 +14,7 @@
 #include <boost/foreach.hpp>
 
 #include <TMath.h>
+#include <TLine.h>
 
 using std::cout;
 using std::endl;
@@ -282,6 +283,9 @@ string CM_Detector::Name() const{
 int CM_Detector::get_MaxNClus() const{
 	return MaxNClus;
 }
+TLine * CM_Detector::get_line_display() const{
+	return new TLine(offset - size/2.,z,offset + size/2.,z);
+}
 
 MG_Detector::MG_Detector(): Detector(){
 	ClusTOTCut_Min = -1;
@@ -445,6 +449,9 @@ string MG_Detector::Name() const{
 }
 int MG_Detector::get_MaxNClus() const{
 	return MaxNClus;
+}
+TLine * MG_Detector::get_line_display() const{
+	return new TLine(offset - size/2.,z,offset + size/2.,z);
 }
 
 MGv2_Detector::MGv2_Detector(): Detector(){
@@ -618,6 +625,9 @@ string MGv2_Detector::Name() const{
 }
 int MGv2_Detector::get_MaxNClus() const{
 	return MaxNClus;
+}
+TLine * MGv2_Detector::get_line_display() const{
+	return new TLine(offset - size/2.,z,offset + size/2.,z);
 }
 
 
