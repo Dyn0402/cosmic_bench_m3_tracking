@@ -2415,11 +2415,12 @@ void CosmicBenchEvent::EventDisplay(TCanvas * c1){
 	}
 	vector<TLine*> clus_X;
 	vector<TLine*> clus_Y;
-	double min_z = Min(clus_pos_X.begin()->first,clus_pos_Y.begin()->first);
-	double max_z = Max((--(clus_pos_X.end()))->first,(--(clus_pos_Y.end()))->first);
+	double min_z = Min(ampl_hists_X.begin()->first,ampl_hists_Y.begin()->first);
+	double max_z = Max((--(ampl_hists_X.end()))->first,(--(ampl_hists_Y.end()))->first);
 	double diff_z = max_z-min_z;
 	min_z -= 0.1*diff_z;
 	max_z += 0.1*diff_z;
+	max_z += min_dist;
 	for(map<double,vector<double> >::iterator it = clus_pos_X.begin();it!=clus_pos_X.end();++it){
 		for(vector<double>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
 			clus_X.push_back(new TLine(*jt,it->first,*jt,Min(it->first + (min_dist/scale),max_z)));
