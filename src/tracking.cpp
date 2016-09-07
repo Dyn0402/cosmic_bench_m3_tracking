@@ -35,6 +35,7 @@ int main(int argc, char ** argv){
 	string efficacity = "efficacity";
 	string eff2D = "eff2D";
 	string residus = "residus";
+	string restime = "restime";
 	string fluxMap = "fluxmap";
 	string tomoAbs = "tomoAbs";
 	string raypairs = "raypairs";
@@ -55,6 +56,9 @@ int main(int argc, char ** argv){
 		//blah->Residus_ref();
 		//blah->Residus();
 		blah->Residus_ref_MT();
+	}
+	else if(argv[2] == restime){
+		blah->Residus_time();
 	}
 	else if(argv[2] == eff2D){
 		blah->Residus_ref_2D();
@@ -150,7 +154,7 @@ int main(int argc, char ** argv){
 		else{
 			int i = atoi(argv[3]);
 			TCanvas * cDisplay = new TCanvas();
-			for(int j=0;j<i;j++){
+			for(int j=0;j<i && Tomography::get_instance()->get_can_continue();j++){
 				cout << "\r" << "Event : " << j << flush;
 				blah->EventDisplay(j, cDisplay);
 				sleep(2);
