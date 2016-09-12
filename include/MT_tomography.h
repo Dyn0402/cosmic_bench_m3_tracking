@@ -167,6 +167,7 @@ class Thread{
 		int stop();
 		pthread_t getThreadId() const;
 		virtual bool is_working() const = 0;
+		virtual string get_name() const = 0;
 	private:
 		virtual void * run() = 0;
 		static void * runThread(void * arg);
@@ -182,6 +183,7 @@ class Worker_Thread: public Thread{
 		Worker_Thread();
 		~Worker_Thread();
 		bool is_working() const;
+		string get_name() const;
 	protected:
 		void * run();
 		void pre_stop();
@@ -195,6 +197,7 @@ class Reader_Thread: public Thread{
 		~Reader_Thread();
 		bool is_working() const;
 		static unsigned short has_working_readers();
+		string get_name() const;
 	protected:
 		static unsigned short working_readers;
 		static unsigned short working_readers_init();
@@ -210,6 +213,7 @@ class Writer_Thread: public Thread{
 		template<typename T> Writer_Thread(Output_Task<T> * current_task_);
 		~Writer_Thread();
 		bool is_working() const;
+		string get_name() const;
 	protected:
 		void * run();
 		void pre_stop();
@@ -233,6 +237,7 @@ class Display_Thread: public Thread, public ostringstream{
 		static void Quit();
 		void display_text();
 		void display_canvas();
+		string get_name() const;
 	protected:
 		static Display_Thread * singleton_instance;
 		Display_Thread();

@@ -349,6 +349,7 @@ int Thread::start(){
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	if(running == 0){
 		int result = pthread_create(&id,&attr,runThread,this);
+		pthread_setname_np(id,(this->get_name()).c_str());
 		if(result == 0) running = 1;
 		pthread_attr_destroy(&attr);
 		return result;
@@ -408,6 +409,9 @@ void Worker_Thread::pre_stop(){
 }
 bool Worker_Thread::is_working() const{
 	return working;
+}
+string Worker_Thread::get_name() const{
+	return "worker";
 }
 
 Reader_Thread::Reader_Thread(Input_Task * current_task_): Thread(){
@@ -472,6 +476,9 @@ void * Reader_Thread::run(){
 void Reader_Thread::pre_stop(){
 	working = false;
 }
+string Reader_Thread::get_name() const{
+	return "reader";
+}
 
 template<typename T>
 Writer_Thread::Writer_Thread(Output_Task<T> * current_task_): Thread(){
@@ -524,6 +531,9 @@ void * Writer_Thread::run(){
 }
 void Writer_Thread::pre_stop(){
 	working = false;
+}
+string Writer_Thread::get_name() const{
+	return "writer";
 }
 
 Display_Thread * Display_Thread::singleton_instance = 0;
@@ -682,4 +692,7 @@ void Display_Thread::unregister_task(Task * some_task){
 	if(constant){
 		*this << "Task was not registered, counld not unregister" << endl;
 	}
+}
+string Display_Thread::get_name() const{
+	return "display";
 }
