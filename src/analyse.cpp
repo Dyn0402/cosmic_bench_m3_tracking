@@ -174,6 +174,15 @@ void Analyse::Residus_time(){
 		if(!((*it)->get_is_ref())) non_ref_n++;
 	}
 	*/
+	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
+	LoadTree(0);
+	fChain->GetEntry(0);
+	double evttime_min = evttime;
+	LoadTree(nentries-1);
+	fChain->GetEntry(nentries-1);
+	double evttime_max = evttime;
+
+
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
 	map<string,TCanvas*> c_MM;
@@ -185,6 +194,7 @@ void Analyse::Residus_time(){
 	map<string,int> point_nb;
 	map<string,double> efficacity;
 	map<string,TProfile*> efficiency_time;
+	map<string,TProfile*> amplitude_time;
 	int nbins = 200;
 	double marge = 1./10.;
 	int nbins_2D = 100*(1+2*marge);
@@ -195,7 +205,6 @@ void Analyse::Residus_time(){
 	//map<string, bool> nref_is_X;
 	//unsigned int det_x_n = 0;
 	unsigned int nref_x_n = 0;
-	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		if(!((*it)->get_is_ref())){
 			ostringstream name;
@@ -211,7 +220,8 @@ void Analyse::Residus_time(){
 			correlation[name.str()] = new TGraph();
 			point_nb[name.str()] = 0;
 			efficacity[name.str()] = 0;
-			efficiency_time[name.str()] = new TProfile((name.str()+"_efficiency_time").c_str(),(name.str()+"_efficiency_time").c_str(),nbins,0,nentries);
+			efficiency_time[name.str()] = new TProfile((name.str()+"_efficiency_time").c_str(),(name.str()+"_efficiency_time").c_str(),nentries/50,evttime_min,evttime_max);
+			amplitude_time[name.str()] = new TProfile((name.str()+"_amplitude_time").c_str(),(name.str()+"_amplitude_time").c_str(),nentries/50,evttime_min,evttime_max);
 			if((*it)->get_is_X()) nref_x_n++;
 		}
 		//if((*it)->get_is_X()) det_x_n++;
@@ -229,18 +239,20 @@ void Analyse::Residus_time(){
 		}
 	}
 	TCanvas * c0 = new TCanvas("stats","stats");
-	c0->Divide(2,2);
-	TProfile * chisquares = new TProfile("chiSquares","chiSquares",nbins,0,nentries);
+	c0->Divide(3,2);
+	TProfile * chisquares = new TProfile("chiSquares","chiSquares",nentries/50,evttime_min,evttime_max);
 	TH1D * ray_clus_n = new TH1D("clus_n","clus_n",get_det_N_tot() + 2,0,get_det_N_tot() + 2);
 	TH1D * ray_slope = new TH1D("slope","slope",100,0,1);
 	TH1D * ray_phi = new TH1D("phi","phi",100,-Pi(),Pi());
 	TH1D * ray_slope_X = new TH1D("slope_X","slope_X",100,0,1);
 	TH1D * ray_slope_Y = new TH1D("slope_Y","slope_Y",100,0,1);
+	TProfile * freq_time = new TProfile("freq_time","freq_time",nentries/50,evttime_min,evttime_max);
 	ray_slope->SetLineColor(1);
 	ray_slope_X->SetLineColor(2);
 	ray_slope_Y->SetLineColor(3);
 	if (fChain == 0) return;
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
+	double evttime_last = evttime_min;
 	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
 		Long64_t ientry = LoadTree(jentry);
 		if (ientry < 0) break;
@@ -250,7 +262,7 @@ void Analyse::Residus_time(){
 		vector<Ray>::iterator ray_it = currentRays.begin();
 		while(ray_it!= currentRays.end()){
 			if(ray_it->get_chiSquare_X()>-1 && ray_it->get_chiSquare_Y()>-1 && ((ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y())/ray_it->get_clus_n())<chisquare_threshold){
-				chisquares->Fill(jentry,ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y());
+				chisquares->Fill(evttime,ray_it->get_chiSquare_X()+ray_it->get_chiSquare_Y());
 				ray_clus_n->Fill(ray_it->get_clus_n());
 				double slope = Sqrt((ray_it->get_slope_Y()*ray_it->get_slope_Y()) + (ray_it->get_slope_X()*ray_it->get_slope_X()));
 				ray_slope->Fill(ATan(slope));
@@ -263,6 +275,8 @@ void Analyse::Residus_time(){
 			}
 			else ray_it = currentRays.erase(ray_it);
 		}
+		freq_time->Fill(evttime,evttime - evttime_last);
+		evttime_last = evttime;
 		eventReconstructed+=currentRays.size();
 		eventSuitable+=currentCBEvent->get_clus_N()*1./(get_det_N_tot());
 		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
@@ -270,6 +284,12 @@ void Analyse::Residus_time(){
 				ostringstream name;
 				name <<(*it)->get_type() << "_" << (*it)->get_n_in_tree();
 				vector<Cluster*> current_clusters = (*it)->get_clusters();
+				double biggest_ampl = 0;
+				for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
+					double current_ampl = (*kt)->get_maxStripAmpl();
+					if(current_ampl>biggest_ampl) biggest_ampl = current_ampl;
+				}
+				amplitude_time[name.str()]->Fill(evttime,biggest_ampl);
 				for(vector<Ray>::iterator jt=currentRays.begin();jt!=currentRays.end();++jt){
 					//double chiSquare_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_chiSquare_X() : jt->get_chiSquare_Y();
 					//unsigned int clus_in_nref_dir = (nref_is_X[name.str()]) ? jt->get_clus_x_n() : jt->get_clus_y_n();
@@ -304,7 +324,7 @@ void Analyse::Residus_time(){
 					double pos_X = jt->eval_X((*it)->get_z());
 					double pos_Y = jt->eval_Y((*it)->get_z());
 					if(pos_X<=2*Tomography::get_instance()->get_XY_size()/5. && pos_X>=-2*Tomography::get_instance()->get_XY_size()/5. && pos_Y<=2*Tomography::get_instance()->get_XY_size()/5. && pos_Y>=-2*Tomography::get_instance()->get_XY_size()/5.){
-						efficiency_time[name.str()]->Fill(jentry,residu<chisquare_threshold);
+						efficiency_time[name.str()]->Fill(evttime,residu<chisquare_threshold);
 					}
 					delete *matching_cluster;
 					current_clusters.erase(matching_cluster);
@@ -331,7 +351,7 @@ void Analyse::Residus_time(){
 				it->second->cd(2);
 				muon_seen[it->first]->Draw("COLZ");
 				it->second->cd(3);
-				muon_total[it->first]->Draw("COLZ");
+				amplitude_time[it->first]->Draw();
 				it->second->cd(4);
 				efficiency_time[it->first]->Draw();
 				it->second->cd(5);
@@ -351,6 +371,8 @@ void Analyse::Residus_time(){
 			ray_slope_Y->Draw("SAME");
 			c0->cd(4);
 			ray_phi->Draw();
+			c0->cd(5);
+			freq_time->Draw();
 			c0->Modified();
 			c0->Update();
 		}
@@ -380,7 +402,7 @@ void Analyse::Residus_time(){
 		it->second->cd(2);
 		muon_seen[it->first]->Draw("COLZ");
 		it->second->cd(3);
-		muon_total[it->first]->Draw("COLZ");
+		amplitude_time[it->first]->Draw();
 		it->second->cd(4);
 		efficiency_time[it->first]->Draw();
 		it->second->cd(5);
@@ -401,6 +423,8 @@ void Analyse::Residus_time(){
 	ray_slope_Y->Draw("SAME");
 	c0->cd(4);
 	ray_phi->Draw();
+	c0->cd(5);
+	freq_time->Draw();
 	c0->Modified();
 	c0->Update();
 }
