@@ -461,8 +461,9 @@ void Analyse::Amplitude_time(){
 	int n_bin_log = 200;
 	double * bin_edges = new double[n_bin_log+1];
 	double log_max = 20*(evttime_max-evttime_min)/nentries;
+	double log_min = 1e4;
 	for(int i=0;i<=n_bin_log;i++){
-		bin_edges[i] = Power(log_max,i/static_cast<double>(n_bin_log));
+		bin_edges[i] = log_min*Power(log_max/log_min,i/static_cast<double>(n_bin_log));
 	}
 
 
@@ -470,7 +471,9 @@ void Analyse::Amplitude_time(){
 	TH1D * freq_h = new TH1D("freq_h","freq_h",n_bin_log,bin_edges);
 	TH2D * freq_time_h = new TH2D("freq_time_h","freq_time_h",n_bin_log,bin_edges,n_bins_time,evttime_min,evttime_max);
 	c0->GetPad(2)->SetLogx();
+	c0->GetPad(2)->SetLogy();
 	c0->GetPad(3)->SetLogx();
+	c0->GetPad(3)->SetLogz();
 	delete bin_edges;
 	if (fChain == 0) return;
 	cout << setw(20) << "total processed" << endl;
@@ -518,7 +521,7 @@ void Analyse::Amplitude_time(){
 			c0->cd(2);
 			freq_h->Draw();
 			c0->cd(3);
-			freq_time_h->Draw();
+			freq_time_h->Draw("COLZ");
 			c0->Modified();
 			c0->Update();
 		}
@@ -543,7 +546,7 @@ void Analyse::Amplitude_time(){
 	c0->cd(2);
 	freq_h->Draw();
 	c0->cd(3);
-	freq_time_h->Draw();
+	freq_time_h->Draw("COLZ");
 	c0->Modified();
 	c0->Update();
 }
