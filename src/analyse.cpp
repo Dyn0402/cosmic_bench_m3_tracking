@@ -444,17 +444,20 @@ void Analyse::Amplitude_time(){
 	TCanvas * c_MM = new TCanvas();
 	int column_nb = CeilNint(2*Sqrt((3*get_det_N_tot())/3.));
 	c_MM->Divide(column_nb,1+(3*get_det_N_tot()/column_nb));
-	map<string,TProfile*> amplitude_time;
-	map<string,TH1D*> ampl_h;
-	map<string,TH2D*> ampl_time_h;
+	map<Tomography::det_type,map<int,TProfile*> > amplitude_time;
+	//map<string,TProfile*> amplitude_time;
+	map<Tomography::det_type,map<int,TH1D*> > ampl_h;
+	//map<string,TH1D*> ampl_h;
+	map<Tomography::det_type,map<int,TH2D*> > ampl_time_h;
+	//map<string,TH2D*> ampl_time_h;
 	int n_bins_adc = 800;
 	int n_bins_time = nentries/100;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		ostringstream name;
 		name << (*it)->get_type() << "_" << (*it)->get_n_in_tree();
-		amplitude_time[name.str()] = new TProfile((name.str()+"_amplitude_time").c_str(),(name.str()+"_amplitude_time").c_str(),n_bins_time,evttime_min,evttime_max);
-		ampl_h[name.str()] = new TH1D((name.str()+"_ampl_h").c_str(),(name.str()+"_ampl_h").c_str(),n_bins_adc,0,4096);
-		ampl_time_h[name.str()] = new TH2D((name.str()+"_ampl_time_h").c_str(),(name.str()+"_ampl_time_h").c_str(),n_bins_adc/2,0,4096,n_bins_time,evttime_min,evttime_max);
+		amplitude_time[(*it)->get_type()][(*it)->get_n_in_tree()] = new TProfile((name.str()+"_amplitude_time").c_str(),(name.str()+"_amplitude_time").c_str(),n_bins_time,evttime_min,evttime_max);
+		ampl_h[(*it)->get_type()][(*it)->get_n_in_tree()] = new TH1D((name.str()+"_ampl_h").c_str(),(name.str()+"_ampl_h").c_str(),n_bins_adc,0,4096);
+		ampl_time_h[(*it)->get_type()][(*it)->get_n_in_tree()] = new TH2D((name.str()+"_ampl_time_h").c_str(),(name.str()+"_ampl_time_h").c_str(),n_bins_adc/2,0,4096,n_bins_time,evttime_min,evttime_max);
 	}
 	TCanvas * c0 = new TCanvas("stats","stats");
 	c0->Divide(3);
@@ -488,14 +491,16 @@ void Analyse::Amplitude_time(){
 		freq_time_h->Fill(evttime - evttime_last,evttime);
 		evttime_last = evttime;
 		for(vector<Event*>::iterator it = (currentCBEvent->events).begin();it!=(currentCBEvent->events).end();++it){
-			ostringstream name;
-			name <<(*it)->get_type() << "_" << (*it)->get_n_in_tree();
+			//ostringstream name;
+			//name <<(*it)->get_type() << "_" << (*it)->get_n_in_tree();
+			Tomography::det_type current_type = (*it)->get_type();
+			int current_n = (*it)->get_n_in_tree();
 			vector<Cluster*> current_clusters = (*it)->get_clusters();
 			for(vector<Cluster*>::iterator kt = current_clusters.begin();kt!=current_clusters.end();++kt){
 				double current_ampl = (*kt)->get_maxStripAmpl();
-				ampl_h[name.str()]->Fill(current_ampl);
-				amplitude_time[name.str()]->Fill(evttime,current_ampl);
-				ampl_time_h[name.str()]->Fill(current_ampl,evttime);
+				ampl_h[current_type][current_n]->Fill(current_ampl);
+				amplitude_time[current_type][current_n]->Fill(evttime,current_ampl);
+				ampl_time_h[current_type][current_n]->Fill(current_ampl,evttime);
 				delete *kt;
 			}
 		}
@@ -503,16 +508,18 @@ void Analyse::Amplitude_time(){
 		if(jentry%500 == 0) cout << "\r" << setw(20) << jentry << flush;
 		if(jentry%20000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
 			int pad_id= 1;
-			for(map<string,TProfile*>::iterator it = amplitude_time.begin();it!=amplitude_time.end();++it){
-				c_MM->cd(pad_id);
-				it->second->Draw();
-				pad_id++;
-				c_MM->cd(pad_id);
-				ampl_h[it->first]->Draw();
-				pad_id++;
-				c_MM->cd(pad_id);
-				ampl_time_h[it->first]->Draw("COLZ");
-				pad_id++;
+			for(map<Tomography::det_type,map<int,TProfile*> >::iterator it = amplitude_time.begin();it!=amplitude_time.end();++it){
+				for(map<int,TProfile*>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+					c_MM->cd(pad_id);
+					jt->second->Draw();
+					pad_id++;
+					c_MM->cd(pad_id);
+					ampl_h[it->first][jt->first]->Draw();
+					pad_id++;
+					c_MM->cd(pad_id);
+					ampl_time_h[it->first][jt->first]->Draw("COLZ");
+					pad_id++;
+				}
 			}
 			c_MM->Modified();
 			c_MM->Update();
@@ -528,16 +535,18 @@ void Analyse::Amplitude_time(){
 	}
 	cout << "\r" << setw(20) << nentries << endl;
 	int pad_id= 1;
-	for(map<string,TProfile*>::iterator it = amplitude_time.begin();it!=amplitude_time.end();++it){
-		c_MM->cd(pad_id);
-		it->second->Draw();
-		pad_id++;
-		c_MM->cd(pad_id);
-		ampl_h[it->first]->Draw();
-		pad_id++;
-		c_MM->cd(pad_id);
-		ampl_time_h[it->first]->Draw("COLZ");
-		pad_id++;
+	for(map<Tomography::det_type,map<int,TProfile*> >::iterator it = amplitude_time.begin();it!=amplitude_time.end();++it){
+		for(map<int,TProfile*>::iterator jt = (it->second).begin();jt!=(it->second).end();++jt){
+			c_MM->cd(pad_id);
+			jt->second->Draw();
+			pad_id++;
+			c_MM->cd(pad_id);
+			ampl_h[it->first][jt->first]->Draw();
+			pad_id++;
+			c_MM->cd(pad_id);
+			ampl_time_h[it->first][jt->first]->Draw("COLZ");
+			pad_id++;
+		}
 	}
 	c_MM->Modified();
 	c_MM->Update();
