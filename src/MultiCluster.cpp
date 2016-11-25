@@ -52,10 +52,7 @@ int main(int argc, char ** argv){
 			return 1;
 		}
 		int event_nb = atoi(argv[3]);
-		cout << "--- Without holes ---" << endl;
-		blah->HoughTracking(event_nb,false);
-		cout << "--- With holes ---" << endl;
-		blah->HoughTracking(event_nb,true);
+		blah->HoughTracking(event_nb);
 	}
 	else if(argv[2] == debug){
 		if(argc<4){

@@ -208,7 +208,7 @@ void Signal::MultiCluster(){
 	fChain->SetBranchStatus("*",1);
 }
 
-void Signal::HoughTracking(long event_nb, bool use_hole){
+void Signal::HoughTracking(long event_nb){
 	long nentries = fChain->GetEntriesFast();
 	if(event_nb<0 || event_nb>=nentries){
 		cout << "invalid event number" << endl;
@@ -216,166 +216,179 @@ void Signal::HoughTracking(long event_nb, bool use_hole){
 	}
 	LoadTree(event_nb);
 	GetEntry(event_nb);
-	map<bool,map<int,vector<Cluster*> > > all_cluster;
-	vector<Event*> events;
+	vector<map<bool,map<int,vector<Cluster*> > > > all_cluster;
+	vector<vector<Event*> > events;
 	double max_z = -10000;
 	double min_z = 10000;
-	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
-		Event * current_event = (*it)->build_event(get_ampl<double>((*it)->get_type(),(*it)->get_n_in_tree()),Nevent,evttime);
-		current_event->HoughCluster(use_hole);
-		vector<Cluster*> current_cluster = current_event->get_clusters();
-		vector<Cluster*>::iterator clus_it = current_cluster.begin();
-		while(clus_it!=current_cluster.end()){
-			if(!((*it)->is_suitable(*clus_it))){
-				delete *clus_it;
-				clus_it = current_cluster.erase(clus_it);
-			}
-			else ++clus_it;
-		}
-		cout << "number of suitable cluster for " << (*it)->get_type() << "_" << (*it)->get_n_in_tree() << " : " << current_cluster.size();
-		all_cluster[(*it)->get_is_X()][(*it)->get_layer()].insert(all_cluster[(*it)->get_is_X()][(*it)->get_z()].end(),current_cluster.begin(),current_cluster.end());
-		current_event->MultiCluster();
-		cout << " (" << current_event->get_NClus() << ")" << endl;
-		events.push_back(current_event);
-		if((*it)->get_z()>max_z) max_z = (*it)->get_z();
-		if((*it)->get_z()<min_z) min_z = (*it)->get_z();
-	}
-	//max_z+=10;
-	//min_z-=10;
+	int max_hole_nb = 5;
 	int bin_n = 500;
 	double min_coord = -10*Tomography::get_instance()->get_XY_size()/10.;
 	double max_coord = 10*Tomography::get_instance()->get_XY_size()/10.;
-	TH2D * hough_space_X = new TH2D(("hough_space_X" + ((use_hole) ? string("_hole") : string())).c_str(),("hough_space_X" + ((use_hole) ? string("_hole") : string())).c_str(),bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
-	TH2D * hough_space_Y = new TH2D(("hough_space_Y" + ((use_hole) ? string("_hole") : string())).c_str(),("hough_space_Y" + ((use_hole) ? string("_hole") : string())).c_str(),bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
-	int suitable_clus_n = 0;
-	//draw clusters in hough space
-	bin_n = 2*bin_n;
-	map<bool,map<int,int> > sizes;
-	for(map<bool,map<int,vector<Cluster*> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
-		for(map<int,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
-			for(vector<Cluster*>::iterator it=(kt->second).begin();it!=(kt->second).end();++it){
-				suitable_clus_n++;
-				if(!(Tomography::get_instance()->get_is_up((*it)->get_layer()))){
-					for(int i=0;i<bin_n;i++){
-						double current_coord_up = min_coord +i*(max_coord-min_coord)/bin_n;
-						double current_coord_down = current_coord_up + ((*it)->get_pos_mm() - current_coord_up)*(min_z-max_z)/((*it)->get_z()-max_z);
-						if((*it)->get_is_X()){
-							hough_space_X->Fill(current_coord_down,current_coord_up);// possible wieght : it->get_ampl()
-						}
-						else{
-							hough_space_Y->Fill(current_coord_down,current_coord_up);// possible wieght : it->get_ampl()
-						}
-					}
+	vector<TH2D*> hough_space_X;
+	vector<TH2D*> hough_space_Y;
+	gStyle->SetPalette(55,0);
+	gStyle->SetNumberContours(512);
+	TCanvas * cHough = new TCanvas();
+	cHough->Divide(2,max_hole_nb);
+	vector<TGraph*> int_X;
+	vector<TGraph*> int_Y;
+	vector<int> X_int_nb;
+	vector<int> Y_int_nb;
+	for(int i = 0; i<max_hole_nb; i++){
+		cout << "--- Hole number : " << i << " ---" << endl;
+		for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
+			Event * current_event = (*it)->build_event(get_ampl<double>((*it)->get_type(),(*it)->get_n_in_tree()),Nevent,evttime);
+			current_event->HoughCluster(i);
+			vector<Cluster*> current_cluster = current_event->get_clusters();
+			vector<Cluster*>::iterator clus_it = current_cluster.begin();
+			while(clus_it!=current_cluster.end()){
+				if(!((*it)->is_suitable(*clus_it))){
+					delete *clus_it;
+					clus_it = current_cluster.erase(clus_it);
 				}
-				else{
-					for(int i=0;i<bin_n;i++){
-						double current_coord_down = min_coord +i*(max_coord-min_coord)/bin_n;
-						double current_coord_up = current_coord_down + ((*it)->get_pos_mm() - current_coord_down)*(max_z-min_z)/((*it)->get_z()-min_z);
-						if((*it)->get_is_X()){
-							hough_space_X->Fill(current_coord_down,current_coord_up);// possible wieght : it->get_ampl()
-						}
-						else{
-							hough_space_Y->Fill(current_coord_down,current_coord_up);// possible wieght : it->get_ampl()
-						}
-					}
-				}
+				else ++clus_it;
 			}
-			sizes[jt->first][kt->first] = (kt->second).size();
+			cout << "number of suitable cluster for " << (*it)->get_type() << "_" << (*it)->get_n_in_tree() << " : " << current_cluster.size();
+			all_cluster[i][(*it)->get_is_X()][(*it)->get_layer()].insert(all_cluster[i][(*it)->get_is_X()][(*it)->get_z()].end(),current_cluster.begin(),current_cluster.end());
+			current_event->MultiCluster();
+			cout << " (" << current_event->get_NClus() << ")" << endl;
+			events[i].push_back(current_event);
+			if((*it)->get_z()>max_z) max_z = (*it)->get_z();
+			if((*it)->get_z()<min_z) min_z = (*it)->get_z();
 		}
-	}
-	TGraph * int_X = new TGraph();
-	TGraph * int_Y = new TGraph();
-	int X_int_nb = 0;
-	int Y_int_nb = 0;
-	int_X->SetMarkerStyle(24);
-	int_Y->SetMarkerStyle(24);
-	int_X->SetMarkerSize(2);
-	int_Y->SetMarkerSize(2);
-	int_X->SetMarkerColor(2);
-	int_Y->SetMarkerColor(2);
-	map<bool,Point_2D> hough_ray;
-	for(int drop = 0;drop<2;drop++){
-		for(map<bool,map<int,vector<Cluster*> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
-			if(hough_ray.count(jt->first)>0) continue;
-			vector<map<int,int> > comb = CosmicBenchEvent::combinaisons(sizes[jt->first], (drop>0));
-			double smallest_distance = numeric_limits<double>::max();
-			bool found = false;
-			Point_2D best_intersection;
-			for(vector<map<int,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
-				vector<Point_2D> intersections;
-				for(map<int,int>::iterator map_it = kt->begin();map_it!=kt->end();++map_it){
-					Line_2D first_line;
-					Cluster * first_cluster = (jt->second)[map_it->first][map_it->second];
-					if(!(Tomography::get_instance()->get_is_up(first_cluster->get_layer()))) first_line = Line_2D(Point_2D(min_coord + (first_cluster->get_pos_mm() - min_coord)*(min_z-max_z)/(first_cluster->get_z()-max_z),min_coord),Point_2D(max_coord + (first_cluster->get_pos_mm() - max_coord)*(min_z-max_z)/(first_cluster->get_z()-max_z),max_coord));
-					else first_line = Line_2D(Point_2D(min_coord,min_coord + (first_cluster->get_pos_mm() - min_coord)*(max_z-min_z)/(first_cluster->get_z()-min_z)),Point_2D(max_coord,max_coord + (first_cluster->get_pos_mm() - max_coord)*(max_z-min_z)/(first_cluster->get_z()-min_z)));
-					map<int,int>::iterator map_jt = map_it;
-					map_jt++;
-					while(map_jt!=kt->end()){
-						Line_2D second_line;
-						Cluster * second_cluster = (jt->second)[map_jt->first][map_jt->second];
-						if(!(Tomography::get_instance()->get_is_up(second_cluster->get_layer()))) second_line = Line_2D(Point_2D(min_coord + (second_cluster->get_pos_mm() - min_coord)*(min_z-max_z)/(second_cluster->get_z()-max_z),min_coord),Point_2D(max_coord + (second_cluster->get_pos_mm() - max_coord)*(min_z-max_z)/(second_cluster->get_z()-max_z),max_coord));
-						else second_line = Line_2D(Point_2D(min_coord,min_coord + (second_cluster->get_pos_mm() - min_coord)*(max_z-min_z)/(second_cluster->get_z()-min_z)),Point_2D(max_coord,max_coord + (second_cluster->get_pos_mm() - max_coord)*(max_z-min_z)/(second_cluster->get_z()-min_z)));
-						intersections.push_back(first_line.intersection(second_line));
-						++map_jt;
-					}
-				}
-				if(intersections.size()>1){
-					double biggest_distance = 0;
-					for(vector<Point_2D>::iterator vec_it = intersections.begin();vec_it!=intersections.end();++vec_it){
-						vector<Point_2D>::iterator vec_jt = vec_it;
-						vec_jt++;
-						while(vec_jt!=intersections.end()){
-							double current_distance = ((*vec_it) - (*vec_jt)).norm();
-							if(current_distance> biggest_distance) biggest_distance = current_distance;
-							++vec_jt;
+		ostringstream hist_name;
+		hist_name << "hough_space_" << i << "_";
+		hough_space_X[i] = new TH2D((hist_name.str() + "X").c_str(),(hist_name.str() + "X").c_str(),bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
+		hough_space_Y[i] = new TH2D((hist_name.str() + "Y").c_str(),(hist_name.str() + "Y").c_str(),bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
+		//max_z+=10;
+		//min_z-=10;
+		int suitable_clus_n = 0;
+		//draw clusters in hough space
+		bin_n = 2*bin_n;
+		map<bool,map<int,int> > sizes;
+		for(map<bool,map<int,vector<Cluster*> > >::iterator jt = all_cluster[i].begin();jt!=all_cluster[i].end();++jt){
+			for(map<int,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){
+				for(vector<Cluster*>::iterator it=(kt->second).begin();it!=(kt->second).end();++it){
+					suitable_clus_n++;
+					if(!(Tomography::get_instance()->get_is_up((*it)->get_layer()))){
+						for(int j=0;j<bin_n;j++){
+							double current_coord_up = min_coord +j*(max_coord-min_coord)/bin_n;
+							double current_coord_down = current_coord_up + ((*it)->get_pos_mm() - current_coord_up)*(min_z-max_z)/((*it)->get_z()-max_z);
+							if((*it)->get_is_X()){
+								hough_space_X[i]->Fill(current_coord_down,current_coord_up,(*it)->get_size());// possible wieght : it->get_ampl()
+							}
+							else{
+								hough_space_Y[i]->Fill(current_coord_down,current_coord_up,(*it)->get_size());// possible wieght : it->get_ampl()
+							}
 						}
 					}
-					if(biggest_distance<smallest_distance && biggest_distance<10){
-						smallest_distance = biggest_distance;
-						found = true;
-						vector<Point_2D>::iterator vec_it = intersections.begin();
-						best_intersection = *vec_it;
-						++vec_it;
-						while(vec_it!=intersections.end()){
-							best_intersection += (*vec_it);
+					else{
+						for(int j=0;j<bin_n;j++){
+							double current_coord_down = min_coord +j*(max_coord-min_coord)/bin_n;
+							double current_coord_up = current_coord_down + ((*it)->get_pos_mm() - current_coord_down)*(max_z-min_z)/((*it)->get_z()-min_z);
+							if((*it)->get_is_X()){
+								hough_space_X[i]->Fill(current_coord_down,current_coord_up,(*it)->get_size());// possible wieght : it->get_ampl()
+							}
+							else{
+								hough_space_Y[i]->Fill(current_coord_down,current_coord_up,(*it)->get_size());// possible wieght : it->get_ampl()
+							}
+						}
+					}
+				}
+				sizes[jt->first][kt->first] = (kt->second).size();
+			}
+		}
+		int_X[i] = new TGraph();
+		int_Y[i] = new TGraph();
+		X_int_nb[i] = 0;
+		Y_int_nb[i] = 0;
+		int_X[i]->SetMarkerStyle(24);
+		int_Y[i]->SetMarkerStyle(24);
+		int_X[i]->SetMarkerSize(2);
+		int_Y[i]->SetMarkerSize(2);
+		int_X[i]->SetMarkerColor(2);
+		int_Y[i]->SetMarkerColor(2);
+		map<bool,Point_2D> hough_ray;
+		for(int drop = 0;drop<2;drop++){
+			for(map<bool,map<int,vector<Cluster*> > >::iterator jt = all_cluster[i].begin();jt!=all_cluster[i].end();++jt){
+				if(hough_ray.count(jt->first)>0) continue;
+				vector<map<int,int> > comb = CosmicBenchEvent::combinaisons(sizes[jt->first], (drop>0));
+				double smallest_distance = numeric_limits<double>::max();
+				bool found = false;
+				Point_2D best_intersection;
+				for(vector<map<int,int> >::iterator kt = comb.begin();kt!=comb.end();++kt){
+					vector<Point_2D> intersections;
+					for(map<int,int>::iterator map_it = kt->begin();map_it!=kt->end();++map_it){
+						Line_2D first_line;
+						Cluster * first_cluster = (jt->second)[map_it->first][map_it->second];
+						if(!(Tomography::get_instance()->get_is_up(first_cluster->get_layer()))) first_line = Line_2D(Point_2D(min_coord + (first_cluster->get_pos_mm() - min_coord)*(min_z-max_z)/(first_cluster->get_z()-max_z),min_coord),Point_2D(max_coord + (first_cluster->get_pos_mm() - max_coord)*(min_z-max_z)/(first_cluster->get_z()-max_z),max_coord));
+						else first_line = Line_2D(Point_2D(min_coord,min_coord + (first_cluster->get_pos_mm() - min_coord)*(max_z-min_z)/(first_cluster->get_z()-min_z)),Point_2D(max_coord,max_coord + (first_cluster->get_pos_mm() - max_coord)*(max_z-min_z)/(first_cluster->get_z()-min_z)));
+						map<int,int>::iterator map_jt = map_it;
+						map_jt++;
+						while(map_jt!=kt->end()){
+							Line_2D second_line;
+							Cluster * second_cluster = (jt->second)[map_jt->first][map_jt->second];
+							if(!(Tomography::get_instance()->get_is_up(second_cluster->get_layer()))) second_line = Line_2D(Point_2D(min_coord + (second_cluster->get_pos_mm() - min_coord)*(min_z-max_z)/(second_cluster->get_z()-max_z),min_coord),Point_2D(max_coord + (second_cluster->get_pos_mm() - max_coord)*(min_z-max_z)/(second_cluster->get_z()-max_z),max_coord));
+							else second_line = Line_2D(Point_2D(min_coord,min_coord + (second_cluster->get_pos_mm() - min_coord)*(max_z-min_z)/(second_cluster->get_z()-min_z)),Point_2D(max_coord,max_coord + (second_cluster->get_pos_mm() - max_coord)*(max_z-min_z)/(second_cluster->get_z()-min_z)));
+							intersections.push_back(first_line.intersection(second_line));
+							++map_jt;
+						}
+					}
+					if(intersections.size()>1){
+						double biggest_distance = 0;
+						for(vector<Point_2D>::iterator vec_it = intersections.begin();vec_it!=intersections.end();++vec_it){
+							vector<Point_2D>::iterator vec_jt = vec_it;
+							vec_jt++;
+							while(vec_jt!=intersections.end()){
+								double current_distance = ((*vec_it) - (*vec_jt)).norm();
+								if(current_distance> biggest_distance) biggest_distance = current_distance;
+								++vec_jt;
+							}
+						}
+						if(biggest_distance<smallest_distance && biggest_distance<10){
+							smallest_distance = biggest_distance;
+							found = true;
+							vector<Point_2D>::iterator vec_it = intersections.begin();
+							best_intersection = *vec_it;
 							++vec_it;
+							while(vec_it!=intersections.end()){
+								best_intersection += (*vec_it);
+								++vec_it;
+							}
+							best_intersection /= intersections.size();
 						}
-						best_intersection /= intersections.size();
+					}
+				}
+				if(found){
+					hough_ray[jt->first] = best_intersection;
+					if(jt->first){
+						int_X[i]->SetPoint(X_int_nb[i],best_intersection.get_X(),best_intersection.get_Y());
+						X_int_nb[i]++;
+					}
+					else{
+						int_Y[i]->SetPoint(Y_int_nb[i],best_intersection.get_X(),best_intersection.get_Y());
+						Y_int_nb[i]++;
 					}
 				}
 			}
-			if(found){
-				hough_ray[jt->first] = best_intersection;
-				if(jt->first){
-					int_X->SetPoint(X_int_nb,best_intersection.get_X(),best_intersection.get_Y());
-					X_int_nb++;
-				}
-				else{
-					int_Y->SetPoint(Y_int_nb,best_intersection.get_X(),best_intersection.get_Y());
-					Y_int_nb++;
-				}
-			}
 		}
-	}
-	cout << "total number of suitable cluster : " << suitable_clus_n << endl;
-	//draw "normal" ray in hough space
-	CosmicBenchEvent * thisEvent = new CosmicBenchEvent(this,events);
-	vector<Ray> rays = thisEvent->get_absorption_rays();
-	delete thisEvent;
-	for(vector<Event*>::iterator ev_it=events.begin();ev_it!=events.end();++ev_it){
-		delete *ev_it;
-	}
-	events.clear();
-	for(map<bool,map<int,vector<Cluster*> > >::iterator coord_it=all_cluster.begin();coord_it!=all_cluster.end();++coord_it){
-		for(map<int,vector<Cluster*> >::iterator alt_it=(coord_it->second).begin();alt_it!=(coord_it->second).end();++alt_it){
-			for(vector<Cluster*>::iterator clus_it=(alt_it->second).begin();clus_it!=(alt_it->second).end();++clus_it){
-				delete *clus_it;
+		cout << "total number of suitable cluster : " << suitable_clus_n << endl;
+		for(map<bool,map<int,vector<Cluster*> > >::iterator coord_it=all_cluster[i].begin();coord_it!=all_cluster[i].end();++coord_it){
+			for(map<int,vector<Cluster*> >::iterator alt_it=(coord_it->second).begin();alt_it!=(coord_it->second).end();++alt_it){
+				for(vector<Cluster*>::iterator clus_it=(alt_it->second).begin();clus_it!=(alt_it->second).end();++clus_it){
+					delete *clus_it;
+				}
+				(alt_it->second).clear();
 			}
-			(alt_it->second).clear();
+			(coord_it->second).clear();
 		}
-		(coord_it->second).clear();
+		all_cluster[i].clear();
 	}
 	all_cluster.clear();
+	//draw "normal" ray in hough space
+	CosmicBenchEvent * thisEvent = new CosmicBenchEvent(this,events[0]);
+	vector<Ray> rays = thisEvent->get_absorption_rays();
+	delete thisEvent;
 	TGraph * rays_X = new TGraph();
 	TGraph * rays_Y = new TGraph();
 	int X_point_nb = 0;
@@ -391,18 +404,21 @@ void Signal::HoughTracking(long event_nb, bool use_hole){
 		Y_point_nb++;
 	}
 	cout << "number of reconstructed rays : " << rays.size() << endl;
-	gStyle->SetPalette(55,0);
-	gStyle->SetNumberContours(512);
-	TCanvas * cHough = new TCanvas();
-	cHough->Divide(2);
-	cHough->cd(1);
-	hough_space_X->Draw("colz");
-	if(rays.size()>0) rays_X->Draw("sameP");
-	if(X_int_nb>0) int_X->Draw("sameP");
-	cHough->cd(2);
-	hough_space_Y->Draw("colz");
-	if(rays.size()>0) rays_Y->Draw("sameP");
-	if(Y_int_nb>0) int_Y->Draw("sameP");
+	
+	for(int i=0;i<max_hole_nb;i++){
+		for(vector<Event*>::iterator ev_it=events[i].begin();ev_it!=events[i].end();++ev_it){
+			delete *ev_it;
+		}
+		cHough->cd((2*i)+1);
+		hough_space_X[i]->Draw("colz");
+		if(rays.size()>0) rays_X->Draw("sameP");
+		if(X_int_nb[i]>0) int_X[i]->Draw("sameP");
+		cHough->cd((2*i)+2);
+		hough_space_Y[i]->Draw("colz");
+		if(rays.size()>0) rays_Y->Draw("sameP");
+		if(Y_int_nb[i]>0) int_Y[i]->Draw("sameP");
+	}
+	events.clear();
 	cHough->Modified();
 	cHough->Update();
 }

@@ -27,7 +27,7 @@ class Signal: public Tsignal_R, public CosmicBench{
 		//void ElecToAnalyse();
 		//void ElecToRays(string outFileName);
 		void EventDisplay(int evn_min = 0, int evn_max = 20, Tomography::signal_type signal_correction = Tomography::corr);
-		void HoughTracking(long event_nb, bool use_hole);
+		void HoughTracking(long event_nb);
 		void ConvClusterTest();
 		map<Tomography::det_type,map<int,TProfile*> > SignalOverNoise();
 		void SignalOverNoiseDisplay();
