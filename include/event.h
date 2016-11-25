@@ -37,7 +37,7 @@ class Event{
 		virtual ~Event();
 		virtual void MultiCluster() = 0;
 		virtual void ConvCluster() = 0;
-		virtual void HoughCluster() = 0;
+		virtual void HoughCluster(bool use_hole) = 0;
 		void do_cuts();
 		virtual void set_strip_ampl(vector<vector<double> > strip_ampl_) = 0;
 		vector<Cluster*> get_clusters() const;
@@ -81,7 +81,7 @@ class CM_Event: public Event{
 		~CM_Event();
 		void MultiCluster();
 		void ConvCluster();
-		void HoughCluster();
+		void HoughCluster(bool use_hole);
 		void set_strip_ampl(vector<vector<double> > strip_ampl_);
 		TH1D * get_ampl_hist() const;
 		TH1D * get_TOT_hist() const;
@@ -98,7 +98,7 @@ class CM_Demux_Event: public Event{
 		~CM_Demux_Event();
 		void MultiCluster();
 		void ConvCluster();
-		void HoughCluster();
+		void HoughCluster(bool use_hole);
 		TH1D * get_ampl_hist() const;
 		TH1D * get_TOT_hist() const;
 		Event * Clone() const;
@@ -116,7 +116,7 @@ class MG_Event: public Event{
 		~MG_Event();
 		void MultiCluster();
 		void ConvCluster();
-		void HoughCluster();
+		void HoughCluster(bool use_hole);
 		TH1D * get_ampl_hist() const;
 		TH1D * get_TOT_hist() const;
 		Event * Clone() const;
@@ -134,7 +134,7 @@ class MGv2_Event: public Event{
 		~MGv2_Event();
 		void MultiCluster();
 		void ConvCluster();
-		void HoughCluster();
+		void HoughCluster(bool use_hole);
 		TH1D * get_ampl_hist() const;
 		TH1D * get_TOT_hist() const;
 		Event * Clone() const;

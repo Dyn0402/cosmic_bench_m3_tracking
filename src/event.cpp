@@ -279,7 +279,7 @@ void CM_Event::MultiCluster(){
 void CM_Event::ConvCluster(){
 	// TODO : implement convcluster for CM
 }
-void CM_Event::HoughCluster(){
+void CM_Event::HoughCluster(bool use_hole){
 	// TODO : implement houghcluster for CM
 }
 void CM_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
@@ -350,7 +350,7 @@ void CM_Demux_Event::MultiCluster(){
 void CM_Demux_Event::ConvCluster(){
 	// TODO : implement convcluster for CM
 }
-void CM_Demux_Event::HoughCluster(){
+void CM_Demux_Event::HoughCluster(bool use_hole){
 	// TODO : implement houghcluster for CM
 }
 void CM_Demux_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
@@ -791,7 +791,7 @@ void MG_Event::ConvCluster(){
 	delete convHist;
 
 }
-void MG_Event::HoughCluster(){
+void MG_Event::HoughCluster(bool use_hole){
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
 	}
@@ -857,12 +857,17 @@ void MG_Event::HoughCluster(){
 	//second loop : group the channels in clusters
 	vector<pair<int,int> > cluster_list;
 	int k = 0;
+	unsigned int max_hole_size = detector->get_clustering_holes();
 	while(k<n){
 		if(channelOverThreshold.count(MG_Detector::StripToChannel_a[k])>0){
 			pair<int,int> current_cluster(k,k);
+			unsigned int current_hole_nb = 0;
 			for(int j=k+1;j<n;j++){
 				if(channelOverThreshold.count(MG_Detector::StripToChannel_a[j])>0){
 					current_cluster.second = j;
+				}
+				else if(current_hole_nb<max_hole_size && use_hole){
+					current_hole_nb++;
 				}
 				else break;
 			}
@@ -876,9 +881,13 @@ void MG_Event::HoughCluster(){
 		while(k<n){
 			if(channelOverThreshold.count(MG_Detector::StripToChannel_a[k])>0){
 				pair<int,int> current_cluster(k,k);
+				unsigned int current_hole_nb = 0;
 				for(int j=k+1;j<n;j++){
 					if(channelOverThreshold.count(MG_Detector::StripToChannel_a[j])>0){
 						current_cluster.second = j;
+					}
+					else if(current_hole_nb<max_hole_size && use_hole){
+						current_hole_nb++;
 					}
 					else break;
 				}
@@ -1417,7 +1426,7 @@ void MGv2_Event::ConvCluster(){
 	delete convHist;
 
 }
-void MGv2_Event::HoughCluster(){
+void MGv2_Event::HoughCluster(bool use_hole){
 	for(vector<Cluster*>::iterator clus_it = clusters.begin();clus_it != clusters.end();++clus_it){
 		delete *clus_it;
 	}
@@ -1483,12 +1492,17 @@ void MGv2_Event::HoughCluster(){
 	//second loop : group the channels in clusters
 	vector<pair<int,int> > cluster_list;
 	int k = 0;
+	unsigned int max_hole_size = detector->get_clustering_holes();
 	while(k<n){
 		if(channelOverThreshold.count(MGv2_Detector::StripToChannel_a[k])>0){
 			pair<int,int> current_cluster(k,k);
+			unsigned int current_hole_nb = 0;
 			for(int j=k+1;j<n;j++){
 				if(channelOverThreshold.count(MGv2_Detector::StripToChannel_a[j])>0){
 					current_cluster.second = j;
+				}
+				else if(current_hole_nb<max_hole_size && use_hole){
+					current_hole_nb++;
 				}
 				else break;
 			}
@@ -1502,9 +1516,13 @@ void MGv2_Event::HoughCluster(){
 		while(k<n){
 			if(channelOverThreshold.count(MGv2_Detector::StripToChannel_a[k])>0){
 				pair<int,int> current_cluster(k,k);
+				unsigned int current_hole_nb = 0;
 				for(int j=k+1;j<n;j++){
 					if(channelOverThreshold.count(MGv2_Detector::StripToChannel_a[j])>0){
 						current_cluster.second = j;
+					}
+					else if(current_hole_nb<max_hole_size && use_hole){
+						current_hole_nb++;
 					}
 					else break;
 				}

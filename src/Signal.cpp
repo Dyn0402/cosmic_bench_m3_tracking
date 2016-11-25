@@ -208,7 +208,7 @@ void Signal::MultiCluster(){
 	fChain->SetBranchStatus("*",1);
 }
 
-void Signal::HoughTracking(long event_nb){
+void Signal::HoughTracking(long event_nb, bool use_hole){
 	long nentries = fChain->GetEntriesFast();
 	if(event_nb<0 || event_nb>=nentries){
 		cout << "invalid event number" << endl;
@@ -222,7 +222,7 @@ void Signal::HoughTracking(long event_nb){
 	double min_z = 10000;
 	for(vector<Detector*>::iterator it = detectors.begin();it!=detectors.end();++it){
 		Event * current_event = (*it)->build_event(get_ampl<double>((*it)->get_type(),(*it)->get_n_in_tree()),Nevent,evttime);
-		current_event->HoughCluster();
+		current_event->HoughCluster(use_hole);
 		vector<Cluster*> current_cluster = current_event->get_clusters();
 		vector<Cluster*>::iterator clus_it = current_cluster.begin();
 		while(clus_it!=current_cluster.end()){
@@ -243,8 +243,8 @@ void Signal::HoughTracking(long event_nb){
 	//max_z+=10;
 	//min_z-=10;
 	int bin_n = 500;
-	double min_coord = -6*Tomography::get_instance()->get_XY_size()/10.;
-	double max_coord = 6*Tomography::get_instance()->get_XY_size()/10.;
+	double min_coord = -10*Tomography::get_instance()->get_XY_size()/10.;
+	double max_coord = 10*Tomography::get_instance()->get_XY_size()/10.;
 	TH2D * hough_space_X = new TH2D("hough_space_X","hough_space_X",bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
 	TH2D * hough_space_Y = new TH2D("hough_space_Y","hough_space_Y",bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
 	int suitable_clus_n = 0;
