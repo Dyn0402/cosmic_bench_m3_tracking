@@ -245,8 +245,8 @@ void Signal::HoughTracking(long event_nb, bool use_hole){
 	int bin_n = 500;
 	double min_coord = -10*Tomography::get_instance()->get_XY_size()/10.;
 	double max_coord = 10*Tomography::get_instance()->get_XY_size()/10.;
-	TH2D * hough_space_X = new TH2D("hough_space_X","hough_space_X",bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
-	TH2D * hough_space_Y = new TH2D("hough_space_Y","hough_space_Y",bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
+	TH2D * hough_space_X = new TH2D(("hough_space_X" + ((use_hole) ? string("_hole") : string())).c_str(),("hough_space_X" + ((use_hole) ? string("_hole") : string())).c_str(),bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
+	TH2D * hough_space_Y = new TH2D(("hough_space_Y" + ((use_hole) ? string("_hole") : string())).c_str(),("hough_space_Y" + ((use_hole) ? string("_hole") : string())).c_str(),bin_n,min_coord,max_coord,bin_n,min_coord,max_coord);
 	int suitable_clus_n = 0;
 	//draw clusters in hough space
 	bin_n = 2*bin_n;
