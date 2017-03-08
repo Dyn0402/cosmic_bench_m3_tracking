@@ -222,16 +222,22 @@ void Signal::HoughTracking(long event_nb){
 	int bin_n = 500;
 	double min_coord = -10*Tomography::get_instance()->get_XY_size()/10.;
 	double max_coord = 10*Tomography::get_instance()->get_XY_size()/10.;
-	vector<TH2D*> hough_space_X(max_hole_nb);
-	vector<TH2D*> hough_space_Y(max_hole_nb);
+	TH2D * hough_space_X[max_hole_nb];
+	TH2D * hough_space_Y[max_hole_nb];
+	//vector<TH2D*> hough_space_X(max_hole_nb);
+	//vector<TH2D*> hough_space_Y(max_hole_nb);
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
 	TCanvas * cHough = new TCanvas();
 	cHough->Divide(4,max_hole_nb/2);
-	vector<TGraph*> int_X(max_hole_nb);
-	vector<TGraph*> int_Y(max_hole_nb);
-	vector<int> X_int_nb(max_hole_nb,0);
-	vector<int> Y_int_nb(max_hole_nb,0);
+	TGraph * int_X[max_hole_nb];
+	TGraph * int_Y[max_hole_nb];
+	//vector<TGraph*> int_X(max_hole_nb);
+	//vector<TGraph*> int_Y(max_hole_nb);
+	int X_int_nb[max_hole_nb];
+	int Y_int_nb[max_hole_nb];
+	//vector<int> X_int_nb(max_hole_nb,0);
+	//vector<int> Y_int_nb(max_hole_nb,0);
 	for(int i = 0; i<max_hole_nb; i++){
 		cout << "--- Hole number : " << i << " ---" << endl;
 		map<bool,map<int,vector<Cluster*> > > all_cluster;
@@ -263,7 +269,6 @@ void Signal::HoughTracking(long event_nb){
 		//min_z-=10;
 		int suitable_clus_n = 0;
 		//draw clusters in hough space
-		bin_n = 2*bin_n;
 		map<bool,map<int,int> > sizes;
 		for(map<bool,map<int,vector<Cluster*> > >::iterator jt = all_cluster.begin();jt!=all_cluster.end();++jt){
 			for(map<int,vector<Cluster*> >::iterator kt = (jt->second).begin();kt!=(jt->second).end();++kt){

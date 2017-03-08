@@ -140,7 +140,7 @@ int main(int argc, char ** argv){
 		vector<Thread*> threads;
 		if(operation==pyrarays){
 			raysFile = new Tray(config_tree.get<string>("metadata") + "_rays.root");
-			to_write_rays = new Write_Rays_Task(raysFile,bench->get_z_Up(),bench->get_z_Down());
+			to_write_rays = new Write_Rays_Task(raysFile,bench->get_z_Up(),bench->get_z_Down(),config_tree.get<string>("metadata") + "_ampl.txt");
 			threads.push_back(new Writer_Thread(to_write_rays));
 		}
 		else{
