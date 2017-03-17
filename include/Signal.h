@@ -33,6 +33,7 @@ class Signal: public Tsignal_R, public CosmicBench{
 		void SignalOverNoiseDisplay();
 		void SignalDispersion();
 		void DebugHoles(long event_nb);
+		void NoiseLevels();
 	protected:
 		string analyseTree;
 		bool use_srf;

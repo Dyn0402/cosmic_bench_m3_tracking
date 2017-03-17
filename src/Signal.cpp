@@ -1015,3 +1015,139 @@ void Signal::ConvClusterTest(){
 	cTest->Modified();
 	cTest->Update();
 }
+void Signal::NoiseLevels(){
+	double Ymin=-500;
+	double Ymax=500;
+	int bin_n = 500;
+	int sample_min = 1;
+	int sample_max = Tomography::get_instance()->get_Nsample()-1;//Min(Nsample,4);
+	Long64_t tot_event = 1000;
+	long nentries = (max_event>0) ? Min(static_cast<long>(fChain->GetEntriesFast()),max_event) : fChain->GetEntriesFast();
+	map<Tomography::det_type,vector<vector<TH1F*> > > ampl_hist_raw;
+	map<Tomography::det_type,vector<vector<TH1F*> > > ampl_hist_ped;
+	map<Tomography::det_type,vector<vector<TH1F*> > > ampl_hist_corr;
+	int tot_chan = 0;
+	vector<TLine*> sep_raw;
+	vector<TLine*> sep_ped;
+	vector<TLine*> sep_corr;
+	ostringstream det_order;
+	det_order << "|";
+	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
+		int j = (*det_it)->get_n_in_tree();
+		Tomography::det_type current_type = (*det_it)->get_type();
+		tot_chan += ((*det_it)->get_Nchannel());
+		for(unsigned int i=0;i<((*det_it)->get_Nchannel());i++){
+			ostringstream name;
+			name << "ampl_hist_" << current_type << j << "_" << i << "_";
+			ampl_hist_raw[current_type][j][i] = new TH1F((name.str() + "raw").c_str(),(name.str() + "raw").c_str(),bin_n,Ymin,Ymax);
+			ampl_hist_ped[current_type][j][i] = new TH1F((name.str() + "ped").c_str(),(name.str() + "ped").c_str(),bin_n,Ymin,Ymax);
+			ampl_hist_corr[current_type][j][i] = new TH1F((name.str() + "corr").c_str(),(name.str() + "corr").c_str(),bin_n,Ymin,Ymax);
+		}
+		sep_raw.push_back(new TLine(tot_chan,0,tot_chan,4096));
+		(sep_raw.back())->SetLineStyle(2);
+		(sep_raw.back())->SetLineColor(2);
+		sep_ped.push_back(new TLine(tot_chan,-800,tot_chan,1500));
+		(sep_ped.back())->SetLineStyle(2);
+		(sep_ped.back())->SetLineColor(2);
+		sep_corr.push_back(new TLine(tot_chan,-500,tot_chan,500));
+		(sep_corr.back())->SetLineStyle(2);
+		(sep_corr.back())->SetLineColor(2);
+		det_order << " " << current_type << j << " |";
+	}
+	TProfile * ampl_prof_raw = new TProfile("prof_raw","prof_raw",tot_chan,0,tot_chan,0,4096);
+	ampl_prof_raw->SetTitle(det_order.str().c_str());
+	TProfile * ampl_prof_ped = new TProfile("prof_ped","prof_ped",tot_chan,0,tot_chan,-800,1500);
+	TProfile * ampl_prof_corr = new TProfile("prof_corr","prof_corr",tot_chan,0,tot_chan,-500,500);
+	TGraph * RMS_raw = new TGraph();
+	RMS_raw->SetTitle(det_order.str().c_str());
+	TGraph * RMS_ped = new TGraph();
+	TGraph * RMS_corr = new TGraph();
+	for(long n=0;n<nentries && Tomography::get_instance()->get_can_continue();n++){
+		LoadTree(n);
+		GetEntry(n);
+		int n_chan = 0;
+		for(map<Tomography::det_type,vector<vector<TH1F*> > >::iterator type_it = ampl_hist_raw.begin();type_it!=ampl_hist_raw.end();++type_it){
+			for(unsigned int i=0;i<(type_it->second).size();i++){
+				vector<vector<float> > current_ampl_raw = get_ampl_raw<float>(type_it->first,i);
+				vector<vector<float> > current_ampl_ped = get_ampl_ped<float>(type_it->first,i);
+				vector<vector<float> > current_ampl_corr = get_ampl<float>(type_it->first,i);
+				for(unsigned int j=0;j<(type_it->second)[i].size();j++){
+					for(int k=sample_min;k<sample_max;k++){
+						(type_it->second)[i][j]->Fill(current_ampl_raw[j][k]);
+						ampl_prof_raw->Fill(n_chan,current_ampl_raw[j][k]);
+						ampl_hist_ped[type_it->first][i][j]->Fill(current_ampl_ped[j][k]);
+						ampl_prof_ped->Fill(n_chan,current_ampl_ped[j][k]);
+						ampl_hist_corr[type_it->first][i][j]->Fill(current_ampl_corr[j][k]);
+						ampl_prof_corr->Fill(n_chan,current_ampl_corr[j][k]);
+					}
+					n_chan++;
+				}
+			}
+		}
+		if((n%100) == 0) cout << "\rcomputing RMS (" << n << "/" << nentries << ")" << flush;
+	}
+	cout << "\rcomputing RMS (" << nentries << "/" << nentries << ")" << endl;
+	int n_chan = 0;
+	for(map<Tomography::det_type,vector<vector<TH1F*> > >::iterator type_it = ampl_hist_raw.begin();type_it!=ampl_hist_raw.end();++type_it){
+		for(unsigned int i=0;i<(type_it->second).size();i++){
+			for(unsigned int j=0;j<(type_it->second)[i].size();j++){
+				TFitResultPtr res = (type_it->second)[i][j]->Fit("gaus","SQN");
+				if(res->IsEmpty()){
+					RMS_raw->SetPoint(n_chan,n_chan,-1);
+				}
+				else{
+					RMS_raw->SetPoint(n_chan,n_chan,res->Parameter(2));
+				}
+				n_chan++;
+			}
+		}
+	}
+	n_chan = 0;
+	for(map<Tomography::det_type,vector<vector<TH1F*> > >::iterator type_it = ampl_hist_ped.begin();type_it!=ampl_hist_ped.end();++type_it){
+		for(unsigned int i=0;i<(type_it->second).size();i++){
+			for(unsigned int j=0;j<(type_it->second)[i].size();j++){
+				TFitResultPtr res = (type_it->second)[i][j]->Fit("gaus","SQN");
+				if(res->IsEmpty()){
+					RMS_ped->SetPoint(n_chan,n_chan,-1);
+				}
+				else{
+					RMS_ped->SetPoint(n_chan,n_chan,res->Parameter(2));
+				}
+				n_chan++;
+			}
+		}
+	}
+	n_chan = 0;
+	for(map<Tomography::det_type,vector<vector<TH1F*> > >::iterator type_it = ampl_hist_corr.begin();type_it!=ampl_hist_corr.end();++type_it){
+		for(unsigned int i=0;i<(type_it->second).size();i++){
+			for(unsigned int j=0;j<(type_it->second)[i].size();j++){
+				TFitResultPtr res = (type_it->second)[i][j]->Fit("gaus","SQN");
+				if(res->IsEmpty()){
+					RMS_corr->SetPoint(n_chan,n_chan,-1);
+				}
+				else{
+					RMS_corr->SetPoint(n_chan,n_chan,res->Parameter(2));
+				}
+				n_chan++;
+			}
+		}
+	}
+	TCanvas * c_prof = new TCanvas();
+	TCanvas * c_RMS = new TCanvas();
+	c_prof->Divide(1,3);
+	c_RMS->Divide(1,3);
+	
+	c_prof->cd(1);
+	ampl_prof_raw->Draw();
+	c_RMS->cd(1);
+	RMS_raw->Draw();
+	c_prof->cd(2);
+	ampl_prof_ped->Draw();
+	c_RMS->cd(2);
+	RMS_ped->Draw();
+	c_prof->cd(3);
+	ampl_prof_corr->Draw();
+	c_RMS->cd(3);
+	RMS_corr->Draw();
+
+}

@@ -31,6 +31,7 @@ int main(int argc, char ** argv){
 	string dispersion = "dispersion";
 	string debug = "debug";
 	string conv = "conv";
+	string noiselevels = "noiselevels";
 	bool is_interactive = true;
 	if(argv[2] == multicluster){
 		blah->MultiCluster();
@@ -39,6 +40,9 @@ int main(int argc, char ** argv){
 	else if(argv[2] == multicluster_raw){
 		blah->MultiCluster_raw();
 		is_interactive = false;
+	}
+	else if(argv[2] == noiselevels){
+		blah->NoiseLevels();
 	}
 	else if(argv[2] == SoB){
 		blah->SignalOverNoiseDisplay();
