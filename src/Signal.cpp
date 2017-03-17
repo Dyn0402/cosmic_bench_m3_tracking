@@ -1027,8 +1027,6 @@ void Signal::NoiseLevels(){
 	map<Tomography::det_type,vector<vector<TH1F*> > > ampl_hist_corr;
 	int tot_chan = 0;
 	vector<TLine*> sep_raw;
-	vector<TLine*> sep_ped;
-	vector<TLine*> sep_corr;
 	ostringstream det_order;
 	det_order << "|";
 	for(vector<Detector*>::iterator det_it = detectors.begin();det_it!=detectors.end();++det_it){
@@ -1048,20 +1046,14 @@ void Signal::NoiseLevels(){
 		sep_raw.push_back(new TLine(tot_chan,0,tot_chan,4096));
 		(sep_raw.back())->SetLineStyle(2);
 		(sep_raw.back())->SetLineColor(2);
-		sep_ped.push_back(new TLine(tot_chan,-800,tot_chan,1500));
-		(sep_ped.back())->SetLineStyle(2);
-		(sep_ped.back())->SetLineColor(2);
-		sep_corr.push_back(new TLine(tot_chan,-500,tot_chan,500));
-		(sep_corr.back())->SetLineStyle(2);
-		(sep_corr.back())->SetLineColor(2);
-		det_order << " " << current_type << j << " |";
+		det_order << " " << current_type << "_" << j << " |";
 	}
 	TProfile * ampl_prof_raw = new TProfile("prof_raw","prof_raw",tot_chan,0,tot_chan,0,4096);
-	ampl_prof_raw->SetTitle(det_order.str().c_str());
+	//ampl_prof_raw->SetTitle(det_order.str().c_str());
 	TProfile * ampl_prof_ped = new TProfile("prof_ped","prof_ped",tot_chan,0,tot_chan,-800,1500);
 	TProfile * ampl_prof_corr = new TProfile("prof_corr","prof_corr",tot_chan,0,tot_chan,-500,500);
 	TGraph * RMS_raw = new TGraph();
-	RMS_raw->SetTitle(det_order.str().c_str());
+	//RMS_raw->SetTitle(det_order.str().c_str());
 	TGraph * RMS_ped = new TGraph();
 	TGraph * RMS_corr = new TGraph();
 	for(long n=0;n<nentries && Tomography::get_instance()->get_can_continue();n++){
@@ -1135,21 +1127,65 @@ void Signal::NoiseLevels(){
 		}
 	}
 	TCanvas * c_prof = new TCanvas();
+	c_prof->SetTitle(det_order.str().c_str());
 	TCanvas * c_RMS = new TCanvas();
+	c_RMS->SetTitle(det_order.str().c_str());
 	c_prof->Divide(1,3);
 	c_RMS->Divide(1,3);
 	
 	c_prof->cd(1);
 	ampl_prof_raw->Draw();
+	double current_min = ampl_prof_raw->GetYaxis()->GetXmin();
+	double current_max = ampl_prof_raw->GetYaxis()->GetXmax();
+	for(vector<TLine*>::iterator line_it=sep_raw.begin();line_it!=sep_raw.end();++line_it){
+		(*line_it)->SetY1(current_min);
+		(*line_it)->SetY2(current_max);
+		(*line_it)->DrawClone();
+	}
 	c_RMS->cd(1);
 	RMS_raw->Draw();
+	current_min = RMS_raw->GetYaxis()->GetXmin();
+	current_max = RMS_raw->GetYaxis()->GetXmax();
+	for(vector<TLine*>::iterator line_it=sep_raw.begin();line_it!=sep_raw.end();++line_it){
+		(*line_it)->SetY1(current_min);
+		(*line_it)->SetY2(current_max);
+		(*line_it)->DrawClone();
+	}
 	c_prof->cd(2);
 	ampl_prof_ped->Draw();
+	current_min = ampl_prof_ped->GetYaxis()->GetXmin();
+	current_max = ampl_prof_ped->GetYaxis()->GetXmax();
+	for(vector<TLine*>::iterator line_it=sep_raw.begin();line_it!=sep_raw.end();++line_it){
+		(*line_it)->SetY1(current_min);
+		(*line_it)->SetY2(current_max);
+		(*line_it)->DrawClone();
+	}
 	c_RMS->cd(2);
 	RMS_ped->Draw();
+	current_min = RMS_ped->GetYaxis()->GetXmin();
+	current_max = RMS_ped->GetYaxis()->GetXmax();
+	for(vector<TLine*>::iterator line_it=sep_raw.begin();line_it!=sep_raw.end();++line_it){
+		(*line_it)->SetY1(current_min);
+		(*line_it)->SetY2(current_max);
+		(*line_it)->DrawClone();
+	}
 	c_prof->cd(3);
 	ampl_prof_corr->Draw();
+	current_min = ampl_prof_corr->GetYaxis()->GetXmin();
+	current_max = ampl_prof_corr->GetYaxis()->GetXmax();
+	for(vector<TLine*>::iterator line_it=sep_raw.begin();line_it!=sep_raw.end();++line_it){
+		(*line_it)->SetY1(current_min);
+		(*line_it)->SetY2(current_max);
+		(*line_it)->DrawClone();
+	}
 	c_RMS->cd(3);
 	RMS_corr->Draw();
+	current_min = RMS_corr->GetYaxis()->GetXmin();
+	current_max = RMS_corr->GetYaxis()->GetXmax();
+	for(vector<TLine*>::iterator line_it=sep_raw.begin();line_it!=sep_raw.end();++line_it){
+		(*line_it)->SetY1(current_min);
+		(*line_it)->SetY2(current_max);
+		(*line_it)->DrawClone();
+	}
 
 }
