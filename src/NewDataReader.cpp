@@ -72,7 +72,7 @@ int main(int argc, char ** argv){
 			operation = pyrarays;
 		}
 		else if(argv[i] == string("mcube")){
-			operation = pyrarays;
+			operation = mcube;
 		}
 	}
 	string config_file = argv[1];
