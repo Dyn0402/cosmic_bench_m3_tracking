@@ -142,31 +142,34 @@ int main(int argc, char ** argv){
 		Output_Task<event_data> * to_write_analyse = NULL;
 		Output_Task<ray_data> * to_write_rays = NULL;
 		vector<Thread*> threads;
+		Typed_Task<event_data> * follow_up_analyse_task = NULL;
 		if(operation==pyrarays){
+			cout << "creating rays output chain" << endl;
 			raysFile = new Tray(config_tree.get<string>("metadata") + "_rays.root");
 			to_write_rays = new Write_Rays_Task(raysFile,bench->get_z_Up(),bench->get_z_Down(),config_tree.get<string>("metadata") + "_ampl.txt");
 			threads.push_back(new Writer_Thread(to_write_rays));
-		}
-		else{
-
+			follow_up_analyse_task = new Tracking_Abs_Task(bench,to_write_rays);
 		}
 		Output_Task<raw_data> * to_write_signal = NULL;
-		Typed_Task<raw_data> * follow_up_task = NULL;
+		Typed_Task<raw_data> * follow_up_signal_task = NULL;
 		if(operation!=live){
+			cout << "creating analyse output chain" << endl;
 			analysisFile = new Tanalyse_W(config_tree.get<string>("Tree"),bench->get_det_N());
-			to_write_analyse = new Write_Analyse_Task(analysisFile, new Tracking_Abs_Task(bench,to_write_rays));
+			to_write_analyse = new Write_Analyse_Task(analysisFile, follow_up_analyse_task);
 			threads.push_back(new Writer_Thread(to_write_analyse));
-			follow_up_task = new Ped_Corr_Task(current_ped,new Multicluster_Task(bench,to_write_analyse));
+			follow_up_signal_task = new Ped_Corr_Task(current_ped,new Multicluster_Task(bench,to_write_analyse));
 		}
 		Input_Task * to_do = NULL;
 		if(operation!=mcube){
+			cout << "creating signal output chain" << endl;
 			signalFile = new Tsignal_W(config_tree.get<string>("signal_file"),bench->get_det_N());
-			to_write_signal = new Write_Signal_Task<raw_data>(signalFile,follow_up_task);
+			to_write_signal = new Write_Signal_Task<raw_data>(signalFile,follow_up_signal_task);
 			threads.push_back(new Writer_Thread(to_write_signal));
 			to_do = new Read_Elec_Task(blah,to_write_signal);
 		}
 		else{
-			to_do = new Read_Elec_Task(blah,follow_up_task);
+			cout << "skipping signal file" << endl;
+			to_do = new Read_Elec_Task(blah,follow_up_signal_task);
 		}
 		threads.push_back(new Reader_Thread(to_do));
 		for(vector<Thread*>::reverse_iterator thread_it=threads.rbegin();thread_it!=threads.rend();++thread_it){
@@ -199,8 +202,11 @@ int main(int argc, char ** argv){
 		}
 		Display_Thread::get_instance()->stop_count();
 		//cout << "\r" << Tomography::get_instance()->print_count() << "|" << setw(7) << Task::task_left() << endl;
-		signalFile->Write();
-		signalFile->CloseFile();
+		if(operation!=mcube){
+			signalFile->Write();
+			signalFile->CloseFile();
+			delete signalFile;
+		}
 		if(operation != live){
 			analysisFile->Write();
 			analysisFile->CloseFile();
@@ -212,7 +218,6 @@ int main(int argc, char ** argv){
 			}
 		}
 		delete blah;
-		delete signalFile;
 		delete bench;
 		delete to_do;
 	}
