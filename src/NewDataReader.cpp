@@ -93,7 +93,10 @@ int main(int argc, char ** argv){
 		Tanalyse_W * analysisFile = new Tanalyse_W(config_tree.get<string>("Tree"),bench->get_det_N());
 		DataReader * blah = NULL;
 		if(operation==analysis) blah = new DataReader(config_tree,false);
-		else blah = new DataReader(config_tree,"./");
+		else{
+			cout << "processing all fdf files from current directory" << endl;
+			blah = new DataReader(config_tree,string("./"));
+		}
 		blah->read_ped();
 		map<Tomography::det_type,vector<vector<float> > > current_ped = blah->get_Ped();
 

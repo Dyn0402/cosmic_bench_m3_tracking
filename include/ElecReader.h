@@ -132,7 +132,7 @@ class DreamElecReader: public ElecReader{
 		double get_data(int asic_n,int channel_n,int sample_n); // asic_n = 8*feu_n + asic_n_in_feu
 		virtual long get_event_n();
 		virtual double get_evttime();
-		bool is_end() const;
+		virtual bool is_end() const;
 		bool is_end_feu(int feu_id) const;
 	protected:
 		void reset_data();
@@ -152,15 +152,14 @@ class DreamElecWattoReader: public DreamElecReader{
 		DreamElecWattoReader(string directory,vector<FeuInfo> feu_info);
 		DreamElecWattoReader(const DreamElecWattoReader& other);
 		DreamElecWattoReader& operator=(const DreamElecWattoReader& other);
-		long get_event_n();
 		double get_evttime();
+		bool is_end() const;
 	protected:
 		void check_file(int feu_id);
 		void open_file(int feu_id);
 		void change_run();
 		map<unsigned long,pair<string,int> > timestamp_to_filename;
 		map<unsigned long,pair<string,int> >::iterator reading_status;
-		long event_n_offset;
 		double evttime_offset;
 };
 
