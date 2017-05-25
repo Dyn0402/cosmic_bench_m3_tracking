@@ -155,6 +155,84 @@ Detector::~Detector(){
 
 }
 
+dummy_Detector::dummy_Detector(): Detector(){
+
+}
+dummy_Detector::dummy_Detector(int det_n_, int asic_n_, bool connector_direction_) : Detector(-1,true,-1,det_n_,false,0,true,0,0,0,-1,0,vector<pair<int,bool> >(1,pair<int,bool>(asic_n_,connector_direction_))){
+
+}
+dummy_Detector::dummy_Detector(const dummy_Detector& other): Detector(other){
+
+}
+dummy_Detector& dummy_Detector::operator=(const dummy_Detector& other){
+	Detector::operator=(other);
+	return *this;
+}
+dummy_Detector::~dummy_Detector(){
+
+}
+Tomography::det_type dummy_Detector::get_type() const{
+	return Tomography::dummy;
+}
+double dummy_Detector::get_size() const{
+	return -1;
+}
+void dummy_Detector::set_RMS(vector<double> RMS_){
+	if(RMS_.size() != get_Nchannel()) return;
+	RMS = RMS_;
+}
+unsigned int dummy_Detector::StripToChannel(unsigned int i) const{
+	return i;
+}
+int dummy_Detector::get_Nchannel() const{
+	return Tomography::Nchannel;
+}
+int dummy_Detector::get_Nstrip() const{
+	return get_Nchannel();
+}
+double dummy_Detector::get_StripPitch() const{
+	return -1;
+}
+int dummy_Detector::get_CMN_div() const{
+	return CMN_div;
+}
+bool dummy_Detector::is_suitable(const Cluster * const clus) const{
+	if(!(clus->is_in_det(this))) return false;
+	return true;
+}
+Detector * dummy_Detector::Clone() const{
+	return new dummy_Detector(*this);
+}
+Event * dummy_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
+	return new dummy_Event();
+}
+Event * dummy_Detector::build_event(const Tanalyse_R * const treeObject) const{
+	return new dummy_Event();
+}
+Event * dummy_Detector::build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const{
+	return new dummy_Event();
+}
+Detector * dummy_Detector::build_det(const ptree::value_type& child) const{
+	return new dummy_Detector(child.second.get<int>("dummy_n"),child.second.get<int>("asic_n"), child.second.get<bool>("connector_direction"));
+}
+int dummy_Detector::feminos_mapping(int channel, bool connector_direction) const{
+	if(connector_direction) return channel;
+	return (get_Nchannel() - channel);
+}
+int dummy_Detector::dream_mapping(int channel, bool connector_direction) const{
+	if(connector_direction) return channel;
+	return (get_Nchannel() - channel);
+}
+string dummy_Detector::Name() const{
+	return "dummy";
+}
+int dummy_Detector::get_MaxNClus() const{
+	return -1;
+}
+TLine * dummy_Detector::get_line_display() const{
+	return new TLine();
+}
+
 CM_Detector::CM_Detector() : Detector(){
 	use_thin_strip = false;
 	ClusTOTCut_Min = -1;
