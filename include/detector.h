@@ -292,6 +292,7 @@ class CosmicBench{
 		int get_det_N_tot() const;
 		int get_non_ref_N() const;
 		Detector * get_detector(unsigned int i) const;
+		unsigned int find_det(const Cluster * const clus) const;
 		static map<Tomography::det_type,vector<vector<double> > > read_pedfile(string filename, map<Tomography::det_type,unsigned short> det_n_);
 		double get_z_Up() const;
 		double get_z_Down() const;

@@ -2,16 +2,19 @@
 #define ray_h
 #include <vector>
 #include <ostream>
+#include <utility>
 
 #include "point.h"
 
 using std::vector;
 using std::ostream;
+using std::pair;
 
 class Ray;
 class Ray_2D;
 class Cluster;
 class Detector;
+class CosmicBench;
 
 ostream& operator<<(ostream& os, const Ray_2D& ray);
 ostream& operator<<(ostream& os, const Ray& ray);
@@ -37,6 +40,7 @@ class Ray_2D{
 		double get_t_mean() const;
 		double get_t_sigma() const;
 		unsigned int get_clus_n() const;
+		pair<int,int> get_extremal_det(const CosmicBench * const bench) const;
 		void clear();
 	protected:
 		vector<Cluster*> clusters;
@@ -78,6 +82,7 @@ class Ray{
 		unsigned int get_clus_x_n() const;
 		unsigned int get_clus_y_n() const;
 		vector<Cluster*> get_clus() const;
+		pair<pair<int,int>,pair<int,int> > get_extremal_det(const CosmicBench * const bench) const;
 		void clear();
 	protected:
 		vector<Cluster*> clusters;

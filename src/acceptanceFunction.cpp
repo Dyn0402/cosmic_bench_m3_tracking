@@ -31,13 +31,19 @@ using TMath::Sin;
 using TMath::Abs;
 using TMath::Binomial;
 
-acceptanceFunction::acceptanceFunction(double x_min_,double x_max_,double y_min_,double y_max_,double z_Up_,double z_Down_,double bench_angle_){
-	x_min = x_min_;
-	x_max = x_max_;
-	y_min = y_min_;
-	y_max = y_max_;
-	z_Up = z_Up_;
-	z_Down = z_Down_;
+acceptanceFunction::acceptanceFunction(double x_min_Up_,double x_max_Up_,double y_min_Up_,double y_max_Up_,double x_min_Down_,double x_max_Down_,double y_min_Down_,double y_max_Down_,double z_Up_x_,double z_Down_x_,double z_Up_y_,double z_Down_y_,double bench_angle_){
+	x_min_Up = x_min_Up_;
+	x_max_Up = x_max_Up_;
+	y_min_Up = y_min_Up_;
+	y_max_Up = y_max_Up_;
+	x_min_Down = x_min_Down_;
+	x_max_Down = x_max_Down_;
+	y_min_Down = y_min_Down_;
+	y_max_Down = y_max_Down_;
+	z_Up_x = z_Up_x_;
+	z_Down_x = z_Down_x_;
+	z_Up_y = z_Up_y_;
+	z_Down_y = z_Down_y_;
 	bench_angle = bench_angle_;
 }
 
@@ -48,30 +54,36 @@ acceptanceFunction::~acceptanceFunction(){
 double acceptanceFunction::operator()(double x,double y, double z){
 	double theta_x_min = 0;
 	double theta_x_max = 0;
+	if(z<z_Up_x && z>z_Down_x){
+		theta_x_min = Max((x-x_min_Up)/(z-z_Up_x),(x_max_Down-x)/(z_Down_x-z));
+		theta_x_max = Min((x_max_Up-x)/(z_Up_x-z),(x-x_min_Down)/(z-z_Down_x));
+		if(theta_x_max < theta_x_min) return 0;
+	}
+	else if(z>=z_Up_x){
+		theta_x_max = Min((x-x_min_Up)/(z-z_Up_x),(x-x_min_Down)/(z-z_Down_x));
+		theta_x_min = Max((x_max_Up-x)/(z_Up_x-z),(x_max_Down-x)/(z_Down_x-z));
+		if(theta_x_max < theta_x_min) return 0;
+	}
+	else{
+		theta_x_min = Max((x-x_min_Up)/(z-z_Up_x),(x-x_min_Down)/(z-z_Down_x));
+		theta_x_max = Min((x_max_Up-x)/(z_Up_x-z),(x_max_Down-x)/(z_Down_x-z));
+		if(theta_x_max < theta_x_min) return 0;
+	}
 	double theta_y_min = 0;
 	double theta_y_max = 0;
-	if(z<z_Up && z>z_Down){
-		theta_x_min = Max((x-x_min)/(z-z_Up),(x_max-x)/(z_Down-z));
-		theta_x_max = Min((x_max-x)/(z_Up-z),(x-x_min)/(z-z_Down));
-		if(theta_x_max < theta_x_min) return 0;
-		theta_y_min = Max((y-y_min)/(z-z_Up),(y_max-y)/(z_Down-z));
-		theta_y_max = Min((y_max-y)/(z_Up-z),(y-y_min)/(z-z_Down));
+	if(z<z_Up_y && z>z_Down_y){
+		theta_y_min = Max((y-y_min_Up)/(z-z_Up_y),(y_max_Down-y)/(z_Down_y-z));
+		theta_y_max = Min((y_max_Up-y)/(z_Up_y-z),(y-y_min_Down)/(z-z_Down_y));
 		if(theta_y_max < theta_y_min) return 0;
 	}
-	else if(z>=z_Up){
-		theta_x_max = Min((x-x_min)/(z-z_Up),(x-x_min)/(z-z_Down));
-		theta_x_min = Max((x_max-x)/(z_Up-z),(x_max-x)/(z_Down-z));
-		if(theta_x_max < theta_x_min) return 0;
-		theta_y_max = Min((y-y_min)/(z-z_Up),(y-y_min)/(z-z_Down));
-		theta_y_min = Max((y_max-y)/(z_Up-z),(y_max-y)/(z_Down-z));
+	else if(z>=z_Up_y){
+		theta_y_max = Min((y-y_min_Up)/(z-z_Up_y),(y-y_min_Down)/(z-z_Down_y));
+		theta_y_min = Max((y_max_Up-y)/(z_Up_y-z),(y_max_Down-y)/(z_Down_y-z));
 		if(theta_y_max < theta_y_min) return 0;
 	}
 	else{
-		theta_x_min = Max((x-x_min)/(z-z_Up),(x-x_min)/(z-z_Down));
-		theta_x_max = Min((x_max-x)/(z_Up-z),(x_max-x)/(z_Down-z));
-		if(theta_x_max < theta_x_min) return 0;
-		theta_y_min = Max((y-y_min)/(z-z_Up),(y-y_min)/(z-z_Down));
-		theta_y_max = Min((y_max-y)/(z_Up-z),(y_max-y)/(z_Down-z));
+		theta_y_min = Max((y-y_min_Up)/(z-z_Up_y),(y-y_min_Down)/(z-z_Down_y));
+		theta_y_max = Min((y_max_Up-y)/(z_Up_y-z),(y_max_Down-y)/(z_Down_y-z));
 		if(theta_y_max < theta_y_min) return 0;
 	}
 	/*
@@ -202,6 +214,7 @@ TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,doubl
 	}
 	return proba_XY;
 }
+/*
 TH2D acceptanceFunction::plot_XY(int nbin_x, int nbin_y,double z, double y_angle){
 	int step_x = 20*nbin_x;
 	int step_y = 20*nbin_y;
@@ -264,6 +277,7 @@ TH2D acceptanceFunction::plot_XY(int nbin_x, int nbin_y,double z, double y_angle
 	}
 	return proba_XY;
 }
+*/
 
 FreeSkyFunction::FreeSkyFunction(double x_min_,double x_max_,double y_min_,double y_max_,vector<double> z_, double bench_angle_){
 	x_min = x_min_;

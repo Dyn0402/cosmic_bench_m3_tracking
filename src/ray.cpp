@@ -277,6 +277,22 @@ double Ray_2D::get_t_sigma() const{
 unsigned int Ray_2D::get_clus_n() const{
 	return clusters.size();
 }
+pair<int,int> Ray_2D::get_extremal_det(const CosmicBench * const bench) const{
+	pair<int,int> return_pair(-1,-1);
+	pair<double,double> extremal_z(numeric_limits<double>::max(), numeric_limits<double>::min());
+	for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
+		double current_z = (*it)->get_z();
+		if(current_z < extremal_z.first){
+			extremal_z.first = current_z;
+			return_pair.first = bench->find_det(*it);
+		}
+		if(current_z > extremal_z.second){
+			extremal_z.second = current_z;
+			return_pair.second = bench->find_det(*it);
+		}
+	}
+	return return_pair;
+}
 ostream& operator<<(ostream& os, const Ray_2D& ray){
 	os << "RAY_" << ray.coord << "(slope : " << ray.slope << " ; intercept : " << ray.Z_intercept << " ; ChiSquare : " << ray.chiSquare << " ; NClus : " << ray.clusters.size() << ")";
 	return os;
@@ -505,6 +521,34 @@ vector<Cluster*> Ray::get_clus() const{
 		return_vector.push_back((*it)->Clone());
 	}
 	return return_vector;
+}
+pair<pair<int,int>,pair<int,int> > Ray::get_extremal_det(const CosmicBench * const bench) const{
+	pair<pair<int,int>,pair<int,int> > return_pair(pair<int,int>(-1,-1),pair<int,int>(-1,-1));
+	pair<pair<double,double>,pair<double,double> > extremal_z(pair<double,double>(numeric_limits<double>::max(), numeric_limits<double>::min()),pair<double,double>(numeric_limits<double>::max(), numeric_limits<double>::min()));
+	for(vector<Cluster*>::const_iterator it = clusters.begin();it!=clusters.end();++it){
+		double current_z = (*it)->get_z();
+		if((*it)->get_is_X()){
+			if(current_z < extremal_z.first.first){
+				extremal_z.first.first = current_z;
+				return_pair.first.first = bench->find_det(*it);
+			}
+			if(current_z > extremal_z.first.second){
+				extremal_z.first.second = current_z;
+				return_pair.first.second = bench->find_det(*it);
+			}
+		}
+		else{
+			if(current_z < extremal_z.second.first){
+				extremal_z.second.first = current_z;
+				return_pair.second.first = bench->find_det(*it);
+			}
+			if(current_z > extremal_z.second.second){
+				extremal_z.second.second = current_z;
+				return_pair.second.second = bench->find_det(*it);
+			}
+		}
+	}
+	return return_pair;
 }
 ostream& operator<<(ostream& os, const Ray& ray){
 	os << "[" << Ray_2D(ray,'X') << " ; " << Ray_2D(ray,'Y') << "]";

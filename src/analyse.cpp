@@ -2143,13 +2143,8 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, double bench_angle, TCanvas * 
 	TH2D * fluxMapSigma = new TH2D("fluxMapSigma","fluxMapSigma",nbins,x_min,x_max,nbins,x_min,x_max);
 	fluxMapSigma->SetStats(0);
 	if(c3 == 0) c3 = new TCanvas("fluxMap_Sigma","fluxMap_Sigma");
-	acceptanceFunction acceptanceEstimation(-Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,-Tomography::get_instance()->get_XY_size()/2.,Tomography::get_instance()->get_XY_size()/2.,z_max,z_min,bench_angle);
-	TH2D * background = new TH2D(acceptanceEstimation.plot_XY(nbins,x_min,x_max,nbins,x_min,x_max,z));
-	if(c4 == 0) c4 = new TCanvas("fluxMap_background","fluxMap_background");
-	c4->cd();
-	background->Draw("COLZ");
-	c4->Modified();
-	c4->Update();
+
+	map<pair<pair<int,int>,pair<int,int> >,unsigned long> ray_class_n;
 
 	cout <<  setw(20) << "rays" <<  "|" << setw(20) << "suitable" <<  "|" << setw(20) << "total processed" << endl;
 	for (Long64_t jentry=0; jentry<nentries && Tomography::get_instance()->get_can_continue();jentry++){
@@ -2167,45 +2162,55 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, double bench_angle, TCanvas * 
 		eventSuitable+=currentCBEvent->get_clus_N()/(get_det_N_tot());
 		delete currentCBEvent;
 		for(vector<Ray>::iterator it=currentRays.begin();it!=currentRays.end();++it){
+			pair<pair<int,int>,pair<int,int> > current_extremal_det = it->get_extremal_det(this);
+			map<pair<pair<int,int>,pair<int,int> >,unsigned long>::iterator current_ray_class = ray_class_n.find(current_extremal_det);
+			if(current_ray_class!= ray_class_n.end()) (current_ray_class->second)++;
+			else ray_class_n[current_extremal_det] = 1;
 			fluxMapZ->Fill(it->eval_X(z),it->eval_Y(z));
 		}
 		if(jentry%500 == 0) cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << jentry << flush;
 		if(jentry%10000 == 0 && Tomography::get_instance()->get_live_graphic_display()){
-			TH2D * copy = new TH2D(*fluxMapZ);
-			copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
-			copy->SetStats(0);
-			copy->Scale(1./copy->Integral());
-			copy->Add(background,-1./background->Integral());
-			copy->Scale(-1.);
-			c2->cd();
-			copy->Draw("COLZ");
-			c2->Modified();
-			c2->Update();
-			delete copy;
 			c1->cd();
 			fluxMapZ->Draw("COLZ");
 			c1->Modified();
 			c1->Update();
-			double ratio = background->Integral()/fluxMapZ->Integral();
-			for(int i=1;i<=nbins;i++){
-				for(int j=1;j<=nbins;j++){
-					int binN = fluxMapSigma->GetBin(i,j);
-					double binContent = (fluxMapZ->GetBinContent(binN)*ratio - background->GetBinContent(binN))/Sqrt(background->GetBinContent(binN) + fluxMapZ->GetBinContent(binN)*ratio);
-					fluxMapSigma->SetBinContent(binN,-binContent);
-				}
-			}
-			c3->cd();
-			fluxMapSigma->Draw("COLZ");
-			c3->Modified();
-			c3->Update();
 		}
 	}
 	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
+
+	TH2D * full_bkg = new TH2D("full_bkg","full_bkg",nbins,x_min,x_max,nbins,x_min,x_max);
+	for(map<pair<pair<int,int>,pair<int,int> >,unsigned long>::iterator class_it = ray_class_n.begin();class_it!=ray_class_n.end();++class_it){
+		double size_X_Down = detectors[(class_it->first).first.first]->get_size();
+		double size_X_Up = detectors[(class_it->first).first.second]->get_size();
+		double size_Y_Down = detectors[(class_it->first).second.first]->get_size();
+		double size_Y_Up = detectors[(class_it->first).second.second]->get_size();
+
+		double offset_X_Down = detectors[(class_it->first).first.first]->get_offset();
+		double offset_X_Up = detectors[(class_it->first).first.second]->get_offset();
+		double offset_Y_Down = detectors[(class_it->first).second.first]->get_offset();
+		double offset_Y_Up = detectors[(class_it->first).second.second]->get_offset();
+
+		double z_X_Down = detectors[(class_it->first).first.first]->get_z();
+		double z_X_Up = detectors[(class_it->first).first.second]->get_z();
+		double z_Y_Down = detectors[(class_it->first).second.first]->get_z();
+		double z_Y_Up = detectors[(class_it->first).second.second]->get_z();
+
+		acceptanceFunction current_acceptance(offset_X_Up - size_X_Up/2,offset_X_Up + size_X_Up/2,offset_Y_Up - size_Y_Up/2,offset_Y_Up + size_Y_Up/2,offset_X_Down - size_X_Down/2,offset_X_Down + size_X_Down/2,offset_Y_Down - size_Y_Down/2,offset_Y_Down + size_Y_Down/2,z_X_Up,z_X_Down,z_Y_Up,z_Y_Down,bench_angle);
+		TH2D * current_bkg = new TH2D(current_acceptance.plot_XY(nbins,x_min,x_max,nbins,x_min,x_max,z));
+		full_bkg->Add(current_bkg,(class_it->second)/(current_bkg->Integral()));
+		delete current_bkg;
+	}
+	if(c4 == 0) c4 = new TCanvas("fluxMap_background","fluxMap_background");
+	c4->cd();
+	full_bkg->Draw("COLZ");
+	c4->Modified();
+	c4->Update();
+
 	TH2D * copy = new TH2D(*fluxMapZ);
 	copy->SetNameTitle("fluxMapDiff","fluxMapDiff");
 	copy->SetStats(0);
 	copy->Scale(1./copy->Integral());
-	copy->Add(background,-1./background->Integral());
+	copy->Add(full_bkg,-1./full_bkg->Integral());
 	copy->Scale(-1.);
 	c2->cd();
 	copy->Draw("COLZ");
@@ -2215,11 +2220,11 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, double bench_angle, TCanvas * 
 	fluxMapZ->Draw("COLZ");
 	c1->Modified();
 	c1->Update();
-	double ratio = background->Integral()/fluxMapZ->Integral();
+	double ratio = full_bkg->Integral()/fluxMapZ->Integral();
 	for(int i=1;i<=nbins;i++){
 		for(int j=1;j<=nbins;j++){
 			int binN = fluxMapSigma->GetBin(i,j);
-			double binContent = (fluxMapZ->GetBinContent(binN)*ratio - background->GetBinContent(binN))/Sqrt(background->GetBinContent(binN) + fluxMapZ->GetBinContent(binN)*ratio);
+			double binContent = (fluxMapZ->GetBinContent(binN)*ratio - full_bkg->GetBinContent(binN))/Sqrt(full_bkg->GetBinContent(binN) + fluxMapZ->GetBinContent(binN)*ratio);
 			fluxMapSigma->SetBinContent(binN,-binContent);
 		}
 	}

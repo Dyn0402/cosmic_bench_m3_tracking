@@ -46,7 +46,7 @@ int main(int argc, char ** argv){
 	string eventdisplay = "eventdisplay";
 	string eventdisplaymult = "eventdisplaymult";
 	string SoN = "SoN";
-	string acceptance = "acceptance";
+	//string acceptance = "acceptance";
 	string watto = "watto";
 	string scanpyramids = "scanpyramids";
 	string rays = "rays";
@@ -192,11 +192,13 @@ int main(int argc, char ** argv){
 	else if(argv[2] == SoN){
 		blah->SignalOverNoise();
 	}
+	/*
 	else if(argv[2] == acceptance){
 		acceptanceFunction chombier(0,500,0,500,1270,0,0);
 		TH2D * plot = new TH2D(chombier.plot_XY(500,-200,700,500,-200,700,1600));
 		plot->Draw("colz");
 	}
+	*/
 	else if(argv[2] == watto){
 		if(argc<9){
 			cout << "you must indicate in order : flux map altitude, ellipse x center, ellipse y center, ellipse x axis length, ellipse y axis length, ellipse rotation angle" << endl;
