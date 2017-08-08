@@ -13,11 +13,13 @@
 #include <Math/AdaptiveIntegratorMultiDim.h>
 #include <iostream>
 #include <utility>
+#include <iomanip>
 
 using std::cout;
 using std::endl;
 using std::flush;
 using std::pair;
+using std::setprecision;
 using TMath::ATan;
 using TMath::Tan;
 using TMath::Erf;
@@ -199,6 +201,7 @@ TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,doubl
 	y_min_plot -= width_y/(nbin_y*100.);
 	double width_step_x = (x_max_plot - x_min_plot)/step_x;
 	double width_step_y = (y_max_plot - y_min_plot)/step_y;
+	cout << "computing acceptance..." << endl;
 	for(int i=0;i<step_x && Tomography::get_instance()->get_can_continue();i++){
 		double x = x_min_plot + (i+0.5)*width_step_x;
 		if(x<x1 || x>x2) continue;
@@ -210,8 +213,10 @@ TH2D acceptanceFunction::plot_XY(int nbin_x,double x1,double x2,int nbin_y,doubl
 			double real_z = z - y*Sin(y_angle);
 			double proba = (*this)(real_x,real_y,real_z);
 			proba_XY.Fill(x,y,proba);
+			cout << "\r" << setprecision(1) << (i*step_y+j+1)*100./(step_x*step_y) << "%" << flush;
 		}
 	}
+	cout << "done !" << endl;
 	return proba_XY;
 }
 /*
