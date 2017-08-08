@@ -44,6 +44,7 @@ class Tomography{
 
 		enum det_type{
 			unknown_det,
+			dummy,
 			CM,
 			MG,
 			MGv2

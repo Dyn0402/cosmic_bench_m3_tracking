@@ -69,6 +69,22 @@ class Event{
 		Detector * detector;
 };
 
+class dummy_Event: public Event{
+	public:
+		dummy_Event();
+		dummy_Event(const dummy_Event& other);
+		dummy_Event& operator=(const dummy_Event& other);
+		~dummy_Event();
+		void MultiCluster();
+		void ConvCluster();
+		void HoughCluster(int hole_nb);
+		void set_strip_ampl(vector<vector<double> > strip_ampl_);
+		TH1D * get_ampl_hist() const;
+		TH1D * get_TOT_hist() const;
+		Event * Clone() const;
+};
+
+
 class CM_Event: public Event{
 	friend class CM_Demux_Event;
 	public:

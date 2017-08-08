@@ -236,6 +236,34 @@ Cluster::~Cluster(){
 
 }
 
+dummy_Cluster::dummy_Cluster(): Cluster(){
+	type = Tomography::dummy;
+}
+dummy_Cluster::dummy_Cluster(const dummy_Cluster& other): Cluster(other){
+	type = Tomography::dummy;
+}
+dummy_Cluster& dummy_Cluster::operator=(const dummy_Cluster& other){
+	Cluster::operator=(other);
+	type = other.type;
+	return *this;
+}
+dummy_Cluster::~dummy_Cluster(){
+
+}
+double dummy_Cluster::get_pos_mm() const{
+	return pos;
+}
+double dummy_Cluster::correct_strip_nb(int strip_nb) const{
+	return strip_nb;
+}
+double dummy_Cluster::get_z() const{
+	return -1;
+}
+Cluster * dummy_Cluster::Clone() const{
+	return new dummy_Cluster(*this);
+}
+
+
 CM_Cluster::CM_Cluster(): Cluster(){
 	type = Tomography::CM;
 }

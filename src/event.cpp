@@ -227,6 +227,50 @@ Detector * Event::get_det() const{
 	return detector->Clone();
 }
 
+dummy_Event::dummy_Event(): Event(){
+	type = Tomography::dummy;
+}
+dummy_Event::dummy_Event(const dummy_Event& other): Event(other){
+	type = Tomography::dummy;
+}
+dummy_Event& dummy_Event::operator=(const dummy_Event& other){	
+	Event::operator=(other);
+	type = Tomography::dummy;
+	return *this;
+}
+dummy_Event::~dummy_Event(){
+
+}
+void dummy_Event::MultiCluster(){
+
+}
+void dummy_Event::ConvCluster(){
+
+}
+void dummy_Event::HoughCluster(int hole_nb){
+
+}
+void dummy_Event::set_strip_ampl(vector<vector<double> > strip_ampl_){
+	if(strip_ampl_.size()!=Tomography::Nchannel){
+		cout << "problem in size" << endl;
+		return;
+	}
+	strip_ampl = strip_ampl_;
+}
+TH1D * dummy_Event::get_ampl_hist() const{
+	ostringstream name;
+	name << "ampl_dummy_det_" << detector->get_n_in_tree() << "_evn_" << evn;
+	return new TH1D(name.str().c_str(),name.str().c_str(),1,0,0);
+}
+TH1D * dummy_Event::get_TOT_hist() const{
+	ostringstream name;
+	name << "ampl_dummy_det_" << detector->get_n_in_tree() << "_evn_" << evn;
+	return new TH1D(name.str().c_str(),name.str().c_str(),1,0,0);
+}
+Event * dummy_Event::Clone() const{
+	return new dummy_Event(*this);
+}
+
 CM_Event::CM_Event(): Event(){
 	type = Tomography::CM;
 	detector = new CM_Detector();

@@ -45,6 +45,7 @@ int main(int argc, char ** argv){
 		pyramids,
 		pyrarays,
 		mcube,
+		mcuberays,
 		live,
 		watto,
 		read
@@ -74,6 +75,9 @@ int main(int argc, char ** argv){
 		}
 		else if(argv[i] == string("mcube")){
 			operation = mcube;
+		}
+		else if(argv[i] == string("mcuberays")){
+			operation = mcuberays;
 		}
 		else if(argv[i] == string("watto")){
 			operation = watto;
@@ -139,7 +143,7 @@ int main(int argc, char ** argv){
 		delete analysisFile;
 		delete bench;
 	}
-	else if((operation == pyramids) || (operation == pyrarays) || (operation == live) || (operation == mcube)){
+	else if((operation == pyramids) || (operation == pyrarays) || (operation == live) || (operation == mcube) || (operation == mcuberays)){
 		CosmicBench * bench = new CosmicBench(config_tree);
 		Tsignal_W * signalFile = NULL;
 		Tanalyse_W * analysisFile = NULL;
@@ -152,7 +156,7 @@ int main(int argc, char ** argv){
 		Output_Task<ray_data> * to_write_rays = NULL;
 		vector<Thread*> threads;
 		Typed_Task<event_data> * follow_up_analyse_task = NULL;
-		if(operation==pyrarays){
+		if((operation==pyrarays) || (operation==mcuberays)){
 			cout << "creating rays output chain" << endl;
 			raysFile = new Tray(config_tree.get<string>("metadata") + "_rays.root");
 			to_write_rays = new Write_Rays_Task(raysFile,bench->get_z_Up(),bench->get_z_Down(),config_tree.get<string>("metadata") + "_ampl.txt");
@@ -169,7 +173,7 @@ int main(int argc, char ** argv){
 			follow_up_signal_task = new Ped_Corr_Task(current_ped,new Multicluster_Task(bench,to_write_analyse));
 		}
 		Input_Task * to_do = NULL;
-		if(operation!=mcube){
+		if((operation == pyramids) || (operation == pyrarays) || (operation == live)){
 			cout << "creating signal output chain" << endl;
 			signalFile = new Tsignal_W(config_tree.get<string>("signal_file"),bench->get_det_N());
 			to_write_signal = new Write_Signal_Task<raw_data>(signalFile,follow_up_signal_task);

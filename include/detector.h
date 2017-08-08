@@ -83,6 +83,36 @@ class Detector{
 
 };
 
+class dummy_Detector: public Detector{
+	public:
+		dummy_Detector();
+		dummy_Detector(int det_n_, int asic_n_, bool connector_direction_ = true);
+		dummy_Detector(const dummy_Detector& other);
+		dummy_Detector& operator=(const dummy_Detector& other);
+		~dummy_Detector();
+		Tomography::det_type get_type() const;
+		double get_size() const;
+		void set_RMS(vector<double> RMS_);
+		unsigned int StripToChannel(unsigned int i) const;
+		int get_Nchannel() const;
+		int get_Nstrip() const;
+		double get_StripPitch() const;
+		int get_CMN_div() const;
+		bool is_suitable(const Cluster * const clus) const;
+		Detector * Clone() const;
+		Event * build_event(Tanalyse_R * treeObject, int entry) const;
+		Event * build_event(const Tanalyse_R * const treeObject) const;
+		Event * build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const;
+		Detector * build_det(const ptree::value_type& child) const;
+		int feminos_mapping(int channel, bool connector_direction) const;
+		int dream_mapping(int channel, bool connector_direction) const;
+		string Name() const;
+		int get_MaxNClus() const;
+		TLine * get_line_display() const;
+		static constexpr const int CMN_div = 2;
+};
+
+
 class CM_Detector: public Detector{
 	public:	
 		CM_Detector();

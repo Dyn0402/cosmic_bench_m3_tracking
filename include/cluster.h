@@ -65,6 +65,18 @@ class Cluster{
 		int n_in_tree;
 };
 
+class dummy_Cluster: public Cluster{
+	public:
+		dummy_Cluster();
+		dummy_Cluster(const dummy_Cluster& other);
+		dummy_Cluster& operator=(const dummy_Cluster& other);
+		~dummy_Cluster();
+		double get_pos_mm() const;
+		double correct_strip_nb(int strip_nb) const;
+		double get_z() const;
+		Cluster * Clone() const;
+};
+
 class CM_Cluster: public Cluster{
 	friend class CM_Demux_Cluster;
 	public:
