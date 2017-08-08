@@ -803,6 +803,14 @@ int CosmicBench::get_det_N_tot() const{
 Detector * CosmicBench::get_detector(unsigned int i) const{
 	return detectors[i];
 }
+unsigned int CosmicBench::find_det(const Cluster * const clus) const{
+	for(unsigned int i=0;i<detectors.size();i++){
+		if((clus->get_type()) == (detectors[i]->get_type())){
+			if((clus->get_n_in_tree()) == (detectors[i]->get_n_in_tree())) return i;
+		}
+	}
+	return detectors.size();
+}
 int CosmicBench::get_non_ref_N() const{
 	return non_ref_n;
 }
