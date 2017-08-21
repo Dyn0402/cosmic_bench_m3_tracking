@@ -168,20 +168,20 @@ int main(int argc, char ** argv){
 		}
 		Display_Thread::get_instance()->stop_count();
 		//cout << "\r" << Tomography::get_instance()->print_count() << "|" << setw(7) << Task::task_left() << endl;
-		if(operation!=mcube){
+		if((operation == pyramids) || (operation == pyrarays) || (operation == live) || (operation==read) || (operation==wattosignal)){
 			signalFile->Write();
 			signalFile->CloseFile();
 			delete signalFile;
 		}
-		if(operation != live){
+		if((operation==pyrarays) || (operation==mcuberays) || (operation==mcube) || (operation==pyramids) || (operation==analysis) || (operation==wattoanalyse)){
 			analysisFile->Write();
 			analysisFile->CloseFile();
 			delete analysisFile;
-			if(operation==pyrarays){
-				raysFile->Write();
-				raysFile->CloseFile();
-				delete raysFile;
-			}
+		}
+		if((operation==pyrarays) || (operation==mcuberays)){
+			raysFile->Write();
+			raysFile->CloseFile();
+			delete raysFile;
 		}
 		delete blah;
 		delete bench;
