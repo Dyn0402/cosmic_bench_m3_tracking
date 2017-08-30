@@ -673,13 +673,32 @@ void Signal::EventDisplay(int evn_min, int evn_max, Tomography::signal_type sign
 void Signal::SignalDispersion(){
 	gStyle->SetPalette(55,0);
 	gStyle->SetNumberContours(512);
-	TCanvas * cDisplay = new TCanvas("cDisplay");
-	cDisplay->Divide(2,2);
 	TCanvas * cControl = new TCanvas("cControl");
 	cControl->Divide(2,2);
 	TCanvas * cAnalyse = new TCanvas("cAnalyse");
 	cAnalyse->Divide(2,2);
 	int nbin_time = Tomography::get_instance()->get_Nsample();
+	map<int,TH2D*> signalShape_X;
+	map<int,TH2D*> signalShape_Y;
+	map<int,TGraph*> mean_X;
+	map<int,TGraph*> mean_Y;
+	int divisions = 11;
+	TCanvas * cDisplay = new TCanvas("cDisplay");
+	cDisplay->Divide(divisions,2);
+	for(int i=0;i<divisions;i++){
+		//double division_mean = 90.*(((2.*i+1.)/divisions)-1.);
+		ostringstream oss_title;
+		oss_title << "signalShape_" << (180.*i/divisions - 90) << "_" << (180.*(i+1)/divisions - 90) << "_";
+		ostringstream oss_name;
+		oss_title << "signalShape_" << i << "_";
+		signalShape_X[i] = new TH2D((oss_name.str() + "X").c_str(),(oss_title.str() + "X").c_str(),60,-6,6,nbin_time,0,nbin_time);
+		signalShape_Y[i] = new TH2D((oss_name.str() + "Y").c_str(),(oss_title.str() + "Y").c_str(),60,-6,6,nbin_time,0,nbin_time);
+		mean_X[i] = new TGraph();
+		mean_Y[i] = new TGraph();
+		mean_X[i]->SetMarkerStyle(2);
+		mean_Y[i]->SetMarkerStyle(2);
+	}
+	/*
 	TH2D * signalShape_X_pos = new TH2D("signalShape_X_pos","signalShape_X_pos",60,-6,6,nbin_time,0,nbin_time);
 	TH2D * signalShape_Y_pos = new TH2D("signalShape_Y_pos","signalShape_Y_pos",60,-15,15,nbin_time,0,nbin_time);
 	TH2D * signalShape_X_neg = new TH2D("signalShape_X_neg","signalShape_X_neg",60,-6,6,nbin_time,0,nbin_time);
@@ -692,6 +711,7 @@ void Signal::SignalDispersion(){
 	mean_Y_pos->SetMarkerStyle(2);
 	mean_X_neg->SetMarkerStyle(2);
 	mean_Y_neg->SetMarkerStyle(2);
+	*/
 
 	TH2D * angle_shape_corr_X = new TH2D("angle_shape_corr_X","angle_shape_corr_X",50,-0.5,0.5,50,-1,1);
 	TH2D * angle_shape_corr_Y = new TH2D("angle_shape_corr_Y","angle_shape_corr_Y",50,-0.5,0.5,50,-1,1);
@@ -760,12 +780,30 @@ void Signal::SignalDispersion(){
 						ampl += current_ampl;
 						if(current_ampl > max_ampl) max_ampl = current_ampl;
 						if(current_X){
-							if(ray_it->get_slope_X() > 0) signalShape_X_pos->Fill(current_pos,j,current_ampl);
-							else signalShape_X_neg->Fill(current_pos,j,current_ampl);
+							for(int k=0;k<divisions;k++){
+								double min_slope = Pi()*((k*1./divisions)-2);
+								double max_slope = Pi()*(((k+1.)/divisions)-2);
+								double current_slope = ATan(ray_it->get_slope_X());
+								if(current_slope>min_slope && current_slope<max_slope){
+									signalShape_X[k]->Fill(current_pos,j,current_ampl);
+									break;
+								}
+							}
+							//if(ray_it->get_slope_X() > 0) signalShape_X_pos->Fill(current_pos,j,current_ampl);
+							//else signalShape_X_neg->Fill(current_pos,j,current_ampl);
 						}
 						else{
-							if(ray_it->get_slope_Y() > 0) signalShape_Y_pos->Fill(current_pos,j,current_ampl);
-							else signalShape_Y_neg->Fill(current_pos,j,current_ampl);
+							for(int k=0;k<divisions;k++){
+								double min_slope = Pi()*((k*1./divisions)-2);
+								double max_slope = Pi()*(((k+1.)/divisions)-2);
+								double current_slope = ATan(ray_it->get_slope_Y());
+								if(current_slope>min_slope && current_slope<max_slope){
+									signalShape_Y[k]->Fill(current_pos,j,current_ampl);
+									break;
+								}
+							}
+							//if(ray_it->get_slope_Y() > 0) signalShape_Y_pos->Fill(current_pos,j,current_ampl);
+							//else signalShape_Y_neg->Fill(current_pos,j,current_ampl);
 						}
 					}
 					if(Abs(mean)<=(*clus_it)->get_size() && j>4 && j<16){
@@ -807,24 +845,18 @@ void Signal::SignalDispersion(){
 		events.clear();
 		if(ientry%100 == 0) cout << "\r" << ientry << "/" << nentries << flush;
 		if((ientry%5000 == 0) && Tomography::get_instance()->get_live_graphic_display()){
-			for(int i=1;i<=nbin_time;i++){
-				mean_X_pos->SetPoint(i-1,signalShape_X_pos->ProjectionX("_px",i,i)->GetMean(),i-0.5);
-				mean_Y_pos->SetPoint(i-1,signalShape_Y_pos->ProjectionX("_px",i,i)->GetMean(),i-0.5);
-				mean_X_neg->SetPoint(i-1,signalShape_X_neg->ProjectionX("_px",i,i)->GetMean(),i-0.5);
-				mean_Y_neg->SetPoint(i-1,signalShape_Y_neg->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+			for(int j=0;j<divisions;j++){
+				for(int i=1;i<=nbin_time;i++){
+					mean_X[j]->SetPoint(i-1,signalShape_X[j]->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+					mean_Y[j]->SetPoint(i-1,signalShape_Y[j]->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+				}
+				cDisplay->cd(j+1);
+				signalShape_X[j]->Draw("COLZ");
+				mean_X[j]->Draw("PSAME");
+				cDisplay->cd(divisions+j+1);
+				signalShape_Y[j]->Draw("COLZ");
+				mean_Y[j]->Draw("PSAME");
 			}
-			cDisplay->cd(1);
-			signalShape_X_pos->Draw("COLZ");
-			mean_X_pos->Draw("PSAME");
-			cDisplay->cd(2);
-			signalShape_Y_pos->Draw("COLZ");
-			mean_Y_pos->Draw("PSAME");
-			cDisplay->cd(3);
-			signalShape_X_neg->Draw("COLZ");
-			mean_X_neg->Draw("PSAME");
-			cDisplay->cd(4);
-			signalShape_Y_neg->Draw("COLZ");
-			mean_Y_neg->Draw("PSAME");
 			cDisplay->Modified();
 			cDisplay->Update();
 			cControl->cd(1);
@@ -852,24 +884,18 @@ void Signal::SignalDispersion(){
 		}
 	}
 	cout << "\r" << nentries << "/" << nentries << endl;
-	for(int i=1;i<=nbin_time;i++){
-		mean_X_pos->SetPoint(i-1,signalShape_X_pos->ProjectionX("_px",i,i)->GetMean(),i);
-		mean_Y_pos->SetPoint(i-1,signalShape_Y_pos->ProjectionX("_px",i,i)->GetMean(),i);
-		mean_X_neg->SetPoint(i-1,signalShape_X_neg->ProjectionX("_px",i,i)->GetMean(),i);
-		mean_Y_neg->SetPoint(i-1,signalShape_Y_neg->ProjectionX("_px",i,i)->GetMean(),i);
+	for(int j=0;j<divisions;j++){
+		for(int i=1;i<=nbin_time;i++){
+			mean_X[j]->SetPoint(i-1,signalShape_X[j]->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+			mean_Y[j]->SetPoint(i-1,signalShape_Y[j]->ProjectionX("_px",i,i)->GetMean(),i-0.5);
+		}
+		cDisplay->cd(j+1);
+		signalShape_X[j]->Draw("COLZ");
+		mean_X[j]->Draw("PSAME");
+		cDisplay->cd(divisions+j+1);
+		signalShape_Y[j]->Draw("COLZ");
+		mean_Y[j]->Draw("PSAME");
 	}
-	cDisplay->cd(1);
-	signalShape_X_pos->Draw("COLZ");
-	mean_X_pos->Draw("PSAME");
-	cDisplay->cd(2);
-	signalShape_Y_pos->Draw("COLZ");
-	mean_Y_pos->Draw("PSAME");
-	cDisplay->cd(3);
-	signalShape_X_neg->Draw("COLZ");
-	mean_X_neg->Draw("PSAME");
-	cDisplay->cd(4);
-	signalShape_Y_neg->Draw("COLZ");
-	mean_Y_neg->Draw("PSAME");
 	cDisplay->Modified();
 	cDisplay->Update();
 	cControl->cd(1);
