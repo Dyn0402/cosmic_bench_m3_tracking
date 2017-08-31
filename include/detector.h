@@ -345,6 +345,8 @@ class CosmicBench{
 		Detector * get_detector(unsigned int i) const;
 		//retrieve the detector index (does not correspond to dector id (which is type dependant) but is the index in the vector number) of the given cluster
 		unsigned int find_det(const Cluster * const clus) const;
+		//retrieve the detector index (does not correspond to dector id (which is type dependant) but is the index in the vector number) of the given detector type and tree id
+		unsigned int find_det(Tomography::det_type det_t, unsigned int tree_n) const;
 		//read the given Ped.dat file containing information about the detector list described by det_n_
 		static map<Tomography::det_type,vector<vector<double> > > read_pedfile(string filename, map<Tomography::det_type,unsigned short> det_n_);
 		//retrieve the altitude of the higher detector of the bench

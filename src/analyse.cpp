@@ -2179,6 +2179,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, double bench_angle, TCanvas * 
 	cout << "\r"<< setw(20) << eventReconstructed << "|" << setw(20) << eventSuitable << "|" << setw(20) << nentries << endl;
 
 	TH2D * full_bkg = new TH2D("full_bkg","full_bkg",nbins,x_min,x_max,nbins,x_min,x_max);
+	cout << ray_class_n.size() << endl;
 	for(map<pair<pair<int,int>,pair<int,int> >,unsigned long>::iterator class_it = ray_class_n.begin();class_it!=ray_class_n.end();++class_it){
 		double size_X_Down = detectors[(class_it->first).first.first]->get_size();
 		double size_X_Up = detectors[(class_it->first).first.second]->get_size();
@@ -2194,6 +2195,7 @@ void Analyse::AbsorptionFluxMapNormTheo(double z, double bench_angle, TCanvas * 
 		double z_X_Up = detectors[(class_it->first).first.second]->get_z();
 		double z_Y_Down = detectors[(class_it->first).second.first]->get_z();
 		double z_Y_Up = detectors[(class_it->first).second.second]->get_z();
+		cout << "    " << z_X_Down << " | " << z_X_Up << " | " << z_Y_Down << " | " << z_Y_Up << " | " << (class_it->second) << endl;
 
 		acceptanceFunction current_acceptance(offset_X_Up - size_X_Up/2,offset_X_Up + size_X_Up/2,offset_Y_Up - size_Y_Up/2,offset_Y_Up + size_Y_Up/2,offset_X_Down - size_X_Down/2,offset_X_Down + size_X_Down/2,offset_Y_Down - size_Y_Down/2,offset_Y_Down + size_Y_Down/2,z_X_Up,z_X_Down,z_Y_Up,z_Y_Down,bench_angle);
 		TH2D * current_bkg = new TH2D(current_acceptance.plot_XY(nbins,x_min,x_max,nbins,x_min,x_max,z));

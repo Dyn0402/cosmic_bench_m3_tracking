@@ -889,6 +889,14 @@ unsigned int CosmicBench::find_det(const Cluster * const clus) const{
 	}
 	return detectors.size();
 }
+unsigned int CosmicBench::find_det(Tomography::det_type det_t, unsigned int tree_n) const{
+		for(unsigned int i=0;i<detectors.size();i++){
+		if(det_t == (detectors[i]->get_type())){
+			if(tree_n == (detectors[i]->get_n_in_tree())) return i;
+		}
+	}
+	return detectors.size();
+}
 int CosmicBench::get_non_ref_N() const{
 	return non_ref_n;
 }
