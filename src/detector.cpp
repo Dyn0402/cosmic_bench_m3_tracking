@@ -726,7 +726,8 @@ CosmicBench::CosmicBench(){
 		delete detectors[i];
 	}
 	detectors.clear();
-	det_n.clear();
+	//det_n.clear();
+	det_n = map<Tomography::det_type,unsigned short>();
 	non_ref_n = 0;
 	layers.clear();
 }
@@ -764,6 +765,7 @@ CosmicBench::~CosmicBench(){
 	layers.clear();
 }
 CosmicBench::CosmicBench(ptree config_tree){
+	det_n = map<Tomography::det_type,unsigned short>();
 	Init(config_tree);
 }
 map<Tomography::det_type,vector<vector<double> > > CosmicBench::read_pedfile(string filename, map<Tomography::det_type,unsigned short> det_n_){

@@ -1735,12 +1735,11 @@ MGv2_Event::~MGv2_Event(){
 }
 
 CosmicBenchEvent::CosmicBenchEvent(){
-	rayPairs.clear();
-	for(unsigned int i=0;i<events.size();i++){
-		delete events[i];
-	}
+	//rayPairs.clear();
+	rayPairs = vector<RayPair>();
 	detectors = NULL;
-	events.clear();
+	//events.clear();
+	events = vector<Event*>();
 	evn = -1;
 	evttime = 0;
 }
@@ -1748,12 +1747,14 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBenchEvent& other){
 	evn = other.evn;
 	evttime = other.evttime;
 	detectors = other.detectors;
-	rayPairs.clear();
+	rayPairs = vector<RayPair>();
+	//rayPairs.clear();
 	rayPairs.assign(other.rayPairs.begin(),other.rayPairs.end());
 	for(unsigned int i=0;i<events.size();i++){
 		delete events[i];
 	}
-	events.clear();
+	events = vector<Event*>();
+	//events.clear();
 	for(vector<Event*>::const_iterator it = other.events.begin();it!= other.events.end();++it){
 		events.push_back((*it)->Clone());
 	}
@@ -1762,12 +1763,14 @@ CosmicBenchEvent& CosmicBenchEvent::operator=(const CosmicBenchEvent& other){
 	evn = other.evn;
 	evttime = other.evttime;
 	detectors = other.detectors;
-	rayPairs.clear();
+	//rayPairs.clear();
+	rayPairs = vector<RayPair>();
 	rayPairs.assign(other.rayPairs.begin(),other.rayPairs.end());
-	for(unsigned int i=0;i<events.size();i++){
-		delete events[i];
-	}
-	events.clear();
+	//for(unsigned int i=0;i<events.size();i++){
+	//	delete events[i];
+	//}
+	//events.clear();
+	events = vector<Event*>();
 	for(vector<Event*>::const_iterator it = other.events.begin();it!= other.events.end();++it){
 		events.push_back((*it)->Clone());
 	}
@@ -1781,11 +1784,13 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors_, Tanalys
 	detectors = detectors_;
 	evn = treeObject->evn;
 	evttime = treeObject->evttime;
-	rayPairs.clear();
-	for(unsigned int i=0;i<events.size();i++){
-		delete events[i];
-	}
-	events.clear();
+	//rayPairs.clear();
+	rayPairs = vector<RayPair>();
+	//for(unsigned int i=0;i<events.size();i++){
+	//	delete events[i];
+	//}
+	events = vector<Event*>();
+	//events.clear();
 	int det_N = detectors->get_det_N_tot();
 	for(int i=0;i<det_N;i++){
 		events.push_back(detectors->get_detector(i)->build_event(treeObject));
@@ -1794,20 +1799,25 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors_, Tanalys
 CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors_, const Tanalyse_R * const treeObject){
 	evn = treeObject->evn;
 	evttime = treeObject->evttime;
-	rayPairs.clear();
-	for(unsigned int i=0;i<events.size();i++){
-		delete events[i];
-	}
-	events.clear();
+	rayPairs = vector<RayPair>();
+	//rayPairs.clear();
+	//for(unsigned int i=0;i<events.size();i++){
+	//	delete events[i];
+	//}
+	//events.clear();
+	events = vector<Event*>();
+	detectors = detectors_;
 	int det_N = detectors->get_det_N_tot();
 	for(int i=0;i<det_N;i++){
 		events.push_back(detectors->get_detector(i)->build_event(treeObject));
 	}
-	detectors = detectors_;
 }
 CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors_,const vector<Event*> events_){
-	rayPairs.clear();
-	events.clear();
+	//rayPairs.clear();
+	rayPairs = vector<RayPair>();
+	//events.clear();
+	events = vector<Event*>();
+	detectors = detectors_;	
 	unsigned int det_N = detectors->get_det_N_tot();
 	if(events_.size()!=det_N){
 		cout << "problem in event size" << endl;
@@ -1828,7 +1838,6 @@ CosmicBenchEvent::CosmicBenchEvent(const CosmicBench * const detectors_,const ve
 		det_is_used.insert(pair<Tomography::det_type,int>((*it)->get_type(),(*it)->get_n_in_tree()));
 		events.push_back((*it)->Clone());
 	}
-	detectors = detectors_;
 }
 CosmicBenchEvent::~CosmicBenchEvent(){
 	for(unsigned int i=0;i<events.size();i++){
