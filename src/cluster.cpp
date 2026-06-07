@@ -695,3 +695,105 @@ double MGv2_Cluster::get_z() const{
 	else real_z += (pos_mm*(Cos(angle_z)*Sin(angle_x)*Cos(angle_y) + Sin(angle_z)*Sin(angle_y)) + perp_pos_mm*Cos(angle_x)*Sin(angle_y))/(Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y));
 	return real_z;
 }
+
+
+MGv3_Cluster::MGv3_Cluster(): Cluster(){
+	type = Tomography::MGv3;
+}
+MGv3_Cluster::MGv3_Cluster(const MGv3_Cluster& other): Cluster(other){
+	type = Tomography::MGv3;
+}
+MGv3_Cluster& MGv3_Cluster::operator=(const MGv3_Cluster& other){
+	Cluster::operator=(other);
+	type = Tomography::MGv3;
+	return *this;
+}
+MGv3_Cluster::MGv3_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry): Cluster(treeObject,number_,det,entry){
+	if(det->get_type() != Tomography::MGv3){
+		*this = MGv3_Cluster();
+		return;
+	}
+	if(entry>-1){
+		treeObject->LoadTree(entry);
+		treeObject->GetEntry(entry);
+	}
+	ampl = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusAmpl.find(Tomography::MGv3)->second)[n_in_tree][number];
+	size = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusSize.find(Tomography::MGv3)->second)[n_in_tree][number];
+	pos = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusPos.find(Tomography::MGv3)->second)[n_in_tree][number];
+	maxStripAmpl = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusMaxStripAmpl.find(Tomography::MGv3)->second)[n_in_tree][number];
+	maxSample = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusMaxSample.find(Tomography::MGv3)->second)[n_in_tree][number];
+	TOT = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusTOT.find(Tomography::MGv3)->second)[n_in_tree][number];
+	t = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusT.find(Tomography::MGv3)->second)[n_in_tree][number];
+	maxStrip = reinterpret_cast<Int_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusMaxStrip.find(Tomography::MGv3)->second)[n_in_tree][number];
+	type = Tomography::MGv3;
+}
+MGv3_Cluster::MGv3_Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det): Cluster(treeObject,number_,det){
+	if(det->get_type() != Tomography::MGv3){
+		*this = MGv3_Cluster();
+		return;
+	}
+	ampl = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusAmpl.find(Tomography::MGv3)->second)[n_in_tree][number];
+	size = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusSize.find(Tomography::MGv3)->second)[n_in_tree][number];
+	pos = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusPos.find(Tomography::MGv3)->second)[n_in_tree][number];
+	maxStripAmpl = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusMaxStripAmpl.find(Tomography::MGv3)->second)[n_in_tree][number];
+	maxSample = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusMaxSample.find(Tomography::MGv3)->second)[n_in_tree][number];
+	TOT = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusTOT.find(Tomography::MGv3)->second)[n_in_tree][number];
+	t = reinterpret_cast<Double_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusT.find(Tomography::MGv3)->second)[n_in_tree][number];
+	maxStrip = reinterpret_cast<Int_t(*)[MGv3_Detector::MaxNClus]>(treeObject->ClusMaxStrip.find(Tomography::MGv3)->second)[n_in_tree][number];
+	type = Tomography::MGv3;
+}
+MGv3_Cluster::MGv3_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_): Cluster(det, number_, pos_, size_, ampl_, maxSample_, maxStripAmpl_, TOT_, t_, maxStrip_){
+	if(det->get_type() != Tomography::MGv3){
+		*this = MGv3_Cluster();
+		return;
+	}
+	type = Tomography::MGv3;
+}
+Cluster * MGv3_Cluster::Clone() const{
+	return new MGv3_Cluster(*this);
+}
+MGv3_Cluster::~MGv3_Cluster(){
+	
+}
+double MGv3_Cluster::get_pos_mm() const{
+	double pos_mm = 0;
+	if(direction){
+		pos_mm = pos*MGv3_Detector::StripPitch;
+	}
+	else{
+		pos_mm = (731-pos)*MGv3_Detector::StripPitch;
+	}
+	pos_mm -= MGv3_Detector::size/2.;
+	if(is_X) pos_mm = (pos_mm*Cos(angle_y)/Cos(angle_z)) - perp_pos_mm*Tan(angle_z);
+	else pos_mm = (pos_mm*Cos(angle_x) + perp_pos_mm*(Sin(angle_z) - Cos(angle_z)*Sin(angle_x)*Tan(angle_y)))/(Cos(angle_z) + Sin(angle_z)*Sin(angle_x)*Tan(angle_y));
+	pos_mm += offset;
+	return pos_mm;
+}
+double MGv3_Cluster::correct_strip_nb(int strip_nb) const{
+	double pos_mm = 0;
+	if(direction){
+		pos_mm = strip_nb*MGv3_Detector::StripPitch;
+	}
+	else{
+		pos_mm = (731-strip_nb)*MGv3_Detector::StripPitch;
+	}
+	pos_mm -= MGv3_Detector::size/2.;
+	if(is_X) pos_mm = (pos_mm*Cos(angle_y)/Cos(angle_z)) - perp_pos_mm*Tan(angle_z);
+	else pos_mm = (pos_mm*Cos(angle_x) + perp_pos_mm*(Sin(angle_z) - Cos(angle_z)*Sin(angle_x)*Tan(angle_y)))/(Cos(angle_z) + Sin(angle_z)*Sin(angle_x)*Tan(angle_y));
+	pos_mm += offset;
+	return pos_mm;
+}
+double MGv3_Cluster::get_z() const{
+	double real_z = z;
+	double pos_mm = 0;
+	if(direction){
+		pos_mm = pos*MGv3_Detector::StripPitch;
+	}
+	else{
+		pos_mm = (731-pos)*MGv3_Detector::StripPitch;
+	}
+	pos_mm -= MGv3_Detector::size/2.;
+	if(is_X) real_z += (pos_mm)*((Sin(angle_y)/Cos(angle_x)) - Tan(angle_x)*Tan(angle_z)*Cos(angle_y)) + (perp_pos_mm)*(Tan(angle_x)/Cos(angle_z));
+	else real_z += (pos_mm*(Cos(angle_z)*Sin(angle_x)*Cos(angle_y) + Sin(angle_z)*Sin(angle_y)) + perp_pos_mm*Cos(angle_x)*Sin(angle_y))/(Cos(angle_z)*Cos(angle_y) + Sin(angle_z)*Sin(angle_x)*Sin(angle_y));
+	return real_z;
+}

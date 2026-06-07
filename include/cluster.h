@@ -174,4 +174,20 @@ class MGv2_Cluster: public Cluster{
 		Cluster * Clone() const;
 };
 
+//implementation to store MultiGen V3 informations (50x50cm^2; 732 strips)
+class MGv3_Cluster: public Cluster{
+        public:
+                MGv3_Cluster();
+                MGv3_Cluster(const MGv3_Cluster& other);
+                MGv3_Cluster& operator=(const MGv3_Cluster& other);
+                MGv3_Cluster(Tanalyse_R * treeObject,int number_,const Detector * const det, long entry);
+                MGv3_Cluster(const Tanalyse_R * const treeObject,int number_,const Detector * const det);
+                MGv3_Cluster(const Detector * const det, int number_, double pos_, double size_, double ampl_, double maxSample_, double maxStripAmpl_, double TOT_, double t_, int maxStrip_);
+                ~MGv3_Cluster();
+                double get_pos_mm() const;
+                double correct_strip_nb(int strip_nb) const;
+                double get_z() const;
+                Cluster * Clone() const;
+};
+
 #endif

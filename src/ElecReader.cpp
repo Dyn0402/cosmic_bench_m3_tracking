@@ -346,7 +346,48 @@ void LiveElecReader::read_next_event(){
 			}
 			*/
 			if(data.count(current_event) == 0) build_data(current_event,current_evttime);
-			if(DataHeaderLine<4 && current_data.is_data_header()){
+			if(zs_mode){
+				// Zero-suppressed data has no per-ASIC data header/trailer: a flat
+				// stream of (channelID+dreamID, amplitude) word pairs runs straight
+				// from the FEU header to the final trailer (mirrors DreamDecoder).
+				if(current_data.is_data_zs()){
+					if(!got_channel_id){
+						ichannel = current_data.get_channel_ID();
+						asicN    = current_data.get_dream_ID_ZS();
+						got_channel_id = true;
+					}
+					else{
+						data[current_event].strip_data[asicN+(8*FeuN)][ichannel][isample] = current_data.get_data();
+						got_channel_id = false;
+					}
+				}
+				else if(current_data.is_final_trailer()){
+					if(got_channel_id){
+						cout << "problem in ZS data" << endl;
+						has_bug = true;
+						break;
+					}
+					if(FeuHeaderLine!=4 && FeuHeaderLine!=8){
+						cout << "problem in Feu Header" << endl;
+						has_bug = true;
+						break;
+					}
+					(data[current_event].data_retrieved)++;
+					zs_mode = false;
+					FeuHeaderLine=0;
+					FeuN = 0;
+					if(current_data.is_EOE()){
+						isample=-1;
+						if((data[current_event].data_retrieved)==((dream_mask.size())*(Tomography::get_instance()->get_Nsample()))){
+							event_complete = true;
+						}
+					}
+					current_data = get_next_word();
+					current_data = DataLineDream();
+					if(event_complete) break;
+				}
+			}
+			else if(DataHeaderLine<4 && current_data.is_data_header()){
 				asicN = current_data.get_dream_ID();
 				DataHeaderLine++;
 			}
@@ -356,29 +397,14 @@ void LiveElecReader::read_next_event(){
 				break;
 			}
 			else if(DataHeaderLine>3){
-				if(current_data.is_data() && !zs_mode){
+				if(current_data.is_data()){
 					//cout << "getting data for asic : " << asicN+(8*FeuN) << " channel : " << ichannel << " sample : " << isample << endl;
 					data[current_event].strip_data[asicN+(8*FeuN)][ichannel][isample] = current_data.get_data();
 					ichannel++;
 				}
-				else if(current_data.is_data_zs() && zs_mode){
-					if(!got_channel_id){
-						ichannel = current_data.get_channel_ID();
-						got_channel_id = true;
-					}
-					else{
-						data[current_event].strip_data[asicN+(8*FeuN)][ichannel][isample] = current_data.get_data();
-						got_channel_id = false;
-					}
-				}
 				else if(current_data.is_data_trailer()){
-					if(ichannel!=64 && !zs_mode){
+					if(ichannel!=64){
 						cout << "problem in channel number" << endl;
-						has_bug = true;
-						break;
-					}
-					if(got_channel_id){
-						cout << "problem in ZS data" << endl;
 						has_bug = true;
 						break;
 					}
@@ -396,11 +422,6 @@ void LiveElecReader::read_next_event(){
 			else if(current_data.is_final_trailer()){
 				if(ichannel!=0){
 					cout << "problem in channel number" << endl;
-					has_bug = true;
-					break;
-				}
-				if(got_channel_id){
-					cout << "problem in ZS data" << endl;
 					has_bug = true;
 					break;
 				}
@@ -428,11 +449,12 @@ void LiveElecReader::read_next_event(){
 					//cout << "EOE reached for " << data[current_event].data_retrieved/Tomography::get_instance()->get_Nsample() << " FEUs out of " << dream_mask.size() << endl;
 					if((data[current_event].data_retrieved)==((dream_mask.size())*(Tomography::get_instance()->get_Nsample()))){
 						event_complete = true;
-						break;
+						//break;
 					}
 				}
 				current_data = get_next_word();
 				current_data = DataLineDream();
+				if(event_complete) break;
 				/*
 				if(feu_nb==dream_mask.size()){
 					feu_nb=0;
@@ -605,7 +627,51 @@ void DreamElecReader::read_next_event_file(int feu_id){
 				break;
 			}
 			else if(FeuHeaderLine>3){
-				if(DataHeaderLine<4 && current_data.is_data_header()){
+				if(zs_mode){
+					// Zero-suppressed data has no per-ASIC data header/trailer: a flat
+					// stream of (channelID+dreamID, amplitude) word pairs runs straight
+					// from the FEU header to the final trailer (mirrors DreamDecoder).
+					if(current_data.is_data_zs()){
+						if(!got_channel_id){
+							ichannel = current_data.get_channel_ID();
+							asicN    = current_data.get_dream_ID_ZS();
+							got_channel_id = true;
+						}
+						else{
+							feu_data[feu_id].data[asicN][ichannel][isample] = current_data.get_data();
+							got_channel_id = false;
+						}
+					}
+					else if(current_data.is_final_trailer()){
+						if(got_channel_id){
+							cout << "problem in ZS data" << endl;
+							has_bug = true;
+							break;
+						}
+						if(FeuHeaderLine!=4 && FeuHeaderLine!=8){
+							cout << "problem in Feu Header" << endl;
+							has_bug = true;
+							break;
+						}
+						if(isample==0) current_event_old = current_event;
+						else if(current_event_old != current_event && !has_bug){
+							cout << "problem in event ID (" << current_event_old << ";" << current_event << ")[sample=" << isample << "]" << endl;
+							//has_bug = true;
+							//break; //comment these 2 lines until bugfix by irakli :)
+						}
+						isample_nb++;
+						zs_mode = false;
+						FeuHeaderLine=0;
+						(feu_data[feu_id].file)->ignore(sizeof(current_data));
+						if(current_data.is_EOE()){
+							if(isample_nb!=Tomography::get_instance()->get_Nsample()) cout << "Reached EOE with less than " << Tomography::get_instance()->get_Nsample() << " samples (" << isample_nb << ")" << endl;
+							isample=-1; isample_prev=-2;
+							event_complete = true;
+							break;
+						}
+					}
+				}
+				else if(DataHeaderLine<4 && current_data.is_data_header()){
 					asicN = current_data.get_dream_ID();
 					DataHeaderLine++;
 				}
@@ -615,28 +681,13 @@ void DreamElecReader::read_next_event_file(int feu_id){
 					break;
 				}
 				else if(DataHeaderLine>3){
-					if(current_data.is_data() && !zs_mode){
+					if(current_data.is_data()){
 						feu_data[feu_id].data[asicN][ichannel][isample] = current_data.get_data();
 						ichannel++;
 					}
-					else if(current_data.is_data_zs() && zs_mode){
-						if(!got_channel_id){
-							ichannel = current_data.get_channel_ID();
-							got_channel_id = true;
-						}
-						else{
-							feu_data[feu_id].data[asicN][ichannel][isample] = current_data.get_data();
-							got_channel_id = false;
-						}
-					}
 					else if(current_data.is_data_trailer()){
-						if(ichannel!=64 && !zs_mode){
+						if(ichannel!=64){
 							cout << "problem in channel number" << endl;
-							has_bug = true;
-							break;
-						}
-						if(got_channel_id){
-							cout << "problem in ZS data" << endl;
 							has_bug = true;
 							break;
 						}
@@ -654,11 +705,6 @@ void DreamElecReader::read_next_event_file(int feu_id){
 				else if(current_data.is_final_trailer()){
 					if(ichannel!=0){
 						cout << "problem in channel number" << endl;
-						has_bug = true;
-						break;
-					}
-					if(got_channel_id){
-						cout << "problem in ZS data" << endl;
 						has_bug = true;
 						break;
 					}

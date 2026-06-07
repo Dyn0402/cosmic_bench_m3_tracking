@@ -34,15 +34,6 @@ public :
    Int_t           Nevent;
    Double_t        evttime;
    /*
-   Float_t         *StripAmpl_MG;
-   Float_t         *StripAmpl_MG_ped;
-   Float_t         *StripAmpl_MG_corr;
-   Float_t         *StripAmpl_MGv2;
-   Float_t         *StripAmpl_MGv2_ped;
-   Float_t         *StripAmpl_MGv2_corr;
-   Float_t         *StripAmpl_CM;
-   Float_t         *StripAmpl_CM_ped;
-   Float_t         *StripAmpl_CM_corr;
    */
    map<Tomography::det_type,Float_t*> StripAmpl;
    map<Tomography::det_type,Float_t*> StripAmpl_ped;
@@ -52,15 +43,6 @@ public :
    TBranch        *b_Nevent;   //!
    TBranch        *b_evttime;   //!
    /*
-   TBranch        *b_StripAmpl_MG;   //!
-   TBranch        *b_StripAmpl_MG_ped;   //!
-   TBranch        *b_StripAmpl_MG_corr;   //!
-   TBranch        *b_StripAmpl_MGv2;   //!
-   TBranch        *b_StripAmpl_MGv2_ped;   //!
-   TBranch        *b_StripAmpl_MGv2_corr;   //!
-   TBranch        *b_StripAmpl_CM;   //!
-   TBranch        *b_StripAmpl_CM_ped;   //!
-   TBranch        *b_StripAmpl_CM_corr;   //!
    */
    map<Tomography::det_type,TBranch*> b_StripAmpl; //!
    map<Tomography::det_type,TBranch*> b_StripAmpl_ped; //!

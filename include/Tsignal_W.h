@@ -33,15 +33,6 @@ public :
    Int_t           Nevent;
    Double_t        evttime;
    /*
-   Float_t         *StripAmpl_MG;
-   Float_t         *StripAmpl_MG_ped;
-   Float_t         *StripAmpl_MG_corr;
-   Float_t         *StripAmpl_MGv2;
-   Float_t         *StripAmpl_MGv2_ped;
-   Float_t         *StripAmpl_MGv2_corr;
-   Float_t         *StripAmpl_CM;
-   Float_t         *StripAmpl_CM_ped;
-   Float_t         *StripAmpl_CM_corr;
    */
    map<Tomography::det_type,Float_t*> StripAmpl;
    map<Tomography::det_type,Float_t*> StripAmpl_ped;

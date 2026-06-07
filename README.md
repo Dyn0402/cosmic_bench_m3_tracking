@@ -1,3 +1,20 @@
+### About this repository
+
+This is the M3 cosmic bench tracking software: it reads raw DAQ data from the
+cosmic ray test bench (`DataReader`), builds pedestals/signal trees from it,
+and reconstructs and analyses muon tracks (`tracking`) to characterize the
+detectors.
+
+The codebase was inherited from a previous student/developer (originally
+hosted at `kallithea.quarkstrange.me/thesis/tracking`, imported here with its
+full history). Since inheriting it, the main fix has been to the handling of
+zero-suppressed (ZS) data, which was causing the data reading/tracking chain
+to fail on ZS-compressed runs — this has been fixed.
+
+The script actually used day-to-day to run the full chain (pedestal
+computation, cosmic data analysis, and tracking) on a data run is
+`run_tracking_single.sh`.
+
 ### Remarks
 
 If you are using ROOT6 or C++11, apply cpp11.patch before build : `patch -p1 < cpp11.patch`

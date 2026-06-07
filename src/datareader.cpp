@@ -82,7 +82,8 @@ DataReader::DataReader(map<int,Tomography::det_type> det_type_by_asic_, map<int,
 }
 */
 DataReader::DataReader(ptree config_tree, bool save_to_disk, bool is_live){
-	CosmicBench current_CB(config_tree);
+  cout << "i am here " << endl;
+  CosmicBench current_CB(config_tree);
 	det_N.clear();
 	for(int i=0;i<current_CB.get_det_N_tot();i++){
 		Detector * current_det = current_CB.get_detector(i);

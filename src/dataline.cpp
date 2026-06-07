@@ -54,6 +54,9 @@ int DataLineDream::get_Feu_ID() const{
 int DataLineDream::get_dream_ID() const{
 	return (((data) & 0xE00)>>9);
 }
+int DataLineDream::get_dream_ID_ZS() const{
+	return (((data) & 0x1C0)>>6);
+}
 int DataLineDream::get_channel_ID() const{
 	return (((data) & 0x3F));
 }

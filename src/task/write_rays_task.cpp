@@ -44,6 +44,7 @@ bool Write_Rays_Task::do_task(){
 	}
 	time_t current_time = time(NULL);
 	pthread_mutex_lock(&IO_mutex);
+	// MODIFIY THIS VALUE TO CHANGE FEEDBACK TIME
 	if((current_time - last_timestamp) > 300){
 		map<int,double> ampl_mean;
 		map<int,int> ampl_number;

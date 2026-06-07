@@ -16,6 +16,7 @@ class Detector;
 class CM_Detector;
 class MG_Detector;
 class MGv2_Detector;
+class MGv3_Detector;
 class CosmicBench;
 class Tanalyse_R;
 class Analyse;
@@ -184,6 +185,25 @@ class MGv2_Event: public Event{
 		TH1D * get_ampl_hist() const;
 		TH1D * get_TOT_hist() const;
 		Event * Clone() const;
+};
+
+//implementation to store MultiGen V3 informations (50x50cm^2; 732 strips)
+class MGv3_Event: public Event{
+        public:
+                MGv3_Event();
+                MGv3_Event(const MGv3_Event& other);
+                MGv3_Event& operator=(const MGv3_Event& other);
+                MGv3_Event(Tanalyse_R * treeObject,const MGv3_Detector * const det, long entry);
+                MGv3_Event(const Tanalyse_R * const treeObject,const MGv3_Detector * const det);
+                MGv3_Event(const MGv3_Detector * const detector_, vector<vector<double> > strip_ampl_, int evn_, double evttime_);
+                void set_strip_ampl(vector<vector<double> > strip_ampl_);
+                ~MGv3_Event();
+                void MultiCluster();
+                void ConvCluster();
+                void HoughCluster(int hole_nb);
+                TH1D * get_ampl_hist() const;
+                TH1D * get_TOT_hist() const;
+                Event * Clone() const;
 };
 
 //Group events objects of a same event for the whole cosmic bench

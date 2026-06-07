@@ -39,6 +39,8 @@ class DataLineDream{
 		int get_channel_ID() const;
 		//retrieve the sample id if is_data_header()
 		int get_dream_ID() const;
+		//retrieve the dream/asic id encoded in the channel-ID word if is_data_zs()
+		int get_dream_ID_ZS() const;
 		//retrieve signal amplitude if is_data()
 		short get_data() const;
 		//unsigned short int data;

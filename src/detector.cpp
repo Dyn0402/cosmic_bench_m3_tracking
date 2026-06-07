@@ -216,6 +216,7 @@ Event * dummy_Detector::build_event(vector<vector<double> > strip_ampl_, int evn
 	return new dummy_Event();
 }
 Detector * dummy_Detector::build_det(const ptree::value_type& child) const{
+  
 	return new dummy_Detector(child.second.get<int>("dummy_n"),child.second.get<int>("asic_n"), child.second.get<bool>("connector_direction"));
 }
 int dummy_Detector::feminos_mapping(int channel, bool connector_direction) const{
@@ -529,7 +530,8 @@ int MG_Detector::feminos_mapping(int channel, bool connector_direction) const{
 }
 int MG_Detector::dream_mapping(int channel, bool connector_direction) const{
 	int tmpchan = (connector_direction) ? channel : (Tomography::Nchannel - 1 - channel);
-	return (tmpchan + 1 - (2*(tmpchan%2)));
+	//return (tmpchan + 1 - (2*(tmpchan%2)));
+	return tmpchan;
 }
 string MG_Detector::Name() const{
 	return "MG";
@@ -583,7 +585,20 @@ MGv2_Detector::~MGv2_Detector(){
 
 }
 Detector * MGv2_Detector::build_det(const ptree::value_type& child) const{
-	MGv2_Detector * current_det = new MGv2_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<int>("layer"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<int>("asic_n"),child.second.get<bool>("connector_direction"));
+  MGv2_Detector * current_det = new MGv2_Detector(child.second.get<double>("z"),
+						  child.second.get<bool>("is_X"),
+						  child.second.get<int>("layer"),
+						  child.second.get<int>("mg_n"),
+						  child.second.get<bool>("is_ref"),
+						  child.second.get<double>("offset"),
+						  child.second.get<bool>("direction"),
+						  child.second.get<double>("angle_x"),
+						  child.second.get<double>("angle_y"),
+						  child.second.get<double>("angle_z"),
+						  child.second.get<int>("2D_perp_n"),
+						  child.second.get<int>("clustering_holes"),
+						  child.second.get<int>("asic_n"),
+						  child.second.get<bool>("connector_direction"));
 	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
 	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
 	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
@@ -720,6 +735,180 @@ TLine * MGv2_Detector::get_line_display() const{
 	return new TLine(offset - size/2.,z,offset + size/2.,z);
 }
 
+// MGv3 code (22/06/2020)
+MGv3_Detector::MGv3_Detector(): Detector(){
+	ClusTOTCut_Min = -1;
+	ClusMaxSampleCut_Min = -1;
+	ClusMaxSampleCut_Max = -1;
+	ClusSizeCut_Min = -1;
+}
+MGv3_Detector::MGv3_Detector(const MGv3_Detector& other): Detector(other){
+	ClusTOTCut_Min = other.ClusTOTCut_Min;
+	ClusMaxSampleCut_Min = other.ClusMaxSampleCut_Min;
+	ClusMaxSampleCut_Max = other.ClusMaxSampleCut_Max;
+	ClusSizeCut_Min = other.ClusSizeCut_Min;
+}
+MGv3_Detector& MGv3_Detector::operator=(const MGv3_Detector& other){
+	Detector::operator=(other);
+	ClusTOTCut_Min = other.ClusTOTCut_Min;
+	ClusMaxSampleCut_Min = other.ClusMaxSampleCut_Min;
+	ClusMaxSampleCut_Max = other.ClusMaxSampleCut_Max;
+	ClusSizeCut_Min = other.ClusSizeCut_Min;
+	return *this;
+}
+MGv3_Detector::MGv3_Detector(double z_, bool is_X_, int layer_, int mg_n, bool is_ref_, double offset_, bool direction_, double angle_x_, double angle_y_, double angle_z_, int perp_n_, int clustering_holes_, int asic_n_, bool connector_direction): Detector(z_,is_X_,layer_,mg_n, is_ref_, offset_,direction_, angle_x_, angle_y_, angle_z_, perp_n_, clustering_holes_,vector<pair<int,bool> >(1,pair<int,bool>(asic_n_,connector_direction))){
+	ClusTOTCut_Min = -1;
+	ClusMaxSampleCut_Min = -1;
+	ClusMaxSampleCut_Max = -1;
+	ClusSizeCut_Min = -1;
+}
+Detector * MGv3_Detector::Clone() const{
+	return new MGv3_Detector(*this);
+}
+Event * MGv3_Detector::build_event(Tanalyse_R * treeObject, int entry) const{
+	return new MGv3_Event(treeObject, this, entry);
+}
+Event * MGv3_Detector::build_event(const Tanalyse_R * const treeObject) const{
+	return new MGv3_Event(treeObject, this);
+}
+Event * MGv3_Detector::build_event(vector<vector<double> > strip_ampl_, int evn_, double evttime_) const{
+	return new MGv3_Event(this, strip_ampl_,evn_,evttime_);
+}
+MGv3_Detector::~MGv3_Detector(){
+
+}
+Detector * MGv3_Detector::build_det(const ptree::value_type& child) const{
+	MGv3_Detector * current_det = new MGv3_Detector(child.second.get<double>("z"),child.second.get<bool>("is_X"),child.second.get<int>("layer"),child.second.get<int>("mg_n"),child.second.get<bool>("is_ref"),child.second.get<double>("offset"),child.second.get<bool>("direction"),child.second.get<double>("angle_x"),child.second.get<double>("angle_y"),child.second.get<double>("angle_z"),child.second.get<int>("2D_perp_n"),child.second.get<int>("clustering_holes"),child.second.get<int>("asic_n"),child.second.get<bool>("connector_direction"));
+	current_det->set_ClusTOTCut_Min(child.second.get<double>("ClusTOTCut_Min"));
+	current_det->set_ClusMaxSampleCut_Min(child.second.get<double>("ClusMaxSampleCut_Min"));
+	current_det->set_ClusMaxSampleCut_Max(child.second.get<double>("ClusMaxSampleCut_Max"));
+	current_det->set_ClusSizeCut_Min(child.second.get<double>("ClusSizeCut_Min"));
+	return current_det;
+}
+static vector<unsigned int> generate_StripToChannel_MGv3(){
+	int p=61; int n=732;
+	int MultiplexSeries[]={20,27,22,11,24,18,12,9,6,3,4,1,16,8,2,23,21,7,25,14,28,17,26,13,29};
+	vector<unsigned int> Detector(n,0); // strip to channel correspondance
+	for(int i=0;i<(p-1)/2;i++){
+		for(int j=0;j<p;j++){
+			if(i*p+j<n){
+				Detector[i*p+j]=(0+MultiplexSeries[i]*j)%p;
+			}
+		}
+	}
+	return Detector;
+}
+const vector<unsigned int> MGv3_Detector::StripToChannel_a = generate_StripToChannel_MGv3();
+unsigned int MGv3_Detector::StripToChannel(unsigned int i) const{
+	return StripToChannel_a[i];
+}
+
+vector<unsigned int> MGv3_Detector::ChannelToStrip(unsigned int channel_nb){
+	vector<unsigned int> channel_list;
+	if(channel_nb>=61) return channel_list;
+	const int p=61; const int n=732;
+	int MultiplexSeries[]={20,27,22,11,24,18,12,9,6,3,4,1,16,8,2,23,21,7,25,14,28,17,26,13,29};
+	unsigned int Detector[n]; // strip to channel correspondance
+	for(int i=0;i<(p-1)/2;i++){
+		for(int j=0;j<p;j++){
+			if(i*p+j<n){
+				Detector[i*p+j]=(0+MultiplexSeries[i]*j)%p;
+			}
+		}
+	}
+	for(unsigned int i=0;i<61;i++){
+		if(Detector[i] == channel_nb) channel_list.push_back(i);
+	}
+	return channel_list;
+}
+void MGv3_Detector::set_ClusSizeCut_Min(double cut){
+	ClusSizeCut_Min = cut;
+}
+void MGv3_Detector::set_ClusTOTCut_Min(double cut){
+	ClusTOTCut_Min = cut;
+}
+void MGv3_Detector::set_ClusMaxSampleCut_Min(double cut){
+	ClusMaxSampleCut_Min = cut;
+}
+void MGv3_Detector::set_ClusMaxSampleCut_Max(double cut){
+	ClusMaxSampleCut_Max = cut;
+}
+double MGv3_Detector::get_ClusSizeCut_Min() const{
+	return ClusSizeCut_Min;
+}
+Tomography::det_type MGv3_Detector::get_type() const{
+	return Tomography::MGv3;
+}
+void MGv3_Detector::set_RMS(vector<double> RMS_){
+	if(RMS_.size()!=Nchannel) return;
+	RMS = RMS_;
+}
+void MGv3_Detector::set_SRF(double offset_, double gauss, double lorentz, double ratio){
+	srf_offset = offset_;
+	srf_gauss_width = gauss;
+	srf_lorentz_width = lorentz;
+	srf_ratio = ratio;	
+}
+double MGv3_Detector::SRF_fit(double * x, double * p){
+	double position = (x[0]-p[0])/p[1];
+	double alpha = srf_lorentz_width/srf_gauss_width;
+	double return_value = Exp(-4*Log(2)*(1-srf_ratio)*position*position);
+	return_value /= 1 + (4*srf_ratio*position*position/(alpha*alpha));
+	return_value *= 1 - srf_offset;
+	return_value += srf_offset;
+	return return_value;
+}
+double MGv3_Detector::get_size() const{
+	return size;
+}
+double MGv3_Detector::get_perp_size() const{
+	return size;
+}
+int MGv3_Detector::get_Nchannel() const{
+	return Nchannel;
+}
+int MGv3_Detector::get_Nstrip() const{
+	return Nstrip;
+}
+double MGv3_Detector::get_StripPitch() const{
+	return StripPitch;
+}
+int MGv3_Detector::get_CMN_div() const{
+	return CMN_div;
+}
+bool MGv3_Detector::is_suitable(const Cluster * const clus) const{
+	if(!(clus->is_in_det(this))) return false;
+	if(clus->get_pos() < 0) return false;
+	if(clus->get_pos() > 731) return false;
+	if(clus->get_TOT() < ClusTOTCut_Min) return false;
+	if(clus->get_maxSample() < ClusMaxSampleCut_Min) return false;
+	if(clus->get_maxSample() > ClusMaxSampleCut_Max) return false;
+	if(clus->get_size() < ClusSizeCut_Min) return false;
+	return true;
+}
+int MGv3_Detector::feminos_mapping(int channel, bool connector_direction) const{
+	// Warning !!!
+	//This part was never tested
+	int tmpchan = (connector_direction) ? channel : (Tomography::Nchannel - 1 - channel);
+	tmpchan = tmpchan - 2 - (tmpchan>13) - (tmpchan>24) - (tmpchan>47) - (tmpchan>58);
+	if(tmpchan>15 && tmpchan<48) return tmpchan;
+	else return (tmpchan + 1 - (2*(tmpchan%2)));
+}
+int MGv3_Detector::dream_mapping(int channel, bool connector_direction) const{
+	int tmpchan = (connector_direction) ? channel : (Tomography::Nchannel - 1 - channel);
+	/*if(tmpchan == 6) return 8;
+	else if(tmpchan == 8) return 6;
+	else*/ return tmpchan;
+}
+string MGv3_Detector::Name() const{
+	return "MGv3";
+}
+int MGv3_Detector::get_MaxNClus() const{
+	return MaxNClus;
+}
+TLine * MGv3_Detector::get_line_display() const{
+	return new TLine(offset - size/2.,z,offset + size/2.,z);
+}
 
 CosmicBench::CosmicBench(){
 	for(unsigned int i=0;i<detectors.size();i++){
@@ -808,6 +997,7 @@ void CosmicBench::Init(ptree config_tree){
 	//int total_CM_N = config_tree.get<int>("total_CM_N");
 	//int total_MG_N = config_tree.get<int>("total_MG_N");
 	string RMSName = config_tree.get<string>("RMSPed");
+  
 	/*
 	ifstream in;
 	in.open(RMSName.c_str());
@@ -843,15 +1033,17 @@ void CosmicBench::Init(ptree config_tree){
 	for(map<const Tomography::det_type,const Detector* const>::iterator type_it=Tomography::Static_Detector.begin();type_it!=Tomography::Static_Detector.end();++type_it){
 		ostringstream childname;
 		childname << "CosmicBench." << type_it->first;
+		//cout << childname.str() << endl ;
 		if(config_tree.get_child_optional(childname.str())){
-			BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child(childname.str())){
-				detectors.push_back(type_it->second->build_det(child));
-				if(!((detectors.back())->get_is_ref())) non_ref_n++;
-				layers.insert((detectors.back())->get_layer());
-				det_n[type_it->first]++;
-			}
+		  BOOST_FOREACH(const ptree::value_type& child, config_tree.get_child(childname.str())){
+		    detectors.push_back(type_it->second->build_det(child));
+		    if(!((detectors.back())->get_is_ref())) non_ref_n++;
+		    layers.insert((detectors.back())->get_layer());
+		    det_n[type_it->first]++;
+		  }
 		}
 	}
+	
 	map<Tomography::det_type,vector<vector<double> > > RMS = read_pedfile(RMSName,det_n);
 	for(vector<Detector*>::iterator det_it=detectors.begin();det_it!=detectors.end();++det_it){
 		(*det_it)->set_RMS(RMS[(*det_it)->get_type()][(*det_it)->get_n_in_tree()]);

@@ -112,6 +112,7 @@ static map<const Tomography::det_type,const Detector* const> Static_Detector_bui
 	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::CM,new CM_Detector()));
 	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::MG,new MG_Detector()));
 	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::MGv2,new MGv2_Detector()));
+	return_map.insert(pair<const Tomography::det_type,const Detector* const>(Tomography::MGv3,new MGv3_Detector()));
 	return return_map;
 }
 
