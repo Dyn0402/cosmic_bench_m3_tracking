@@ -612,6 +612,15 @@ void DreamElecReader::read_next_event_file(int feu_id){
 						has_bug = true;
 						break;
 					}
+					// In ZS mode only triggered channels are written per event;
+					// non-triggered channels would retain stale data from the
+					// previous event. Clear the array at the start of each event.
+					if(zs_mode && isample==0){
+						for(int ai=0; ai<Tomography::Nasic_FEU; ai++)
+							for(int ci=0; ci<Tomography::Nchannel; ci++)
+								for(int s=0; s<Tomography::get_instance()->get_Nsample(); s++)
+									feu_data[feu_id].data[ai][ci][s] = 0;
+					}
 				}
 				else if(FeuHeaderLine==4){
 					current_event += static_cast<int>(current_data.get_data()) << 12;
