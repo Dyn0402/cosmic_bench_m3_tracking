@@ -15,9 +15,35 @@ The script actually used day-to-day to run the full chain (pedestal
 computation, cosmic data analysis, and tracking) on a data run is
 `run_tracking_single.sh`.
 
-### Remarks
+### Build / current state (updated 2026-06-18)
 
-If you are using ROOT6 or C++11, apply cpp11.patch before build : `patch -p1 < cpp11.patch`
+The binaries are built and run against **ROOT 6** (`~/root_6_30_02`) — the same
+ROOT version used by the `Cosmic_Bench_DAQ_Control` decode/analyze pipeline.
+The whole chain is now ROOT 6; the old ROOT 5 split is gone. The `cpp11.patch`
+(ROOT 6 / C++11 source fixes) is **already applied** in this checkout — do not
+re-apply it.
+
+To (re)build the binaries used day-to-day:
+
+```bash
+source ~/root_6_30_02/root-build/bin/thisroot.sh   # ROOT 6
+source scl_source enable devtoolset-9               # gcc 9
+make -j4 DataReader tracking
+mkdir -p root_files                                 # DataReader writes pedestals/signals here
+```
+
+The compiled binaries (`DataReader`, `tracking`, …) and the `root_files/`
+output directory are git-ignored, so a fresh clone of this repo has neither —
+they must be rebuilt/created with the commands above before tracking will run.
+(This is exactly what bit us once already: a fresh checkout had no binaries.)
+
+`run_tracking_single.sh` calls `./DataReader` and `./tracking` with relative
+paths, so it must be run from this directory — the DAQ processor handles this
+via its `tracking_run_dir` setting. Importantly, `processor_watcher.py` now
+launches the tracking subprocess with the ROOT 6 environment sourced (the same
+`cpp_env` it uses for decode/analyze). Running the binaries in the machine's
+default shell instead picks up the stale ROOT 5 at `/workspace/root` and fails
+with a `libRIO.so` undefined-symbol error.
 
 ### Use this soft
 
