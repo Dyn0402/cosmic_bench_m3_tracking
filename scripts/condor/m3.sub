@@ -13,8 +13,8 @@ log                     = logs/m3.log
 
 MY.SendCredential       = true          # forward a kerberos credential for EOS
 request_cpus            = 1
-request_memory          = 4GB
-request_disk            = 8GB
+request_memory          = 8GB           # headroom for the largest fdfs (1 GB ArIso)
+request_disk            = 16GB          # input copies + signal/analyse trees in scratch
 +JobFlavour             = "longlunch"   # 2 h ceiling; a single file is minutes
 
 on_exit_remove          = (ExitCode == 0)
