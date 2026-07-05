@@ -12,8 +12,8 @@ WARNINGS     += -Wcast-align -Wformat=2 -Winline -Wmissing-include-dirs -Wunknow
 CXX           = g++
 CGNU          = gcc
 #CXXFLAGS      = -O2 -Wall -Wextra -fexceptions -fPIC  $(ROOTCFLAGS) -fopenmp -I$(IDIR) -DUNIX -DLINUX
-CXXFLAGS      = -g -O $(WARNINGS) -fexceptions -fPIC  $(ROOTCFLAGS) -I$(IDIR) -DUNIX -DLINUX
-CFLAGS        = -g -O2 $(WARNINGS) -I$(IDIR) -pthread
+CXXFLAGS      = -g -O $(WARNINGS) -fexceptions -fPIC  $(ROOTCFLAGS) -I$(IDIR) -DUNIX -DLINUX -MMD -MP
+CFLAGS        = -g -O2 $(WARNINGS) -I$(IDIR) -pthread -MMD -MP
 LD            = g++
 LIBS          = $(ROOTLIBS) -lNetx -lm -ldl -rdynamic 
 GLIBS         = $(ROOTGLIBS) -L/usr/X11R6/lib -lXpm -lX11 -lm -ldl -rdynamic -lpthread -lMinuit2 -lboost_system -lboost_filesystem
@@ -55,6 +55,11 @@ carac_all_obj_tmp = carac_all.o carac.o Tanalyse_R.o event.o ray.o cluster.o det
 carac_all_obj = $(patsubst %, $(ODIR)/%, $(carac_all_obj_tmp))
 
 $(shell mkdir -p $(ODIR)/task)
+
+# auto-generated header dependencies (-MMD): without these, editing a header
+# rebuilds only directly-touched .cpp files and leaves stale objects with old
+# class layouts -> heap corruption
+-include $(wildcard $(ODIR)/*.d $(ODIR)/task/*.d)
 #------------------------------------------------------------------------------
 
 default: msg

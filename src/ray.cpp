@@ -242,8 +242,9 @@ double Ray_2D::get_residu(const Detector * const det) const{
 	TF1 * line = new TF1("line","[0]*x+[1]",minZ-10,maxZ+10);
 	double maxSlope = Tomography::get_instance()->get_XY_size()/(maxZ-minZ);
 	line->SetParameters(0,0);
-	line->SetParLimits(0,-(Tomography::get_instance()->get_XY_size()/2.)-(maxSlope*minZ),(Tomography::get_instance()->get_XY_size()/2.)+maxSlope*minZ);
-	line->SetParLimits(1,-maxSlope,maxSlope);
+	// [0] is the slope and [1] the intercept for this TF1 (unlike pol1); the limits were swapped
+	line->SetParLimits(0,-maxSlope,maxSlope);
+	line->SetParLimits(1,-(Tomography::get_instance()->get_XY_size()/2.)-(maxSlope*minZ),(Tomography::get_instance()->get_XY_size()/2.)+maxSlope*minZ);
 	pos->Fit(line,"QN");
 	double residu = det_coord - line->Eval(det->get_z());
 	delete pos; delete line;
@@ -316,9 +317,9 @@ Ray::Ray(){
 	chiSquare_X = -1;
 	slope_X = 0;
 	Z_intercept_X = 0;
-	chiSquare_X = -1;
-	slope_X = 0;
-	Z_intercept_X = 0;
+	chiSquare_Y = -1;
+	slope_Y = 0;
+	Z_intercept_Y = 0;
 }
 Ray::Ray(const Ray& other){
 	chiSquare_X = other.chiSquare_X;
@@ -590,7 +591,7 @@ RayPair::RayPair(){
 RayPair::RayPair(const RayPair& other){
 	delta_x = other.delta_x;
 	delta_y = other.delta_y;
-	delta_theta_x = other.delta_theta_y;
+	delta_theta_x = other.delta_theta_x;
 	delta_theta_y = other.delta_theta_y;
 	downRay = other.downRay;
 	upRay = other.upRay;
@@ -598,7 +599,7 @@ RayPair::RayPair(const RayPair& other){
 RayPair& RayPair::operator=(const RayPair& other){
 	delta_x = other.delta_x;
 	delta_y = other.delta_y;
-	delta_theta_x = other.delta_theta_y;
+	delta_theta_x = other.delta_theta_x;
 	delta_theta_y = other.delta_theta_y;
 	downRay = other.downRay;
 	upRay = other.upRay;
