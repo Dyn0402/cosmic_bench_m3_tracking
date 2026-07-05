@@ -60,44 +60,51 @@ for RAW in "$BASE"/*/*/raw_daq_data; do
 
   DATFILES=("$RAW"/*_datrun_*_000_"$FEU".fdf)
   [ ${#DATFILES[@]} -eq 0 ] && continue
-  COSBASE="${DATFILES[0]%000_${FEU}.fdf}"          # .../<name>_datrun_..._
   OUT="$SUB/m3_tracking_root_v2"
   mkdir -p "$OUT"
-
-  # pedestal basename: prefer the subrun's own pedthr, else override, else skip
-  PEDFILES=("$RAW"/*_pedthr_*_000_"$FEU".fdf)
-  if [ ${#PEDFILES[@]} -gt 0 ]; then
-    PEDBASE="${PEDFILES[0]%000_${FEU}.fdf}"
-  elif [ -n "$PEDOVERRIDE" ]; then
-    PEDBASE="$PEDOVERRIDE"
-  else
-    echo "SKIP (no pedthr): $TAG"; SKIPPED+=("$TAG"); continue
-  fi
-
   echo "=== $TAG"
-  # pedestals (once per subrun)
-  make_config 0 0 "$PEDBASE" config_ped.json
-  rm -f root_files/test_signal.root root_files/test_RMSPed.dat root_files/test_Ped.dat
-  "$REPO/DataReader" config_ped.json read > /dev/null 2>&1
-  "$REPO/DataReader" config_ped.json ped  > /dev/null 2>&1
-  if [ ! -s root_files/test_Ped.dat ]; then
-    echo "PED FAILED: $TAG"; SKIPPED+=("$TAG (ped failed)"); continue
-  fi
 
-  for F in "$RAW"/*_datrun_*_[0-9][0-9][0-9]_"$FEU".fdf; do
-    NUM="$(basename "$F" | sed -E "s/.*_([0-9]{3})_${FEU}\.fdf/\1/")"
-    NAME="$(basename "${COSBASE%_}")_${NUM}_rays.root"
-    if [ -s "$OUT/$NAME" ]; then echo "  file $NUM: exists, skip"; continue; fi
-    make_config $((10#$NUM)) $((10#$NUM)) "$COSBASE" config_cos.json
-    rm -f root_files/test_analyse.root
-    "$REPO/DataReader" config_cos.json analyse > /dev/null 2>&1
-    "$REPO/tracking"  config_cos.json rays "$OUT/$NAME" > "$WORK/track_${NUM}.log" 2>&1
-    if [ -s "$OUT/$NAME" ]; then
-      chmod 666 "$OUT/$NAME" 2>/dev/null
-      echo "  file $NUM: OK ($(tail -1 "$WORK/track_${NUM}.log" | tr -s ' '))"
+  # a subrun can hold several datrun sets (e.g. an aborted start); handle each
+  for DAT000 in "${DATFILES[@]}"; do
+    COSBASE="${DAT000%000_${FEU}.fdf}"             # .../<name>_datrun_<stamp>_
+    # pedestal: prefer the pedthr matching this datrun's timestamp, else any
+    # pedthr in the subrun, else the override, else skip
+    PEDMATCH="${COSBASE/_datrun_/_pedthr_}"
+    PEDFILES=("$RAW"/*_pedthr_*_000_"$FEU".fdf)
+    if [ -s "${PEDMATCH}000_${FEU}.fdf" ]; then
+      PEDBASE="$PEDMATCH"
+    elif [ ${#PEDFILES[@]} -gt 0 ]; then
+      PEDBASE="${PEDFILES[0]%000_${FEU}.fdf}"
+    elif [ -n "$PEDOVERRIDE" ]; then
+      PEDBASE="$PEDOVERRIDE"
     else
-      echo "  file $NUM: FAILED (see $WORK/track_${NUM}.log)"
+      echo "SKIP (no pedthr): $TAG $(basename "$COSBASE")"; SKIPPED+=("$TAG $(basename "$COSBASE")"); continue
     fi
+
+    # pedestals (once per datrun set)
+    make_config 0 0 "$PEDBASE" config_ped.json
+    rm -f root_files/test_signal.root root_files/test_RMSPed.dat root_files/test_Ped.dat
+    "$REPO/DataReader" config_ped.json read > /dev/null 2>&1
+    "$REPO/DataReader" config_ped.json ped  > /dev/null 2>&1
+    if [ ! -s root_files/test_Ped.dat ]; then
+      echo "PED FAILED: $TAG $(basename "$PEDBASE")"; SKIPPED+=("$TAG (ped failed)"); continue
+    fi
+
+    for F in "${COSBASE}"[0-9][0-9][0-9]_"$FEU".fdf; do
+      NUM="$(basename "$F" | sed -E "s/.*_([0-9]{3})_${FEU}\.fdf/\1/")"
+      NAME="$(basename "${COSBASE%_}")_${NUM}_rays.root"
+      if [ -s "$OUT/$NAME" ]; then echo "  $NAME: exists, skip"; continue; fi
+      make_config $((10#$NUM)) $((10#$NUM)) "$COSBASE" config_cos.json
+      rm -f root_files/test_analyse.root
+      "$REPO/DataReader" config_cos.json analyse > /dev/null 2>&1
+      "$REPO/tracking"  config_cos.json rays "$OUT/$NAME" > "$WORK/track_${NUM}.log" 2>&1
+      if [ -s "$OUT/$NAME" ]; then
+        chmod 666 "$OUT/$NAME" 2>/dev/null
+        echo "  $NAME: OK"
+      else
+        echo "  $NAME: FAILED (see $WORK/track_${NUM}.log)"
+      fi
+    done
   done
 done
 
