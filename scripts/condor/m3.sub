@@ -1,8 +1,12 @@
-# M3 v2 tracking on HTCondor (lxplus) — one job per datrun file.
-# The number of jobs is supplied at submit time:
-#   condor_submit m3.sub -queue $(wc -l < joblist.txt)
-# (submit_all.sh does this for you). Each job reads its 0-based index from the
-# staged joblist.txt and writes <subrun>/m3_tracking_root_v2/<name>_rays.root.
+# M3 v2 tracking on HTCondor (lxplus) -- one job per datrun file.
+# Job count is supplied at submit time:  condor_submit m3.sub -queue <N>
+# (submit_all.sh does this). Each job reads its 0-based index from the staged
+# joblist.txt and writes <subrun>/m3_tracking_root_v2/<name>_rays.root.
+#
+# NB: condor treats '#' as a comment only at the START of a line. Do NOT put
+# inline comments after a value -- they become part of the value and error out
+# (max_materialize / request_* are parsed as integer/expression RHS).
+
 universe                = vanilla
 executable              = m3_job.sh
 arguments               = "$(Process)"
@@ -11,14 +15,17 @@ output                  = logs/m3_$(Process).out
 error                   = logs/m3_$(Process).err
 log                     = logs/m3.log
 
-MY.SendCredential       = true          # forward a kerberos credential for EOS
-request_cpus            = 1
-request_memory          = 8GB           # headroom for the largest fdfs (1 GB ArIso)
-request_disk            = 16GB          # input copies + signal/analyse trees in scratch
-+JobFlavour             = "longlunch"   # 2 h ceiling; a single file is minutes
+# forward a kerberos credential so batch nodes can read/write EOS
+MY.SendCredential       = true
 
+request_cpus            = 1
+request_memory          = 8GB
+request_disk            = 16GB
++JobFlavour             = "longlunch"
+
+# retry a failed job up to 3 starts, then give up
 on_exit_remove          = (ExitCode == 0)
 periodic_remove         = (NumJobStarts > 3)
-max_materialize         = 60            # cap concurrent EOS reads of big fdfs
 
-# no trailing `queue` — pass -queue N on the condor_submit command line
+# cap concurrent live jobs so EOS never sees hundreds of big-fdf reads at once
+max_materialize         = 60
