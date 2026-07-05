@@ -16,7 +16,10 @@ CXXFLAGS      = -g -O $(WARNINGS) -fexceptions -fPIC  $(ROOTCFLAGS) -I$(IDIR) -D
 CFLAGS        = -g -O2 $(WARNINGS) -I$(IDIR) -pthread -MMD -MP
 LD            = g++
 LIBS          = $(ROOTLIBS) -lNetx -lm -ldl -rdynamic 
-GLIBS         = $(ROOTGLIBS) -L/usr/X11R6/lib -lXpm -lX11 -lm -ldl -rdynamic -lpthread -lMinuit2 -lboost_system -lboost_filesystem
+# link boost from the same stack as the active root-config (e.g. the LCG view
+# on lxplus); otherwise headers (view) and libs (system) can mismatch
+ROOTSTACKLIB  = $(dir $(shell which root-config))../lib
+GLIBS         = $(ROOTGLIBS) -L$(ROOTSTACKLIB) -L/usr/X11R6/lib -lXpm -lX11 -lm -ldl -rdynamic -lpthread -lMinuit2 -lboost_system -lboost_filesystem
 LDFLAGS       =  $(GLIBS)
 
 #Colors
