@@ -1,0 +1,24 @@
+# M3 v2 tracking on HTCondor (lxplus) — one job per datrun file.
+# The number of jobs is supplied at submit time:
+#   condor_submit m3.sub -queue $(wc -l < joblist.txt)
+# (submit_all.sh does this for you). Each job reads its 0-based index from the
+# staged joblist.txt and writes <subrun>/m3_tracking_root_v2/<name>_rays.root.
+universe                = vanilla
+executable              = m3_job.sh
+arguments               = "$(Process)"
+
+output                  = logs/m3_$(Process).out
+error                   = logs/m3_$(Process).err
+log                     = logs/m3.log
+
+MY.SendCredential       = true          # forward a kerberos credential for EOS
+request_cpus            = 1
+request_memory          = 4GB
+request_disk            = 8GB
++JobFlavour             = "longlunch"   # 2 h ceiling; a single file is minutes
+
+on_exit_remove          = (ExitCode == 0)
+periodic_remove         = (NumJobStarts > 3)
+max_materialize         = 60            # cap concurrent EOS reads of big fdfs
+
+# no trailing `queue` — pass -queue N on the condor_submit command line
