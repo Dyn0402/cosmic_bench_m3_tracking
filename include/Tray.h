@@ -28,6 +28,8 @@ class Tray{
       vector<double>  Y_Down;
       vector<double>  Chi2X;
       vector<double>  Chi2Y;
+      vector<double>  NClusX;
+      vector<double>  NClusY;
 
       Tray(string saveFileName);
       ~Tray();

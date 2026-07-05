@@ -1114,6 +1114,7 @@ void MGv2_Event::MultiCluster(){
 	for(int i=0;i<p;i++){
 		StripInfo current_strip;
 		current_strip.MaxAmpl = 0;
+		current_strip.SumAmpl = 0;
 		current_strip.MaxSample = 0;
 		current_strip.TOT = 0;
 		current_strip.Time = 0;
@@ -1128,6 +1129,7 @@ void MGv2_Event::MultiCluster(){
 			current_strip.signal_sample[j] = false;
 		}
 		for(int j=SampleMin;j<SampleMax;j++){
+			if(strip_ampl[i][j]>0) current_strip.SumAmpl += strip_ampl[i][j];
 			if(strip_ampl[i][j]>current_strip.MaxAmpl){
 				current_strip.MaxAmpl = strip_ampl[i][j];
 				current_strip.MaxSample = j;
@@ -1284,6 +1286,7 @@ void MGv2_Event::MultiCluster(){
 		double ClusSize = 1 + cluster_list[i].second - cluster_list[i].first;
 		double ClusPos = 0;
 		double ClusAmpl = 0;
+		double PosWeightSum = 0;
 		double ClusMaxStripAmpl = 0;
 		double ClusMaxSample = 0;
 		int ClusMaxStrip = -1;
@@ -1299,8 +1302,13 @@ void MGv2_Event::MultiCluster(){
 		//--
 		for(int j = cluster_list[i].first;j<((cluster_list[i].second)+1);j++){
 			StripInfo current_strip = allChannels[MGv2_Detector::StripToChannel_a[j]];
-			double effective_ampl = current_strip.MaxAmpl/count(global_used_channel.begin(),global_used_channel.end(),MGv2_Detector::StripToChannel_a[j]);
-			ClusPos = (ClusPos*ClusAmpl + j*effective_ampl)/(ClusAmpl + effective_ampl);
+			int demux_share = count(global_used_channel.begin(),global_used_channel.end(),MGv2_Detector::StripToChannel_a[j]);
+			double effective_ampl = current_strip.MaxAmpl/demux_share;
+			// centroid weighted by integrated charge (falls back to peak sample if empty);
+			// ClusAmpl/ClusMaxStripAmpl keep the original peak-sample definition
+			double pos_weight = ((current_strip.SumAmpl>0) ? current_strip.SumAmpl : current_strip.MaxAmpl)/demux_share;
+			ClusPos = (ClusPos*PosWeightSum + j*pos_weight)/(PosWeightSum + pos_weight);
+			PosWeightSum += pos_weight;
 			ClusAmpl += effective_ampl;
 
 			//Micro TPC
@@ -2988,7 +2996,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 						max_ampl = (*kt)->get_ampl();
 					}
 				}
-				unique_ray.add_cluster(*best_clust);
+				if(best_clust != (jt->second).end()) unique_ray.add_cluster(*best_clust);
 			}
 			unique_ray.process();
 			suitableRays[it->first].push_back(unique_ray);
@@ -3006,6 +3014,7 @@ vector<Ray> CosmicBenchEvent::get_absorption_rays(double chiSquare_threshold){
 			//if no ray found, allow to drop a detector
 			for(int drop = 0;drop<2;drop++){
 				if(suitableRays[it->first].size() > 0) break;
+				b = true; // reset for each pass: the drop=0 loop exits with b=false, which used to make the drop=1 rescue pass dead code
 				// you can adjust the size to require more or less hit
 				while(b && (it->second).size()>2){
 					b = false;

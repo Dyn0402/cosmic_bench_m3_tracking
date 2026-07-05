@@ -32,6 +32,8 @@ void Tray::Init()
    T->Branch("Y_Down", "vector<double>", &Y_Down);
    T->Branch("Chi2X", "vector<double>", &Chi2X);
    T->Branch("Chi2Y", "vector<double>", &Chi2Y);
+   T->Branch("NClusX", "vector<double>", &NClusX);
+   T->Branch("NClusY", "vector<double>", &NClusY);
 }
 TTree * Tray::getTree() const{
    return T->CloneTree();
@@ -55,9 +57,13 @@ void Tray::fillTree(int evn_, double evttime_, vector<Ray> rays, double Z_Up_, d
    Y_Down = vector<double>(rayN,0);
    Chi2X = vector<double>(rayN,-1);
    Chi2Y = vector<double>(rayN,-1);
+   NClusX = vector<double>(rayN,0);
+   NClusY = vector<double>(rayN,0);
    for(int i=0;i<rayN;i++){
       Chi2X[i] = rays[i].get_chiSquare_X();
       Chi2Y[i] = rays[i].get_chiSquare_Y();
+      NClusX[i] = rays[i].get_clus_x_n();
+      NClusY[i] = rays[i].get_clus_y_n();
       X_Up[i] = rays[i].eval_X(Z_Up);
       Y_Up[i] = rays[i].eval_Y(Z_Up);
       X_Down[i] = rays[i].eval_X(Z_Down);

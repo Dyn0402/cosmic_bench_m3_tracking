@@ -71,6 +71,7 @@ class Event{
 		//helper struct to store strip informations
 		struct StripInfo {
 			double MaxAmpl;
+			double SumAmpl; // integrated charge over the sample window (positive samples only); currently filled by MGv2 only
 			int MaxSample;
 			int TOT;
 			double Time;
