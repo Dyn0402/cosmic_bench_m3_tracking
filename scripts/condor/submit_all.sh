@@ -23,13 +23,19 @@ DRY=""; [ "${1:-}" = "-n" ] && DRY=1
 if ! klist -s 2>/dev/null; then
   echo "!! no valid kerberos ticket. Run:  kinit -r 7d ${USER}@CERN.CH" >&2; exit 1
 fi
-LEFT=$(( $(date -d "$(klist 2>/dev/null | awk '/krbtgt/{print $3" "$4}')" +%s 2>/dev/null || echo 0) - $(date +%s) ))
-if [ "$LEFT" -lt 21600 ]; then   # < 6 h remaining
-  echo "!! ticket has < 6 h left (${LEFT}s). Renew a long one first:  kinit -r 7d ${USER}@CERN.CH" >&2
-  echo "   (a 275-file run can take several hours on a busy pool)" >&2
-  exit 1
+aklog 2>/dev/null || true                             # kerberos TGT -> AFS token
+kinit -R 2>/dev/null || true                          # renew if renewable (best effort)
+# best-effort lifetime warning (klist date formats vary; never block on a parse miss)
+EXP="$(klist 2>/dev/null | awk '/krbtgt/{print $3, $4; exit}')"
+ES="$(date -d "$EXP" +%s 2>/dev/null || echo 0)"
+if [ "$ES" -gt 0 ]; then
+  LEFT=$(( ES - $(date +%s) ))
+  if [ "$LEFT" -lt 21600 ]; then
+    echo "!! ticket has < 6 h left. A 275-file run can take hours; renew first:" >&2
+    echo "   kinit -r 7d ${USER}@CERN.CH   (then re-run; submit is idempotent)" >&2
+    exit 1
+  fi
 fi
-kinit -R 2>/dev/null && aklog 2>/dev/null || true    # top up AFS token
 
 mkdir -p "$WORK/logs"
 cd "$WORK"
