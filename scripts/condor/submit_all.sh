@@ -14,6 +14,23 @@ STAGE=/eos/experiment/ntof/data/x17/cosmic_bench/june_tests/_m3_v2_condor
 WORK="${WORK:-$HOME/m3_condor}"
 DRY=""; [ "${1:-}" = "-n" ] && DRY=1
 
+# --- kerberos preflight -------------------------------------------------------
+# The whole run needs a valid ticket: condor forwards it to the batch nodes for
+# EOS writes, AND the schedd writes each job's .out/.err/.log back to the AFS
+# submit dir. If the ticket lapses mid-run, late jobs go held and are removed
+# (this bit us once: a 7 h default ticket expired ~4 h into a 275-job run).
+# Get a long-lived renewable ticket BEFORE submitting so it outlives the run.
+if ! klist -s 2>/dev/null; then
+  echo "!! no valid kerberos ticket. Run:  kinit -r 7d ${USER}@CERN.CH" >&2; exit 1
+fi
+LEFT=$(( $(date -d "$(klist 2>/dev/null | awk '/krbtgt/{print $3" "$4}')" +%s 2>/dev/null || echo 0) - $(date +%s) ))
+if [ "$LEFT" -lt 21600 ]; then   # < 6 h remaining
+  echo "!! ticket has < 6 h left (${LEFT}s). Renew a long one first:  kinit -r 7d ${USER}@CERN.CH" >&2
+  echo "   (a 275-file run can take several hours on a busy pool)" >&2
+  exit 1
+fi
+kinit -R 2>/dev/null && aklog 2>/dev/null || true    # top up AFS token
+
 mkdir -p "$WORK/logs"
 cd "$WORK"
 cp "$HERE/gen_joblist.sh" "$HERE/m3_job.sh" "$HERE/m3.sub" .

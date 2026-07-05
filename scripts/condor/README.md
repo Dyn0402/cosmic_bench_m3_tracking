@@ -14,8 +14,24 @@ git clone https://github.com/Dyn0402/cosmic_bench_m3_tracking.git ~/m3_tracking_
 cd ~/m3_tracking_v2
 source /cvmfs/sft.cern.ch/lcg/views/LCG_107/x86_64-el9-gcc13-opt/setup.sh
 make cleanall && make tracking DataReader -j4
-kinit    # ensure a valid kerberos ticket (klist to check)
 ```
+
+## Kerberos (important)
+
+The run needs a valid ticket for its whole duration: condor forwards it to the
+batch nodes for EOS writes, and the schedd writes each job's `.out/.err/.log`
+back to the AFS submit dir. A default ~7 h ticket can expire mid-run on a busy
+pool — late jobs then go held and are removed. **Get a long renewable ticket
+before submitting:**
+
+```bash
+kinit -r 7d $USER@CERN.CH     # then enter your CERN password
+klist                         # confirm a multi-day 'renew until'
+```
+
+`submit_all.sh` refuses to submit if under 6 h remain. If a run half-finishes
+because the ticket lapsed, just `kinit -r 7d` again and re-run `submit_all.sh`
+— it is idempotent and only fills the gaps.
 
 ## Run
 
