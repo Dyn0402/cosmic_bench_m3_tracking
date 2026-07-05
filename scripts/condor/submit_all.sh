@@ -9,9 +9,10 @@
 # june_tests EOS tree.
 set -eu
 HERE="$(cd "$(dirname "$0")" && pwd)"
-BINREPO="${BINREPO:-$HOME/m3_tracking_v2}"      # where DataReader/tracking are built
+REPO_ROOT="$(cd "$HERE/../.." && pwd)"          # scripts/condor -> repo root
+BINREPO="${BINREPO:-$REPO_ROOT}"                # DataReader/tracking live in the repo
 STAGE=/eos/experiment/ntof/data/x17/cosmic_bench/june_tests/_m3_v2_condor
-WORK="${WORK:-$HOME/m3_condor}"
+WORK="${WORK:-$(dirname "$REPO_ROOT")/m3_condor}"   # sibling of the repo checkout
 DRY=""; [ "${1:-}" = "-n" ] && DRY=1
 
 # --- kerberos preflight -------------------------------------------------------
