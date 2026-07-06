@@ -45,6 +45,57 @@ launches the tracking subprocess with the ROOT 6 environment sourced (the same
 default shell instead picks up the stale ROOT 5 at `/workspace/root` and fails
 with a `libRIO.so` undefined-symbol error.
 
+### Track reconstruction improvements (updated 2026-07-06)
+
+Since the ZS fix, the track-reconstruction chain has been reworked ("Tracking
+v2"). The changes below are all in `src/event.cpp`, `src/ray.cpp`,
+`src/Tray.cpp` and `src/detector.cpp`; the ray output tree gained two branches.
+
+**More events reconstructed — layer-drop rescue.**
+`CosmicBenchEvent::get_absorption_rays` has a fallback pass that drops a
+detector layer when a full-layer fit finds no ray. That fallback was dead code:
+the inner loop flag was never reset between passes, so the `drop=1` rescue never
+ran. Resetting it per pass recovers ~25% more events with rays (det3_test:
+8407 → 10503 of 12976); rays that were already found are unchanged. The pass
+also now guards against dereferencing `end()` when a layer has no
+positive-amplitude cluster.
+
+**Better quality flags — NClusX / NClusY branches.**
+The rays tree (`Tray`) now writes `NClusX` and `NClusY`: the number of clusters
+that entered each coordinate fit. ~35% of rays have a 2-point coordinate; those
+are only ~38% within 5 mm of the DUT hit (vs ~85% for full fits) and most carry
+a denormal-tiny — not exactly zero — chi2, so they were effectively invisible to
+downstream cuts. **Recommended consumer selection: `NClusX>=3 && NClusY>=3 &&
+chi2 < 5`.** On the 6-27 Saturday det3 run against the DUT this selection moved
+reco_near 65.2% → 73.5%, reco_far 11.0% → 5.0%, within-5mm 85.6% → 93.6%
+(at the cost of ~10% fewer rays).
+
+**Better spatial resolution — charge-weighted centroid (MGv2).**
+`MGv2_Event::MultiCluster` now weights the cluster centroid by the integrated
+charge over the sample window (positive samples only) instead of the single peak
+sample. `ClusAmpl` and `ClusMaxStripAmpl` keep the original peak-sample
+definition; only the position weighting changed. Result: ~1–2% narrower
+exclusive track residuals on det3_test.
+
+**Latent bugfixes in ray fitting / QA.** Several long-standing bugs that
+affected reconstruction and alignment were fixed (verified to leave the
+det3_test 6-22 ray output bit-for-bit unchanged, i.e. they only corrected paths
+that were silently wrong):
+
+* `Ray::Ray()` never initialized the Y-coordinate members
+  (`chiSquare_Y`/`slope_Y`/`Z_intercept_Y`) — the X members were set twice.
+* `RayPair` copy ctor/assignment copied `delta_theta_x` from
+  `other.delta_theta_y`.
+* `Ray_2D::get_residu(Detector*)` had its TF1 parameter limits swapped
+  (`[0]` is the slope, not the intercept, for `"[0]*x+[1]"`), which clamped the
+  refit intercept to ±0.4 mm.
+* `Detector::operator==` compared a detector's `get_n_in_tree()` with itself, so
+  any two same-type detectors compared equal.
+* `Makefile` now generates and includes header dependencies (`-MMD`); without
+  them a header edit left stale objects with the old class layout (this once
+  showed up as heap corruption via a `sizeof(Tray)` mismatch). After pulling
+  these changes, do a clean rebuild once (`make clean && make -j4 …`).
+
 ### Use this soft
 
 * Datareader :
